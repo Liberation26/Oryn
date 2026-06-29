@@ -317,6 +317,10 @@ if [ "$#" -gt 0 ]; then
             shift || true
             exec bash "$SdkRoot/Common/Scripts/GitPushOryn.sh" "$@"
             ;;
+        GitLogin|gitlogin|gcm|credentials)
+            shift || true
+            exec bash "$SdkRoot/Common/Scripts/GitPushOryn.sh" --setup-gcm-only "$@"
+            ;;
     esac
 fi
 
@@ -461,6 +465,7 @@ case "$Command" in
         printf '  ./Oryn.sh bootinfo run n     Select, build, image, and run a variant\n'
         printf '  ./Oryn.sh bootinfo test-all  Build, image, and run every variant\n'
         printf '  ./Oryn.sh gitpush         Initialise git, ignore output, commit, and push source\n'
+        printf '  ./Oryn.sh gitlogin        Configure Git Credential Manager for WSL GitHub login\n'
         printf '  ./Oryn.sh rebuild         Rebuild Common/Bin/oryn\n'
         exit 0
         ;;

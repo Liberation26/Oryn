@@ -104,6 +104,64 @@ CopyWorkspaceFile()
     cp -a "$source_root/$name" "$WorkspaceRoot/$name"
 }
 
+CopyWorkspaceFileIfMissing()
+{
+    local source_root="$1"
+    local name="$2"
+
+    [ -f "$source_root/$name" ] || return 0
+    [ ! -e "$WorkspaceRoot/$name" ] || return 0
+    mkdir -p "$WorkspaceRoot"
+    cp -a "$source_root/$name" "$WorkspaceRoot/$name"
+}
+
+CopyWorkspaceShellAndGitFiles()
+{
+    local source_root="$1"
+
+    CopyWorkspaceFile "$source_root" Oryn.sh
+    CopyWorkspaceFile "$source_root" oryn
+    CopyWorkspaceFile "$source_root" update
+    CopyWorkspaceFile "$source_root" update.sh
+    CopyWorkspaceFile "$source_root" GitPush.sh
+    CopyWorkspaceFile "$source_root" gitpush
+    CopyWorkspaceFileIfMissing "$source_root" GitHubRepo.address
+    CopyWorkspaceFileIfMissing "$source_root" .gitignore
+}
+
+RunPostUpdateGitPush()
+{
+    local gitpush_script="$SdkRoot/Common/Scripts/GitPushOryn.sh"
+
+    if [ "$AutoGitPush" -ne 1 ]; then
+        Warn "Automatic GitPush after update is disabled for this run."
+        return 0
+    fi
+
+    if [ "${ORYN_SKIP_GITPUSH_AFTER_UPDATE:-0}" = "1" ]; then
+        Warn "Automatic GitPush after update skipped because ORYN_SKIP_GITPUSH_AFTER_UPDATE=1."
+        return 0
+    fi
+
+    if [ ! -f "$gitpush_script" ]; then
+        Warn "Automatic GitPush skipped because GitPushOryn.sh was not found."
+        return 0
+    fi
+
+    if ! command -v git >/dev/null 2>&1; then
+        Warn "Automatic GitPush skipped because git is not installed in WSL."
+        return 0
+    fi
+
+    Info "Automatic GitPush after update starting."
+    if bash "$gitpush_script" --message "Oryn automatic post-update source sync $SelectedVersion"; then
+        Ok "Automatic GitPush after update complete."
+    else
+        Warn "Automatic GitPush after update failed. The update itself completed."
+        Warn "Run ./Oryn.sh gitlogin to configure GitHub login, then run ./Oryn.sh gitpush."
+    fi
+}
+
 CleanSdkRootForFullUpdate()
 {
     local entry
@@ -147,10 +205,7 @@ ApplyChangedFiles()
 
     CopyTree "$changed_root/OrynSDK" "$SdkRoot"
     CopyTree "$changed_root/OrynProjects" "$ProjectsRoot"
-    CopyWorkspaceFile "$changed_root" Oryn.sh
-    CopyWorkspaceFile "$changed_root" oryn
-    CopyWorkspaceFile "$changed_root" update
-    CopyWorkspaceFile "$changed_root" update.sh
+    CopyWorkspaceShellAndGitFiles "$changed_root"
 }
 
 ApplyFullSource()
@@ -166,10 +221,7 @@ ApplyFullSource()
     CleanSdkRootForFullUpdate
     CopyTree "$full_root/OrynSDK" "$SdkRoot"
     CopyTree "$full_root/OrynProjects" "$ProjectsRoot"
-    CopyWorkspaceFile "$full_root" Oryn.sh
-    CopyWorkspaceFile "$full_root" oryn
-    CopyWorkspaceFile "$full_root" update
-    CopyWorkspaceFile "$full_root" update.sh
+    CopyWorkspaceShellAndGitFiles "$full_root"
 }
 
 ScriptPath="$(CanonicalPath "${BASH_SOURCE[0]}")"
@@ -195,6 +247,7 @@ fi
 ProjectsRoot="$(CanonicalPath "${ORYN_PROJECTS_ROOT:-$WorkspaceRoot/OrynProjects}")"
 Mode="changed"
 ZipPath=""
+AutoGitPush=1
 
 for arg in "$@"; do
     case "$arg" in
@@ -207,12 +260,19 @@ for arg in "$@"; do
         *.zip)
             ZipPath="$arg"
             ;;
+        --no-gitpush|--no-git-push|--skip-gitpush)
+            AutoGitPush=0
+            ;;
+        --gitpush|--git-push)
+            AutoGitPush=1
+            ;;
         --help|-h)
             printf "Oryn WSL updater\n\n"
             printf "Usage:\n"
             printf "  ./update\n"
             printf "  ./update all\n"
-            printf "  ./update /path/to/OrynWsl-0.1.2.zip\n\n"
+            printf "  ./update /path/to/OrynWsl-0.1.2.zip\n"
+            printf "  ./update --no-gitpush\n\n"
             printf "Workspace root: %s\n" "$WorkspaceRoot"
             printf "SDK root: %s\n" "$SdkRoot"
             printf "Projects root: %s\n" "$ProjectsRoot"
@@ -257,6 +317,9 @@ fi
 }
 
 Ok "Selected archive: $ZipPath"
+SelectedVersion="$(basename "$ZipPath" | sed -n 's/^OrynWsl-\(.*\)\.zip$/\1/p')"
+[ -n "$SelectedVersion" ] || SelectedVersion="unknown"
+Info "Selected archive version: $SelectedVersion"
 unzip -q "$ZipPath" -d "$TempRoot/extract" || {
     Fail "Could not extract archive."
     exit 1
@@ -276,14 +339,19 @@ chmod +x \
   "$WorkspaceRoot/oryn" \
   "$WorkspaceRoot/update" \
   "$WorkspaceRoot/update.sh" \
+  "$WorkspaceRoot/GitPush.sh" \
+  "$WorkspaceRoot/gitpush" \
   "$SdkRoot/Oryn.sh" \
   "$SdkRoot/oryn" \
   "$SdkRoot/update" \
   "$SdkRoot/update.sh" \
+  "$SdkRoot/GitPush.sh" \
+  "$SdkRoot/gitpush" \
   "$SdkRoot/Common/Scripts/BuildOryn.sh" \
   "$SdkRoot/Common/Scripts/UpdateOryn.sh" \
   "$SdkRoot/Common/Scripts/UpdateOrynCurrent.sh" 2>/dev/null || true
 
 Ok "Update complete."
+RunPostUpdateGitPush
 Info "Run from workspace root: cd $WorkspaceRoot && ./Oryn.sh"
 Info "Run from SDK root: cd $SdkRoot && ./Oryn.sh"
