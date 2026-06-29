@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -u
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WorkspaceRoot="$(cd "$script_dir/.." && pwd)"
+CurrentScript="$script_dir/Common/Scripts/UpdateOrynCurrent.sh"
+LegacyCurrentScript="$script_dir/Scripts/UpdateOrynCurrent.sh"
+LegacyScript="$script_dir/Common/Scripts/UpdateOryn.sh"
+LegacyOldScript="$script_dir/Scripts/UpdateOryn.sh"
+
+export ORYN_WORKSPACE_ROOT="$WorkspaceRoot"
+export ORYN_SDK_ROOT="$script_dir"
+export ORYN_PROJECTS_ROOT="${ORYN_PROJECTS_ROOT:-$WorkspaceRoot/OrynProjects}"
+
+if [ ! -f "$CurrentScript" ] && [ -f "$LegacyCurrentScript" ]; then
+    CurrentScript="$LegacyCurrentScript"
+fi
+
+if [ ! -f "$LegacyScript" ] && [ -f "$LegacyOldScript" ]; then
+    LegacyScript="$LegacyOldScript"
+fi
+
+if [ -f "$CurrentScript" ]; then
+    TempScript="$(mktemp)"
+    cp "$CurrentScript" "$TempScript"
+    chmod +x "$TempScript"
+    exec bash "$TempScript" "$@"
+fi
+
+exec "$LegacyScript" "$@"

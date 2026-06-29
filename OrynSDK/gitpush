@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -u
+
+SdkRoot="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WorkspaceRoot="$(cd "$SdkRoot/.." && pwd)"
+export ORYN_WORKSPACE_ROOT="$WorkspaceRoot"
+exec bash "$SdkRoot/Common/Scripts/GitPushOryn.sh" "$@"

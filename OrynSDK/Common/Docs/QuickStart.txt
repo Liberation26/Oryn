@@ -1,0 +1,434 @@
+OrynWsl 0.4.0 Quick Start
+
+This package is a WSL-native Oryn SDK baseline.
+
+Expected workspace layout:
+
+  ~/OrynSDK/
+    OrynSDK/
+    OrynProjects/
+
+The SDK lives here:
+
+  ~/OrynSDK/OrynSDK
+
+The default Kernel-5 project lives here:
+
+  ~/OrynSDK/OrynProjects/Kernel-5/Project.oryn
+
+Build happens inside WSL Ubuntu using Clang and LLD.
+Run launches your Windows qemu-system-x86_64.exe from the WSL terminal.
+
+You can launch from the workspace root:
+
+  cd ~/OrynSDK
+  ./Oryn.sh
+
+Or from the SDK root:
+
+  cd ~/OrynSDK/OrynSDK
+  ./Oryn.sh
+
+Both launchers default to:
+
+  ~/OrynSDK/OrynProjects/Kernel-5/Project.oryn
+
+Install tools in WSL Ubuntu:
+
+  sudo apt update
+  sudo apt install -y clang lld llvm ovmf unzip
+
+Run the default Kernel-5 project:
+
+  cd ~/OrynSDK
+  ./Oryn.sh run
+
+Check tools:
+
+  ./Oryn.sh doctor
+
+Show the version:
+
+  ./Oryn.sh version
+
+Build Kernel-5:
+
+  ./Oryn.sh build
+
+Create the FAT32 partition disk image:
+
+  ./Oryn.sh image
+
+Run Kernel-5 using Windows QEMU from WSL:
+
+  ./Oryn.sh run
+
+The native tool is created here when needed:
+
+  ~/OrynSDK/OrynSDK/Common/Bin/oryn
+
+You can still call it directly after it exists:
+
+  ~/OrynSDK/OrynSDK/Common/Bin/oryn doctor
+  ~/OrynSDK/OrynSDK/Common/Bin/oryn run ~/OrynSDK/OrynProjects/Kernel-5/Project.oryn
+
+Default Windows QEMU search paths:
+
+  /mnt/c/Program Files/qemu/qemu-system-x86_64.exe
+  /mnt/c/Program Files/QEMU/qemu-system-x86_64.exe
+  /mnt/c/Oryn/Tools/QEMU/qemu-system-x86_64.exe
+  /mnt/c/msys64/ucrt64/bin/qemu-system-x86_64.exe
+  /mnt/c/msys64/mingw64/bin/qemu-system-x86_64.exe
+
+Default Windows OVMF search paths include:
+
+  /mnt/c/Program Files/qemu/share/edk2-x86_64-code.fd
+  /mnt/c/Program Files/qemu/share/OVMF_CODE.fd
+  /mnt/c/Program Files/QEMU/share/edk2-x86_64-code.fd
+  /mnt/c/Oryn/Tools/OVMF/OVMF_CODE.fd
+  /usr/share/OVMF/OVMF_CODE.fd
+
+You can override OVMF with either a WSL path or a Windows path:
+
+  ORYN_OVMF_PATH
+  ORYN_OVMF_WINDOWS_PATH
+
+OrynWsl 0.4.0 image output
+---------------------------
+The image command creates a real raw disk image with one MBR partition.
+That partition is an EFI System Partition containing a FAT32 filesystem.
+
+Output files under OrynProjects/Kernel-5/Output:
+
+  ESP/
+    Staging folder for the same boot files.
+
+  Kernel-5.img
+    Raw boot disk image.
+    MBR partition type: 0xEF EFI System Partition.
+    Filesystem: FAT32.
+
+The FAT32 partition contains:
+
+  /EFI/BOOT/BOOTX64.EFI
+  /SYSTEM/KERNEL-4/KERNEL.ELF
+
+The kernel remains a pure x86_64 ELF executable.
+BOOTX64.EFI opens Kernel.elf from the FAT32 partition, validates it as an ELF64 x86_64 executable, copies the ELF load segments, prepares the user-selected OrynBootInfo v1 fields, exits UEFI boot services, places the BootInfo pointer in RDI, and jumps to the ELF entry address.
+
+OrynBootInfo v1 handoff
+-----------------------
+Kernel-5 now receives a pointer to OrynBootInfo:
+
+  void KernelStart(const OrynBootInfo* bootInfo)
+
+The loader always fills:
+
+  Signature
+  Version
+  Size
+  Flags
+  BootLoaderName
+  KernelName
+
+The user can choose whether the loader also passes:
+
+  Kernel physical base/size
+  MemoryMap pointer/count/entry-size/version
+  Framebuffer base/size/width/height/pitch/pixel-format, if GOP is available
+  RSDP pointer, if ACPI is available
+
+The kernel proves the handoff by printing:
+
+  PASS: BootInfo received.
+  Memory map entries: ...
+  Framebuffer: ... or not supplied
+  RSDP: ... or not supplied
+
+
+UEFI BootInfo questionnaire
+---------------------------
+Kernel-5 can now create numbered BootInfo variants under:
+
+  OrynProjects/Kernel-5/Kernel/<number>
+
+Run the questionnaire with:
+
+  ./Oryn.sh bootinfo
+
+The questionnaire asks whether BOOTX64.EFI may pass each available UEFI BootInfo item:
+
+  1. Kernel physical range
+  2. UEFI memory map
+  3. GOP framebuffer
+  4. ACPI RSDP pointer
+
+The package includes Kernel/1 as the default full BootInfo selection.
+
+From 0.1.2 onward, the questionnaire checks existing numbered variants before writing a new one.
+If the same BootInfo answers already exist, Oryn selects the existing Kernel/<number> folder instead of creating a duplicate.
+Only a new unique BootInfo selection creates the next numbered folder, for example:
+
+  OrynProjects/Kernel-5/Kernel/2/Include/OrynBootInfoSelection.h
+  OrynProjects/Kernel-5/Kernel/2/BootInfoSelection.txt
+
+The currently selected variant number is stored in:
+
+  OrynProjects/Kernel-5/Kernel/Selected.txt
+
+The selected header is included by both the UEFI loader build and the Kernel-5 build.
+After the questionnaire, Oryn asks whether to build, image, and run the selected variant immediately.
+
+
+0.1.2 duplicate-selection behavior
+----------------------------------
+The bootinfo command now reads existing Kernel/<number>/Include/OrynBootInfoSelection.h files
+before creating a new numbered folder. If the answers match an existing variant, Oryn updates
+Kernel/Selected.txt to that number and reports that the existing matching variant was selected.
+
+OrynWsl 0.4.0 run output
+-------------------------
+Oryn starts Windows QEMU with the raw FAT32 disk image, not QEMU's synthetic fat:rw folder backend.
+
+The run writes serial output live to the WSL terminal and writes debug-port output to:
+
+  ~/OrynSDK/OrynProjects/Kernel-5/Output/Debug.log
+
+The Kernel-5 kernel writes to both COM1 and the QEMU debug console port 0xE9.
+It then uses QEMU isa-debug-exit so the run finishes and the debug log is printed.
+
+Expected kernel output includes:
+
+  Oryn Kernel-5 booted.
+  Target: uefi-x64
+  Toolchain: clang + lld
+  PASS: Kernel entered successfully.
+  PASS: Serial/debug output path is working.
+  PASS: BootInfo received.
+  Memory map entries: ...
+  Physical memory allocator: available
+  Virtual memory: starting
+  Current CR3: 0x...
+  New PML4: 0x...
+  Virtual memory: active
+  System halted by Kernel-5.
+  Requesting QEMU debug-exit success.
+
+Update from WSL terminal:
+
+  cd ~/OrynSDK
+  ./update
+
+Apply every file from the archive:
+
+  cd ~/OrynSDK
+  ./update all
+
+Boot proof notes
+----------------
+After ./Oryn.sh run, Oryn writes these files under OrynProjects/Kernel-5/Output:
+
+  Debug.log
+    Raw QEMU debug-port output from BOOTX64.EFI and the Kernel-5 kernel.
+
+  BootReport.txt
+    Pass/fail boot report with QEMU path, OVMF path, FAT32 disk image path,
+    QEMU exit code, loader stage checks, BootInfo checks, kernel-entry checks,
+    and the captured debug output.
+
+A passing boot should show:
+
+  Result: PASS
+  Loader started: PASS
+  BootInfo allocated: PASS
+  BootInfo memory map captured or intentionally omitted: PASS
+  Kernel entered: PASS
+  Kernel received BootInfo: PASS
+  Kernel requested QEMU debug-exit: PASS
+
+0.1.2 note
+----------
+When Windows QEMU is launched from WSL, Oryn stages Kernel-5.img and the QEMU debug log in a Windows-local temporary folder before running QEMU. This avoids Windows QEMU block-device failures caused by using the \\wsl.localhost UNC path directly for a raw disk image.
+
+Default staging folder:
+  C:\Users\daves\AppData\Local\Temp\OrynWSL
+
+Override from WSL if required:
+  export ORYN_QEMU_STAGE_DIR='C:\Users\daves\AppData\Local\Temp\OrynWSL'
+
+
+0.1.3 BootInfo variant management
+---------------------------------
+OrynWsl 0.1.3 adds management commands for the numbered Kernel-5 BootInfo variants.
+
+List variants:
+
+  ./Oryn.sh bootinfo list
+
+Show the selected variant or a numbered variant:
+
+  ./Oryn.sh bootinfo show
+  ./Oryn.sh bootinfo show 1
+
+Select an existing variant without answering the questionnaire again:
+
+  ./Oryn.sh bootinfo select 1
+
+Compare two variants:
+
+  ./Oryn.sh bootinfo compare 1 2
+
+Select, build, image, and run one variant:
+
+  ./Oryn.sh bootinfo run 1
+
+Build, image, and run every numbered variant:
+
+  ./Oryn.sh bootinfo test-all
+
+The test-all command writes a summary report to:
+
+  OrynProjects/Kernel-5/Output/BootInfoVariantReport.txt
+
+After test-all finishes, Oryn restores the originally selected variant in:
+
+  OrynProjects/Kernel-5/Kernel/Selected.txt
+
+0.2.0 Kernel BootInfo validation and memory-map parsing
+-------------------------------------------------------
+OrynWsl 0.2.0 adds kernel-side validation for the OrynBootInfo v1 handoff.
+The kernel now checks signature, version, size, unknown flag bits, selected-field rules,
+and the basic safety of each supplied pointer/count pair before using BootInfo data.
+
+Kernel-5 now has small kernel-owned modules for this work:
+
+  OrynProjects/Kernel-5/Include/KernelBootInfo.h
+  OrynProjects/Kernel-5/Include/KernelMemoryMap.h
+  OrynProjects/Kernel-5/Source/BootInfo/
+  OrynProjects/Kernel-5/Source/Memory/
+
+When the selected BootInfo variant includes the UEFI memory map, Kernel-5 copies it into a
+kernel-owned static memory map and prints a summary by class:
+
+  Usable
+  Reserved
+  Bootloader reclaim
+  ACPI reclaim
+  ACPI NVS
+  MMIO
+  Runtime
+  Bad
+  Kernel reserved
+
+This version does not add the physical memory allocator yet. It proves the map can be
+trusted and interpreted first. If a selected variant does not include the memory map,
+the kernel reports that memory services and the physical allocator are unavailable and
+continues to halt cleanly.
+
+
+0.2.1 BootInfo selection header compatibility fix
+--------------------------------------------------
+OrynWsl 0.2.1 fixes older numbered Kernel-5 BootInfo variant folders that were
+created before ORYN_BOOTINFO_SELECTION_MASK existed. The kernel now derives the
+selection mask from the individual ORYN_BOOTINFO_WANT_* values when an older
+variant header does not define the mask.
+
+This allows existing Kernel/2, Kernel/3, and later user-created variants to build
+without deleting or recreating them.
+
+
+0.3.0 Kernel-3 physical memory allocator
+----------------------------------------
+OrynWsl 0.3.0 keeps the allocator work in Kernel-3 and adds the first real kernel
+memory service: a physical 4 KiB page allocator built from the parsed UEFI memory map.
+When updating from Kernel-2, the launcher migrates unique old BootInfo variants into
+Kernel-3 before removing the generated Kernel-2 project folder.
+
+New files:
+
+  OrynProjects/Kernel-3/Include/KernelPhysicalMemory.h
+  OrynProjects/Kernel-3/Source/Memory/KernelPhysicalMemory.c
+  OrynProjects/Kernel-3/Source/Memory/KernelPhysicalMemoryPrint.c
+
+When the selected BootInfo variant includes the memory map, Kernel-3 now prints allocator
+proof after the memory summary:
+
+  Physical memory allocator: available
+  Page size: 4096
+  Total usable pages
+  Tracked free pages
+  Used pages
+  Low pages held back
+  Untracked usable pages
+  Test alloc page 1
+  Test alloc page 2
+  Test free page 1
+  Test alloc page 3
+
+The allocator only uses pages classified as usable by the kernel-owned memory map.
+It keeps the first 1 MiB out of allocation, does not use bootloader reclaim pages yet,
+and respects the kernel physical range by relying on the earlier Kernel reserved
+classification step.
+
+If the selected BootInfo variant does not include the memory map, Kernel-3 reports:
+
+  Memory map selected: no
+  Physical allocator unavailable.
+  Continuing without memory services.
+
+Next intended steps are virtual memory/page-table foundation, then a kernel heap.
+
+
+0.3.1 allocator boot report cleanup
+-------------------------------------
+
+OrynWsl 0.3.1 cleans the Kernel-3 physical allocator boot proof. The stale
+"Physical allocator unavailable until the next allocator step" line has been
+removed now that the allocator exists. The allocator now prints one full
+summary before the self-test, then a compact final allocator state after the
+self-test. Page count lines include KB as well as MB so small reserved regions,
+such as the low-memory hold-back, are visible in the serial report.
+
+
+0.4.0 Kernel-5 virtual memory foundation
+-----------------------------------------
+OrynWsl 0.4.0 moves the default project to Kernel-5 and adds the first
+kernel-owned x86_64 page-table foundation. This is deliberately not a heap,
+not a higher-half kernel, not user mode, and not a scheduler.
+
+New files:
+
+  OrynProjects/Kernel-5/Include/KernelVirtualMemory.h
+  OrynProjects/Kernel-5/Source/Memory/KernelVirtualMemory.c
+  OrynProjects/Kernel-5/Source/Memory/KernelVirtualMemoryPrint.c
+
+Kernel-5 now detects the current CR3, allocates a kernel-owned PML4 and child
+page tables from the 0.3.x physical page allocator, identity-maps the required
+low/kernel memory, maps BootInfo and the BootInfo memory-map storage safely,
+and maps the framebuffer only when the selected BootInfo profile supplies one.
+It then switches CR3 to the new kernel-owned PML4.
+
+Expected virtual-memory proof lines include:
+
+  [KERNEL] Virtual memory: starting
+  [KERNEL] Current CR3: 0x...
+  [KERNEL] New PML4: 0x...
+  [KERNEL] Identity mapped kernel range: ...
+  [KERNEL] Identity mapped BootInfo: ...
+  [KERNEL] Identity mapped memory map: ...
+  [KERNEL] Framebuffer mapping: selected/not selected
+  [KERNEL] Virtual memory: active
+
+Kernel-5 is now the default project. The launcher migrates unique generated
+Kernel-3 BootInfo variants into Kernel-5, preserves the selected variant when
+possible, and removes generated Kernel-3 after Kernel-5 is available.
+
+
+SDK source layout in 0.5.5:
+
+  OrynSDK/Common        Shared SDK modules.
+  OrynSDK/Targets       Target-specific modules.
+  OrynSDK/Common/Handoff Shared target-neutral BootInfo ABI headers.
+  OrynSDK/Common/OrynBuild Native Oryn build tool source.
+  OrynSDK/Common/OrynLibC Early freestanding C support.
+  OrynSDK/Targets/UEFI/X64 UEFI x64 target, boot selection, loader, and linker script.

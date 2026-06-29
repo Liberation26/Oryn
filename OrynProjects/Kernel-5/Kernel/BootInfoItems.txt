@@ -1,0 +1,68 @@
+Oryn Kernel-5 UEFI BootInfo items
+
+The questionnaire can choose these items. Kernel/1 enables all of them.
+
+1. Kernel physical range
+   Fields: KernelPhysicalBase, KernelSize
+   Flag: ORYN_BOOTINFO_FLAG_KERNEL_RANGE
+
+2. UEFI memory map
+   Fields: MemoryMap, MemoryMapEntryCount, MemoryMapEntrySize, MemoryMapVersion
+   Details: each OrynBootMemoryEntry carries the UEFI memory type, physical start,
+            virtual start, page count, and attributes so the kernel can distinguish
+            usable RAM, ACPI memory, runtime service memory, boot-service memory,
+            reserved MMIO, and the loader/kernel allocations.
+   Flag: ORYN_BOOTINFO_FLAG_MEMORY_MAP
+
+3. GOP framebuffer
+   Fields: FramebufferBase, FramebufferSize, FramebufferWidth, FramebufferHeight,
+           FramebufferPixelsPerScanLine, FramebufferPixelFormat, FramebufferMode,
+           FramebufferMaxMode, FramebufferInfoVersion, FramebufferInfoSize,
+           FramebufferRedMask, FramebufferGreenMask, FramebufferBlueMask,
+           FramebufferReservedMask
+   Flag: ORYN_BOOTINFO_FLAG_FRAMEBUFFER
+
+4. ACPI RSDP pointer
+   Fields: Rsdp, Acpi10Rsdp, Acpi20Rsdp
+   Details: BOOTX64.EFI reads the UEFI configuration table and passes the direct
+            ACPI pointer instead of requiring the kernel to scan physical memory
+            for the legacy "RSD PTR " signature.
+   Flag: ORYN_BOOTINFO_FLAG_RSDP
+
+5. UEFI firmware data
+   Fields: FirmwareData.Version, FirmwareData.Size, FirmwareData.UefiRevision,
+           FirmwareData.FirmwareRevision, FirmwareData.ConfigurationTableCount,
+           FirmwareData.BootTime*, FirmwareData.FirmwareVendor
+   Flag: ORYN_BOOTINFO_FLAG_FIRMWARE_DATA
+
+6. UEFI configuration tables / platform pointers
+   Fields: ConfigurationTableEntryCount, ConfigurationTableEntrySize,
+           ConfigurationTables[], Acpi10Rsdp, Acpi20Rsdp, Smbios32, Smbios64,
+           FlattenedDeviceTree
+   Details: entries preserve the table GUID, classified type, and direct physical
+            pointer for ACPI, SMBIOS, SMBIOS3, FDT, and unknown firmware tables.
+   Flag: ORYN_BOOTINFO_FLAG_CONFIGURATION_TABLES
+
+7. UEFI NVRAM snapshot
+   Fields: Nvram.Version, Nvram.Size, Nvram.Flags, Nvram.SecureBoot,
+           Nvram.SetupMode, Nvram.AuditMode, Nvram.DeployedMode,
+           Nvram.BootOrderCount, Nvram.BootOrder[], Nvram.PkSize,
+           Nvram.KekSize, Nvram.DbSize, Nvram.DbxSize
+   Details: the loader snapshots security and boot variables before the kernel
+            takes over. Large authenticated databases are represented by presence
+            and size rather than copied wholesale into BootInfo.
+   Flag: ORYN_BOOTINFO_FLAG_NVRAM_SNAPSHOT
+
+8. UEFI RuntimeServices pointers
+   Fields: RuntimeServices.Version, RuntimeServices.Size, RuntimeServices.Flags,
+           RuntimeServices.SystemTable, RuntimeServices.RuntimeServicesTable,
+           RuntimeServices.GetTime, RuntimeServices.SetTime,
+           RuntimeServices.GetVariable, RuntimeServices.SetVariable,
+           RuntimeServices.ResetSystem, RuntimeServices.SetVirtualAddressMap,
+           RuntimeServices.ConvertPointer, RuntimeServices.QueryVariableInfo
+   Details: the handoff contains the pointer metadata needed for a kernel that
+            intentionally preserves and maps UEFI Runtime Services.
+   Flag: ORYN_BOOTINFO_FLAG_RUNTIME_SERVICES
+
+Each BootInfo selection profile is stored as a numbered folder under Kernel-5/Kernel.
+The selected profile number is stored in Kernel-5/Kernel/Selected.txt.

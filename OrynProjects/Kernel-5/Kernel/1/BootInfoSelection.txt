@@ -1,0 +1,14 @@
+Oryn Kernel-5 BootInfo selection 1
+BootInfoSelectionKey=0x1EF
+
+Selected UEFI BootInfo items:
+  Kernel physical range: yes
+  UEFI memory map: yes
+  GOP framebuffer: yes
+  ACPI RSDP pointer: yes
+  UEFI firmware data: yes
+  UEFI configuration tables / platform pointers: yes
+  UEFI NVRAM snapshot: yes
+  UEFI RuntimeServices pointers: yes
+
+Generated files are used by both the UEFI loader and the kernel build.

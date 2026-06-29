@@ -1,0 +1,49 @@
+Oryn SDK source layout
+======================
+
+The SDK is now split at the SDK root into only two implementation trees:
+
+  OrynSDK/Common
+  OrynSDK/Targets/UEFI/X64
+
+Only thin root launchers remain beside those trees:
+
+  OrynSDK/Oryn.sh
+  OrynSDK/oryn
+  OrynSDK/update
+  OrynSDK/update.sh
+  OrynSDK/VERSION
+
+Common/shared modules
+---------------------
+
+  Common/Bin        Native SDK tool output, including the bootstrapped oryn executable.
+  Common/Docs       SDK documentation that is not target-specific.
+  Common/Handoff    Target-neutral BootInfo ABI headers shared by boot targets and kernels.
+  Common/OrynBuild  Target-neutral native Oryn build-tool source only.
+  Common/OrynLibC   Early freestanding C support shared by kernel targets.
+  Common/Scripts    SDK operational scripts.
+
+Target-specific modules
+-----------------------
+
+  Targets/UEFI/X64/Boot/Include    UEFI x64 default BootInfo selection and boot-target policy headers.
+  Targets/UEFI/X64/Kernel.ld       UEFI x64 kernel linker script.
+  Targets/UEFI/X64/Loader/Include  UEFI x64 loader headers.
+  Targets/UEFI/X64/Loader/Source   UEFI x64 loader source, including BootX64Entry.c.
+  Targets/UEFI/X64/OrynBuild       UEFI x64 build/image/run/BootInfo questionnaire integration for the native oryn tool.
+
+Rules
+-----
+
+  Common must not depend on a concrete target, firmware, boot style, GOP, OVMF, BOOTX64.EFI, or QEMU UEFI launch details.
+  UEFI, BIOS, and future boot styles must keep their boot-specific policy and implementation under Targets/<BootStyle>/<Architecture>.
+  Targets may depend on Common.
+  New architectures and boot styles should be added under Targets/<BootStyle>/<Architecture>.
+
+0.5.5 correction
+----------------
+
+  The previous 0.5.4 layout still had SDK peer directories such as Source, Bin, Docs, and Scripts at the SDK root.
+  0.5.5 removes that ambiguity: SDK implementation directories are now Common or Targets/UEFI/X64.
+  The old Source, Bin, Docs, and Scripts paths are removed automatically on the next Oryn.sh run or update.

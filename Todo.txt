@@ -1,0 +1,184 @@
+Kernel requirements status:
+
+Boot and handoff:
+[ OK ] UEFI loader entry point exists.
+[TOBE] Loader may collect firmware data before handoff.
+[TOBE] Kernel receives plain OrynBootInfo.
+[TOBE] Kernel-side raw GOP dependency removed.
+[TOBE] BootInfo has a stable versioned ABI contract and compatibility checks.
+       BootInfo ABI compatible
+[TOBE] Loader-to-kernel handoff validation checksum.
+       BootInfo checksum OK: loader handoff data verified
+[TOBE] Kernel ELF/native image loading separate from the EFI loader application.
+[TOBE] Kernel ELF image is named from the user kernel/OS name.
+[TOBE] Higher-half or chosen virtual address kernel layout.
+[TOBE] Kernel command line and boot configuration block.
+
+Kernel entry and ownership:
+[TOBE] KernelMain is minimal.
+[TOBE] TestOS boot report code removed from the kernel entry.
+[TOBE] Screen scrolling proof removed from the kernel entry.
+[TOBE] Kernel prints Hello from the Kernel.
+[TOBE] Kernel displays the full-kernel requirement checklist.
+[TOBE] Kernel keeps a small screen-control loop so the checklist can scroll.
+[TOBE] Kernel halts itself instead of returning to the loader.
+[TOBE] Dedicated kernel lifecycle states.
+[TOBE] Kernel-owned panic screen/report path.
+
+Build and linking:
+[TOBE] Incremental C-to-object compilation.
+[TOBE] Kernel source tree supports organised subfolders.
+[TOBE] Recursive kernel include folders.
+[TOBE] OrynLibC object preparse selects required source units before link.
+[TOBE] Only required LibC objects are added to the kernel link stage.
+[TOBE] Symbol preparse is textual and should become a dependency graph/archive resolver.
+[TOBE] Static archive generation for reusable SDK object libraries.
+[TOBE] Link map output and dead-code report.
+[TOBE] Per-module build manifests.
+
+Freestanding LibC:
+[TOBE] Basic freestanding headers are present.
+[TOBE] Basic string/memory helpers are present.
+[TOBE] Basic printf path exists.
+[TOBE] errno/assert/ctype/stdlib basics exist.
+[TOBE] Framebuffer stdout supports coloured status labels.
+[TOBE] Some headers still expose wider SDK/kernel convenience APIs.
+[TOBE] Strict separation: LibC, KernelRuntime, Target.X64, Drivers, Userland.
+[TOBE] Full conformance review for the freestanding subset.
+[TOBE] Unit tests for every LibC translation unit.
+
+CPU architecture base:
+[TOBE] x64 target source folder exists.
+[TOBE] GDT/IDT work has started but is not production stable.
+[TOBE] Port I/O helpers exist for early hardware work.
+[TOBE] Stable GDT install and verification.
+[TOBE] Stable IDT install and exception handlers.
+[TOBE] CPU feature discovery and capability table.
+[TOBE] MSR helpers and safe feature gating.
+[TOBE] SMP bootstrap and per-CPU state.
+[TOBE] FPU/SSE/AVX state management.
+
+Interrupts and IRQ routing:
+[TOBE] First interrupt path work exists but is not full-kernel proven.
+[TOBE] PIC routing work exists as an early path.
+[TOBE] IRQ counters exist for diagnostics.
+[TOBE] Interrupt path caused reboot loops and must stay out of minimal KernelMain.
+[TOBE] Exception screen with vector/error-code/register dump.
+[TOBE] IRQ0 timer interrupt proven without reboot.
+[TOBE] IRQ1 keyboard interrupt proven without polling fallback.
+[TOBE] APIC/x2APIC routing proven.
+[TOBE] IOAPIC discovery and routing.
+[TOBE] Interrupt-safe queues and deferred work.
+
+Timers and time:
+[TOBE] PIT API exists but needs interrupt-driven proof.
+[TOBE] APIC timer API exists but needs stable calibration.
+[TOBE] HPET detection/API exists but needs full validation.
+[TOBE] RTC read path exists.
+[TOBE] UEFI boot time handoff exists as pre-kernel data only.
+[TOBE] Monotonic kernel clock.
+[TOBE] Timer wheel or scheduler tick source.
+[TOBE] Sleep/delay API that does not busy wait.
+[TOBE] UTC/local timezone policy.
+
+Memory management:
+[TOBE] Memory map summary exists.
+[TOBE] Physical/usable memory reporting exists.
+[TOBE] Physical page allocator.
+[TOBE] Virtual memory manager.
+[TOBE] Kernel heap allocator.
+[TOBE] Slab/object allocator.
+[TOBE] Guard pages and stack overflow detection.
+[TOBE] User/kernel address-space split.
+[TOBE] DMA-safe allocation.
+
+Display and console:
+[TOBE] Framebuffer output path exists.
+[TOBE] Double-buffered screen path exists.
+[TOBE] Kernel checklist output can be scrolled with PgUp/PgDn, arrows, Home, and End.
+[TOBE] Display mode change routes through a video-driver layer instead of GOP.
+[TOBE] Real kernel video driver registration.
+[TOBE] EDID/mode enumeration from hardware driver.
+[TOBE] Console module as a kernel service, not KernelMain logic.
+[TOBE] Cursor blink from real timer interrupt.
+[TOBE] Tear-free framebuffer flush policy.
+[TOBE] Shell must draw through Console, Console through Display.
+
+Keyboard and input:
+[TOBE] Keyboard scan-code API exists.
+[TOBE] Polling keyboard scroll-control loop exists for the minimal kernel.
+[TOBE] Fully interrupt-driven keyboard path is not proven stable.
+[TOBE] IRQ1 keyboard queue.
+[TOBE] Keymaps/languages.
+[TOBE] Modifier state, repeat, lock keys.
+[TOBE] Line editor with history and completion in shell/userland.
+
+Storage and filesystems:
+[WARN] Boot image/ESP file placement exists.
+[WARN] FAT32/VFS concepts exist in SDK planning/templates.
+[TOBE] Block device abstraction.
+[TOBE] PCI storage discovery.
+[TOBE] AHCI/SATA driver.
+[TOBE] NVMe driver.
+[TOBE] USB mass storage driver.
+[TOBE] FAT32 production read/write.
+[TOBE] VFS mount table.
+[TOBE] File permissions/ownership metadata.
+
+Process, scheduler, and userland:
+[TOBE] Process abstraction.
+[TOBE] Thread abstraction.
+[TOBE] Scheduler.
+[TOBE] Context switching.
+[TOBE] User/kernel privilege transition.
+[TOBE] Exactly three syscalls: Get, Set, Event.
+[ OK ] External command loader skeleton uses /System/Commands only.
+[ OK ] ExecutableLoader initializes with /System/Commands as the external command root.
+       Loader init: OK
+[ OK ] ExecutableLoader resolves a command name to an external command image path.
+       Command: help -> /System/Commands/help/help.ocmd (OrynCommandV1 ABI 1)
+[ OK ] ExecutableLoader rejects path traversal and slash-separated internal command names.
+[WARN] Shell is not yet a separate loaded application in this smoke test.
+[ OK ] Executable loader API, command ABI version, status text, and command image descriptor exist.
+[TOBE] Production FAT32/VFS byte loading and user-process execution.
+
+Drivers and buses:
+[WARN] PCI listing concepts exist.
+[TOBE] PCI/PCIe enumerator.
+[TOBE] ACPI table parser.
+[TOBE] Driver registry.
+[TOBE] Device tree/object model.
+[TOBE] Driver load/unload lifecycle.
+[TOBE] Safe host hardware access policy for VM/hardware targets.
+
+Networking:
+[TOBE] NIC driver model.
+[TOBE] Ethernet frame layer.
+[TOBE] ARP.
+[TOBE] IPv4 and IPv6.
+[TOBE] UDP.
+[TOBE] TCP.
+[TOBE] DHCP client/server.
+[TOBE] DNS client.
+[TOBE] HTTP client/server.
+[TOBE] TLS.
+
+Security and reliability:
+[WARN] Secure Boot/platform key handoff data exists as boot information.
+[TOBE] Kernel capability model.
+[TOBE] Module permissions.
+[TOBE] User/process isolation.
+[TOBE] W^X memory policy.
+[TOBE] Stack canaries or equivalent kernel hardening.
+[TOBE] Crash dump format.
+[TOBE] Watchdog/recovery policy.
+
+Diagnostics and testing:
+[ OK ] Diagnostics module exists.
+[WARN] TestOS is a clean smoke test plus requirement display.
+[TOBE] Separate diagnostics application outside KernelMain.
+[ OK ] Boot-stage serial and visible UEFI console log.
+[ OK ] Kernel-entry serial and framebuffer proof marker.
+[TOBE] Kernel self-test runner.
+[TOBE] QEMU automated pass/fail capture.
+[TOBE] Regression tests for every module.

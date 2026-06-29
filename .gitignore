@@ -1,0 +1,66 @@
+# BEGIN ORYN GENERATED OUTPUT IGNORE
+
+# Oryn build and runtime output
+Build/
+Output/
+Debug/
+Release/
+*.log
+*.tmp
+*.cache
+*.d
+*.map
+Debug.log
+BootReport.txt
+
+# Kernel/project generated output
+OrynProjects/*/Build/
+OrynProjects/*/Output/
+OrynProjects/*/Build*/
+OrynProjects/*/Output*/
+OrynProjects/*/.cache/
+
+# SDK generated binaries and object output
+OrynSDK/Common/Bin/*
+!OrynSDK/Common/Bin/.gitkeep
+OrynSDK/**/Build/
+OrynSDK/**/Output/
+OrynSDK/**/*.o
+OrynSDK/**/*.obj
+OrynSDK/**/*.a
+OrynSDK/**/*.lib
+OrynSDK/**/*.so
+OrynSDK/**/*.dll
+OrynSDK/**/*.dylib
+OrynSDK/**/*.exe
+OrynSDK/**/*.pdb
+
+# Boot images and linked artifacts
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.dylib
+*.exe
+*.pdb
+*.efi
+*.elf
+*.bin
+*.img
+*.iso
+*.vhd
+*.vhdx
+*.qcow2
+
+# Editor and host noise
+.vs/
+.vscode/.ropeproject/
+.idea/
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+
+# END ORYN GENERATED OUTPUT IGNORE
