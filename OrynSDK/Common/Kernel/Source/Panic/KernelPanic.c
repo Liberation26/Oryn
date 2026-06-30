@@ -1,6 +1,7 @@
 #include "KernelPanic.h"
 #include "KernelConsole.h"
 #include "KernelIo.h"
+#include "KernelScreenReport.h"
 
 #define ORYN_KERNEL_PANIC_MAGIC 0x4F52594E50414E49ULL
 #define ORYN_KERNEL_PANIC_VERSION 1ULL
@@ -67,18 +68,12 @@ static void WriteDecField(const char* name, unsigned long long value)
     KernelIoWriteString("\n");
 }
 
-static void PanicScreenLine(const char* name, const char* value)
+static void PanicScreenLine(const char* category)
 {
-    KernelIoWriteString(name);
-    KernelIoWriteString(TextOrDefault(value, "none"));
-    KernelIoWriteString("\n");
-}
-
-static void PanicScreenHexLine(const char* name, unsigned long long value)
-{
-    KernelIoWriteString(name);
-    KernelIoWriteHex64(value);
-    KernelIoWriteString("\n");
+    OrynKernelScreenReportWriteStatusLine(
+        "FAIL",
+        TextOrDefault(category, "Panic"),
+        KCONSOLE_COLOUR_FAIL);
 }
 
 static void StartPanic(
@@ -156,19 +151,10 @@ void OrynKernelPanicRenderScreen(void)
         return;
     }
 
-    KConsole.ClearScreen();
-    KConsole.SetForegroundColour(KCONSOLE_COLOUR_FAIL);
-    KernelIoWriteString("\n*** ORYN KERNEL PANIC ***\n");
-    KernelIoWriteString("Kernel-owned panic screen active.\n");
-    PanicScreenLine("Reason: ", gPanicReport.Reason);
-    PanicScreenLine("Detail: ", gPanicReport.Detail);
-    PanicScreenLine("Lifecycle: ", OrynKernelLifecycleStateName(gPanicReport.LifecycleState));
-    PanicScreenHexLine("Code: ", gPanicReport.Code);
-    PanicScreenHexLine("RIP: ", gPanicReport.Rip);
-    PanicScreenHexLine("CR2: ", gPanicReport.Cr2);
-    KernelIoWriteString("The kernel will not return to the loader.\n");
-    KernelIoWriteString("A serial/debugcon panic report follows.\n\n");
-    KConsole.ResetForegroundColour();
+    OrynKernelScreenReportPrint();
+    PanicScreenLine("Panic");
+    PanicScreenLine("Panic Report");
+    PanicScreenLine("Kernel Halt");
     gPanicReport.ScreenShown = 1;
 }
 
@@ -195,7 +181,7 @@ void OrynKernelPanicWriteReport(void)
     WriteHexField("rflags", gPanicReport.Rflags);
     WriteHexField("cr2", gPanicReport.Cr2);
     WriteHexField("bootinfo", (unsigned long long)gPanicReport.BootInfo);
-    KernelIoWriteString(gPanicReport.ScreenShown ?
+    KernelIoWriteString(KConsole.IsAvailable() ?
         "[KERNEL] PASS: Kernel panic screen rendered by kernel console.\n" :
         "[KERNEL] WARN: Kernel panic screen unavailable; serial/debug report remains active.\n");
     KernelIoWriteString("[KERNEL] PASS: Kernel panic report written to serial and debugcon.\n");
@@ -211,9 +197,9 @@ void OrynKernelPanicHalt(void)
     gPanicReport.HaltedByKernel = 1;
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalting);
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalted);
-    OrynKernelPanicRenderScreen();
     OrynKernelLifecyclePrintProof();
     OrynKernelPanicWriteReport();
+    OrynKernelPanicRenderScreen();
 #if !ORYN_VM_INTERACTIVE_DISPLAY
     KernelIoExitQemuFailure();
 #else

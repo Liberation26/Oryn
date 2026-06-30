@@ -1,5 +1,6 @@
 #include "KernelIo.h"
 #include "KernelConsole.h"
+#include "KernelScreenReport.h"
 
 #define SERIAL_COM1 0x3F8
 #define QEMU_DEBUG_PORT 0xE9
@@ -158,6 +159,7 @@ static void BeginColoredLine(const char* text)
     }
 
     style = LineStyleForText(text);
+    OrynKernelScreenReportObserve(text);
     KConsoleSetForegroundColour(style.ConsoleColour);
     if (style.AnsiColour[0] != 0)
     {
@@ -199,8 +201,6 @@ void KernelIoWriteChar(char value)
 
     Out8(QEMU_DEBUG_PORT, (unsigned char)value);
     SerialWriteChar(value);
-    KConsoleWriteChar(value);
-
     if (value == '\n')
     {
         gOutputAtLineStart = 1;

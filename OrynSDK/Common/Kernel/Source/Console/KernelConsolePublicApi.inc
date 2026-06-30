@@ -26,6 +26,7 @@ int KConsoleRunLineBufferedFlipProof(void)
     unsigned int afterLine;
     unsigned int originalColour = gConsole.ForegroundColour;
     unsigned char originalVga = gConsole.VgaAttribute;
+    int ok;
 
     if (!gConsole.Available || !gConsole.DoubleBuffered || KConsoleBackBufferBytes() == 0ULL)
     {
@@ -45,8 +46,9 @@ int KConsoleRunLineBufferedFlipProof(void)
 
     gConsole.ForegroundColour = originalColour;
     gConsole.VgaAttribute = originalVga;
-
-    return afterCharacters == before && afterLine > afterCharacters;
+    ok = afterCharacters == before && afterLine > afterCharacters;
+    KConsoleClearScreen();
+    return ok;
 }
 
 int KConsoleRunFastRefreshProof(void)
@@ -57,6 +59,7 @@ int KConsoleRunFastRefreshProof(void)
     unsigned int lines;
     unsigned int originalColour = gConsole.ForegroundColour;
     unsigned char originalVga = gConsole.VgaAttribute;
+    int ok;
 
     if (!gConsole.Available || !gConsole.DoubleBuffered || KConsoleBackBufferBytes() == 0ULL)
     {
@@ -86,8 +89,9 @@ int KConsoleRunFastRefreshProof(void)
 
     gConsole.ForegroundColour = originalColour;
     gConsole.VgaAttribute = originalVga;
-
-    return afterCharacters == beforePresent && gConsole.FastScrollPresentCount > beforeFast;
+    ok = afterCharacters == beforePresent && gConsole.FastScrollPresentCount > beforeFast;
+    KConsoleClearScreen();
+    return ok;
 }
 
 int KConsoleRunScrollProof(void)
@@ -138,6 +142,7 @@ int KConsoleRunScrollProof(void)
 
     gConsole.ForegroundColour = originalColour;
     gConsole.VgaAttribute = originalVga;
+    KConsoleClearScreen();
     return ok;
 }
 

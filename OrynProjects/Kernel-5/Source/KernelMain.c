@@ -4,6 +4,7 @@
 #include "KernelIo.h"
 #include "KernelLifecycle.h"
 #include "KernelPanic.h"
+#include "KernelScreenReport.h"
 #include "KernelCpu.h"
 #include "KernelGdt.h"
 #include "KernelIdt.h"
@@ -335,6 +336,7 @@ void KernelStart(const OrynBootInfo* bootInfo)
 {
     KernelDisableInterrupts();
     KernelIoInit();
+    OrynKernelScreenReportInit();
     OrynKernelLifecycleInit();
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleEntered);
     const OrynBootInfo* kernelBootInfo = KernelBootInfoAdopt(bootInfo);
@@ -408,11 +410,13 @@ void KernelStart(const OrynBootInfo* bootInfo)
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalting);
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalted);
     OrynKernelLifecyclePrintProof();
+    OrynKernelScreenReportPrint();
 #else
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleDebugExitRequested);
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalting);
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalted);
     OrynKernelLifecyclePrintProof();
+    OrynKernelScreenReportPrint();
     KernelIoExitQemuSuccess();
 #endif
 
