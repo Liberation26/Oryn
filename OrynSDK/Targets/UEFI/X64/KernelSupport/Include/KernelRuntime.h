@@ -3,6 +3,6 @@
 
 #include "OrynBootInfo.h"
 
-void OrynKernelRuntimeStartBootSequence(const OrynBootInfo* bootInfo);
+void OrynKernelRuntimeEnterAndStartBootSequence(const OrynBootInfo* bootInfo);
 
 #endif

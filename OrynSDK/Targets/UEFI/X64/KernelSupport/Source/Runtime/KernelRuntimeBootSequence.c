@@ -22,14 +22,18 @@ static void OrynKernelRuntimeEnterRunningState(void)
     KernelIoWriteString("[KERNEL] System halted by Kernel-5.\n");
 }
 
-void OrynKernelRuntimeStartBootSequence(const OrynBootInfo* bootInfo)
+static void OrynKernelRuntimeRunBootSequence(const OrynBootInfo* kernelBootInfo)
 {
-    const OrynBootInfo* kernelBootInfo = OrynKernelRuntimeEnter(bootInfo);
     OrynKernelDiagnosticsRunBootProofs(kernelBootInfo);
     OrynKernelRuntimeHandleActivePanic();
-
     OrynKernelRuntimeEnterRunningState();
     OrynKernelDiagnosticsRunHaltProofs();
+}
+
+void OrynKernelRuntimeEnterAndStartBootSequence(const OrynBootInfo* bootInfo)
+{
+    const OrynBootInfo* kernelBootInfo = OrynKernelRuntimeEnter(bootInfo);
+    OrynKernelRuntimeRunBootSequence(kernelBootInfo);
     OrynKernelRuntimeExitForNonInteractiveVm();
     OrynKernelRuntimeHaltForever();
 }
