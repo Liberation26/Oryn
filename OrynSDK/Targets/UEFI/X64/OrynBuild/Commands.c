@@ -33,6 +33,10 @@ static void WriteBootReport(
     int bootinfo_received = TextContains(debug_text, "[KERNEL] PASS: BootInfo received");
     int kernel_boot_config = TextContains(debug_text, "[KERNEL] PASS: Boot configuration block received");
     int kernel_command_line = TextContains(debug_text, "[KERNEL] PASS: Kernel command line received");
+    int idt_installing = TextContains(debug_text, "[KERNEL] IDT: installing");
+    int idt_installed = TextContains(debug_text, "[KERNEL] PASS: IDT installed.");
+    int idt_entries = TextContains(debug_text, "[KERNEL] IDT entries: 256");
+    int cpu_exception = TextContains(debug_text, "[KERNEL] EXCEPTION:");
     int virtual_memory_started = TextContains(debug_text, "[KERNEL] Virtual memory: starting");
     int virtual_memory_required_mapped = TextContains(debug_text, "[KERNEL] Virtual memory: required ranges mapped");
     int virtual_memory_switching_cr3 = TextContains(debug_text, "[KERNEL] Virtual memory: switching CR3 to kernel-owned PML4");
@@ -43,7 +47,8 @@ static void WriteBootReport(
     int boot_pass = command_ok && (exit_code == 0 || exit_code == 33) && loader_started &&
         kernel_loaded && entry_printed && virtual_map_prepared && virtual_map_active &&
         bootinfo_created && boot_config_prepared && bootinfo_memory_map && boot_services_exited && kernel_jump &&
-        kernel_entered && serial_ok && bootinfo_received && kernel_boot_config && kernel_command_line && debug_exit;
+        kernel_entered && serial_ok && bootinfo_received && kernel_boot_config && kernel_command_line &&
+        idt_installing && idt_installed && idt_entries && !cpu_exception && debug_exit;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -78,6 +83,10 @@ static void WriteBootReport(
     fprintf(file, "  Kernel received BootInfo: %s\n", PassFail(bootinfo_received));
     fprintf(file, "  Kernel received boot configuration block: %s\n", PassFail(kernel_boot_config));
     fprintf(file, "  Kernel received command line: %s\n", PassFail(kernel_command_line));
+    fprintf(file, "  Kernel started IDT install: %s\n", PassFail(idt_installing));
+    fprintf(file, "  Kernel installed and verified IDT: %s\n", PassFail(idt_installed));
+    fprintf(file, "  Kernel installed all 256 IDT entries: %s\n", PassFail(idt_entries));
+    fprintf(file, "  Kernel had no trapped CPU exception: %s\n", PassFail(!cpu_exception));
     fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
     fprintf(file, "  Kernel virtual memory required ranges mapped: %s\n", PassFail(virtual_memory_required_mapped));
     fprintf(file, "  Kernel virtual memory CR3 switch requested: %s\n", PassFail(virtual_memory_switching_cr3));
@@ -99,6 +108,14 @@ static void WriteBootReport(
             "The kernel did not validate the boot configuration block." :
         !kernel_command_line ?
             "The kernel did not validate the command line." :
+        !idt_installing ?
+            "The kernel did not start IDT installation." :
+        !idt_installed ?
+            "The kernel did not verify the IDT install." :
+        !idt_entries ?
+            "The kernel did not install all 256 IDT entries." :
+        cpu_exception ?
+            "The IDT trapped a CPU exception. Check the exception vector and register dump." :
         !virtual_memory_started ?
             "The kernel stopped before virtual-memory initialization." :
         !virtual_memory_required_mapped ?
@@ -362,6 +379,8 @@ int OrynRunQemu(const OrynProject* project)
 
     int boot_pass = TextContains(debug_text, "[KERNEL] PASS: Kernel entered successfully") &&
         TextContains(debug_text, "[KERNEL] PASS: BootInfo received") &&
+        TextContains(debug_text, "[KERNEL] PASS: IDT installed.") &&
+        !TextContains(debug_text, "[KERNEL] EXCEPTION:") &&
         TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success") && command_ok;
 
     if (boot_pass)

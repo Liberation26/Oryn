@@ -7,5 +7,6 @@ void KernelIoWriteString(const char* text);
 void KernelIoWriteHex64(unsigned long long value);
 void KernelIoWriteDec64(unsigned long long value);
 void KernelIoExitQemuSuccess(void);
+void KernelIoExitQemuFailure(void);
 
 #endif

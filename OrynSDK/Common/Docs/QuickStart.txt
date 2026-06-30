@@ -510,3 +510,6 @@ Expected proof lines include:
   [BOOT] PASS: Boot configuration block prepared.
   [KERNEL] PASS: Boot configuration block received.
   [KERNEL] PASS: Kernel command line received.
+
+0.5.26 x64 IDT
+  Kernel startup now installs a target-owned 256-entry x86_64 IDT before BootInfo consumers and virtual-memory work. CPU exceptions 0-31 print vector, error code, RIP, CS, RFLAGS, and CR2 for page faults.

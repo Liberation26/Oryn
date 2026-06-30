@@ -85,3 +85,6 @@ The SDK owns the ABI and transport:
   Targets/UEFI/X64/OrynBuild/Image.c generates OrynBootTarget.h.
   Targets/UEFI/X64/Loader/Source/BootX64.c fills the block before handoff.
   Common/Kernel/Source/BootInfo validates and prints the block.
+
+0.5.26 IDT ownership
+  x86_64 IDT code is SDK target kernel support under Targets/UEFI/X64/KernelSupport, not project-owned kernel code.

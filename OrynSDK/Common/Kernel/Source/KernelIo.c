@@ -77,7 +77,8 @@ static const char* SerialColorForLine(const char* text)
         return SERIAL_COLOR_PASS;
     }
 
-    if (StartsWith(text, "[KERNEL] FAIL") || StartsWith(text, "[FAIL]"))
+    if (StartsWith(text, "[KERNEL] FAIL") || StartsWith(text, "[KERNEL] EXCEPTION") ||
+        StartsWith(text, "[FAIL]"))
     {
         return SERIAL_COLOR_FAIL;
     }
@@ -214,4 +215,10 @@ void KernelIoExitQemuSuccess(void)
 {
     KernelIoWriteString("[KERNEL] Requesting QEMU debug-exit success.\n");
     Out32(QEMU_EXIT_PORT, 0x10U);
+}
+
+void KernelIoExitQemuFailure(void)
+{
+    KernelIoWriteString("[KERNEL] Requesting QEMU debug-exit failure.\n");
+    Out32(QEMU_EXIT_PORT, 0x11U);
 }
