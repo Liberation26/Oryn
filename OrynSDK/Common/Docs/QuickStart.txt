@@ -623,3 +623,32 @@ Expected proof lines include:
   [KERNEL] MSSysCall.h listed syscall count: 6
   [KERNEL] MSSysCall.h translated syscall count: 4
   [KERNEL] PASS: SysCall header counts listed.
+
+
+0.5.33 PCI Discovery
+---------------------
+Kernel-5 now initializes target-owned PCI discovery after the interrupt/timer/syscall proof chain and before virtual-memory allocator work.
+
+The PCI discovery path does the following:
+
+- validates ACPI from the BootInfo RSDP,
+- finds the ACPI MCFG table,
+- captures the first PCIe ECAM segment descriptor,
+- scans all PCI buses 0-255,
+- scans every device slot 0-31,
+- scans every function 0-7,
+- reads vendor/device/class/subclass/progIF/header/BAR0/IRQ metadata,
+- counts bridge, storage, network, and display controller classes,
+- prints the first recorded PCI devices for boot diagnostics,
+- keeps discovery target-owned under UEFI/X64 KernelSupport.
+
+Expected proof lines include:
+
+  [KERNEL] PCI: discovery starting.
+  [KERNEL] PASS: PCI ACPI MCFG table discovered.
+  [KERNEL] PASS: PCIe ECAM descriptor captured.
+  [KERNEL] PASS: PCI config mechanism #1 responded.
+  [KERNEL] PASS: PCI bus/device/function scan completed.
+  [KERNEL] PASS: PCI devices discovered.
+  [KERNEL] PASS: PCI class-code decoding ready.
+  [KERNEL] PASS: PCI Discovery complete.

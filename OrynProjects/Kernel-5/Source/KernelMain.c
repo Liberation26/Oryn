@@ -10,6 +10,7 @@
 #include "KernelPic.h"
 #include "KernelApic.h"
 #include "KernelHpet.h"
+#include "KernelPci.h"
 #include "KernelMemoryMap.h"
 #include "KernelPhysicalMemory.h"
 #include "KernelVirtualMemory.h"
@@ -108,6 +109,8 @@ void KernelStart(const OrynBootInfo* bootInfo)
     OrynKernelHpetPrintProof();
     (void)OrynKernelInterruptsRunApicTimerProof();
     OrynKernelInterruptsPrintRuntimeProof();
+    OrynKernelPciInit(kernelBootInfo);
+    OrynKernelPciPrintProof();
     KernelIoWriteString("[KERNEL] PASS: Kernel entry received one plain OrynBootInfo pointer.\n");
     if (KernelBootInfoIsKernelOwned(kernelBootInfo))
     {

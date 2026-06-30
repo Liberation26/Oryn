@@ -155,3 +155,13 @@ Common/Kernel/Include/MSSysCall.h owns:
   ORYN_MS_SYSCALL_TRANSLATED_COUNT = 4
 
 These constants are intentionally kept with the platform compatibility headers so BootReport and kernel diagnostics can prove what each header currently covers.
+
+
+0.5.33 PCI Discovery ownership
+------------------------------
+PCI discovery is target-owned UEFI x64 kernel support because the current implementation uses x86 PCI config mechanism #1 and target boot ACPI mappings:
+
+  Targets/UEFI/X64/KernelSupport/Include/KernelPci.h
+  Targets/UEFI/X64/KernelSupport/Source/PCI/KernelPci.c
+
+KernelPci validates the BootInfo RSDP, discovers ACPI MCFG/PCIe ECAM metadata, then scans PCI config space and exposes a recorded device list to Kernel-5 diagnostics. Common remains target-neutral; later common driver registries can consume this target-produced device inventory.

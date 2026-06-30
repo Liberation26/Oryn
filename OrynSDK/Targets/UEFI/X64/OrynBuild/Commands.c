@@ -80,6 +80,16 @@ static void WriteBootReport(
     int syscall_three = TextContains(debug_text, "[KERNEL] PASS: SysCalls use Get/Set/Event message packets.");
     int platform_syscalls = TextContains(debug_text, "[KERNEL] PASS: Platform syscalls translate into Get/Set/Event packets.");
     int syscall_counts = TextContains(debug_text, "[KERNEL] PASS: SysCall header counts listed.");
+    int pci_started = TextContains(debug_text, "[KERNEL] PCI: discovery starting.");
+    int pci_rsdp = TextContains(debug_text, "[KERNEL] PASS: PCI ACPI RSDP input present.");
+    int pci_checksum = TextContains(debug_text, "[KERNEL] PASS: PCI ACPI checksum validation passed.");
+    int pci_mcfg = TextContains(debug_text, "[KERNEL] PASS: PCI ACPI MCFG table discovered.");
+    int pci_ecam = TextContains(debug_text, "[KERNEL] PASS: PCIe ECAM descriptor captured.");
+    int pci_config = TextContains(debug_text, "[KERNEL] PASS: PCI config mechanism #1 responded.");
+    int pci_scan = TextContains(debug_text, "[KERNEL] PASS: PCI bus/device/function scan completed.");
+    int pci_devices = TextContains(debug_text, "[KERNEL] PASS: PCI devices discovered.");
+    int pci_class = TextContains(debug_text, "[KERNEL] PASS: PCI class-code decoding ready.");
+    int pci_complete = TextContains(debug_text, "[KERNEL] PASS: PCI Discovery complete.");
     int virtual_memory_started = TextContains(debug_text, "[KERNEL] Virtual memory: starting");
     int virtual_memory_required_mapped = TextContains(debug_text, "[KERNEL] Virtual memory: required ranges mapped");
     int virtual_memory_switching_cr3 = TextContains(debug_text, "[KERNEL] Virtual memory: switching CR3 to kernel-owned PML4");
@@ -101,7 +111,9 @@ static void WriteBootReport(
         apic_irq_counters && apic_eoi && interrupt_chain && syscall_core &&
         syscall_packet && syscall_get && syscall_set && syscall_event && syscall_unknown &&
         linux_translator && ms_translator && linux_vector && ms_vector &&
-        unknown_linux && unknown_ms && syscall_three && platform_syscalls && syscall_counts && debug_exit;
+        unknown_linux && unknown_ms && syscall_three && platform_syscalls && syscall_counts &&
+        pci_started && pci_rsdp && pci_checksum && pci_mcfg && pci_ecam && pci_config &&
+        pci_scan && pci_devices && pci_class && pci_complete && debug_exit;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -183,6 +195,16 @@ static void WriteBootReport(
     fprintf(file, "  Internal SysCalls use Get/Set/Event packets: %s\n", PassFail(syscall_three));
     fprintf(file, "  Platform syscalls translate to Get/Set/Event: %s\n", PassFail(platform_syscalls));
     fprintf(file, "  SysCall header counts listed: %s\n", PassFail(syscall_counts));
+    fprintf(file, "  PCI discovery started: %s\n", PassFail(pci_started));
+    fprintf(file, "  PCI ACPI RSDP present: %s\n", PassFail(pci_rsdp));
+    fprintf(file, "  PCI ACPI checksum validated: %s\n", PassFail(pci_checksum));
+    fprintf(file, "  PCI ACPI MCFG table discovered: %s\n", PassFail(pci_mcfg));
+    fprintf(file, "  PCIe ECAM descriptor captured: %s\n", PassFail(pci_ecam));
+    fprintf(file, "  PCI config mechanism #1 responded: %s\n", PassFail(pci_config));
+    fprintf(file, "  PCI bus/device/function scan completed: %s\n", PassFail(pci_scan));
+    fprintf(file, "  PCI devices discovered: %s\n", PassFail(pci_devices));
+    fprintf(file, "  PCI class-code decoding ready: %s\n", PassFail(pci_class));
+    fprintf(file, "  PCI discovery complete: %s\n", PassFail(pci_complete));
     fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
     fprintf(file, "  Kernel virtual memory required ranges mapped: %s\n", PassFail(virtual_memory_required_mapped));
     fprintf(file, "  Kernel virtual memory CR3 switch requested: %s\n", PassFail(virtual_memory_switching_cr3));
@@ -298,6 +320,26 @@ static void WriteBootReport(
             "Platform syscall compatibility did not translate into Get/Set/Event packets." :
         !syscall_counts ?
             "The LinuxSysCall.h and MSSysCall.h count markers were not printed." :
+        !pci_started ?
+            "The PCI discovery module did not start." :
+        !pci_rsdp ?
+            "The PCI discovery module did not receive the ACPI RSDP." :
+        !pci_checksum ?
+            "The PCI ACPI table walk failed checksum validation." :
+        !pci_mcfg ?
+            "The ACPI MCFG table for PCIe ECAM was not discovered." :
+        !pci_ecam ?
+            "The PCIe ECAM descriptor was not captured from MCFG." :
+        !pci_config ?
+            "PCI config mechanism #1 did not respond with any devices." :
+        !pci_scan ?
+            "The PCI bus/device/function scan did not complete." :
+        !pci_devices ?
+            "The PCI scan completed but found no devices." :
+        !pci_class ?
+            "The PCI class-code decoder did not initialize." :
+        !pci_complete ?
+            "The PCI discovery module did not emit its completion marker." :
         !virtual_memory_started ?
             "The kernel stopped before virtual-memory initialization." :
         !virtual_memory_required_mapped ?
@@ -578,6 +620,13 @@ int OrynRunQemu(const OrynProject* project)
         TextContains(debug_text, "[KERNEL] PASS: Platform syscalls translate into Get/Set/Event packets.") &&
         TextContains(debug_text, "[KERNEL] PASS: SysCall header counts listed.") &&
         TextContains(debug_text, "[KERNEL] PASS: Unknown syscall debug logging path executed.") &&
+        TextContains(debug_text, "[KERNEL] PASS: PCI ACPI MCFG table discovered.") &&
+        TextContains(debug_text, "[KERNEL] PASS: PCIe ECAM descriptor captured.") &&
+        TextContains(debug_text, "[KERNEL] PASS: PCI config mechanism #1 responded.") &&
+        TextContains(debug_text, "[KERNEL] PASS: PCI bus/device/function scan completed.") &&
+        TextContains(debug_text, "[KERNEL] PASS: PCI devices discovered.") &&
+        TextContains(debug_text, "[KERNEL] PASS: PCI class-code decoding ready.") &&
+        TextContains(debug_text, "[KERNEL] PASS: PCI Discovery complete.") &&
         !TextContains(debug_text, "[KERNEL] EXCEPTION:") &&
         TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success") && command_ok;
 
