@@ -513,6 +513,18 @@ BuildWindowsGcmBridgeScript()
 #!/usr/bin/env bash
 set -u
 
+# Oryn WSL Git Credential Manager bridge.
+# Git credential helpers receive credential fields on stdin.  Some Windows
+# discovery commands can accidentally consume that stdin when launched from
+# WSL, so capture it first and replay it only to Git Credential Manager.
+InputFile="$(mktemp "${TMPDIR:-/tmp}/oryn-gcm-input.XXXXXX")" || exit 1
+cat > "$InputFile"
+cleanup()
+{
+    rm -f "$InputFile"
+}
+trap cleanup EXIT HUP INT TERM
+
 FindWindowsGitRoot()
 {
     for Candidate in \
@@ -526,26 +538,38 @@ FindWindowsGitRoot()
     return 1
 }
 
-FindWindowsGitCredentialManager()
+WindowsUserName()
 {
-    WinUser=""
     if command -v cmd.exe >/dev/null 2>&1; then
-        WinUser="$(cmd.exe /C echo %USERNAME% 2>/dev/null | tr -d '\r' | tail -n 1)"
+        cmd.exe /C echo %USERNAME% </dev/null 2>/dev/null | tr -d '\r' | tail -n 1
+        return 0
     fi
 
+    return 1
+}
+
+FindWindowsGitCredentialManager()
+{
     for Candidate in \
         "/mnt/c/Program Files/Git/mingw64/bin/git-credential-manager.exe" \
         "/mnt/c/Program Files/Git/mingw64/libexec/git-core/git-credential-manager.exe" \
         "/mnt/c/Program Files/Git/usr/bin/git-credential-manager.exe" \
         "/mnt/c/Program Files (x86)/Git/mingw64/bin/git-credential-manager.exe" \
         "/mnt/c/Program Files (x86)/Git/mingw64/libexec/git-core/git-credential-manager.exe" \
-        "/mnt/c/Program Files (x86)/Git Credential Manager/git-credential-manager.exe" \
-        "/mnt/c/Users/$WinUser/AppData/Local/Programs/Git Credential Manager/git-credential-manager.exe"; do
-        [ -n "$Candidate" ] || continue
+        "/mnt/c/Program Files (x86)/Git Credential Manager/git-credential-manager.exe"; do
         [ -f "$Candidate" ] || continue
         printf '%s\n' "$Candidate"
         return 0
     done
+
+    WinUser="$(WindowsUserName 2>/dev/null || true)"
+    if [ -n "$WinUser" ]; then
+        Candidate="/mnt/c/Users/$WinUser/AppData/Local/Programs/Git Credential Manager/git-credential-manager.exe"
+        if [ -f "$Candidate" ]; then
+            printf '%s\n' "$Candidate"
+            return 0
+        fi
+    fi
 
     return 1
 }
@@ -574,100 +598,55 @@ BuildWindowsGitPathPrefix()
     [ "$First" -eq 0 ]
 }
 
-BuildWindowsGitCmdPathPrefix()
-{
-    GitPathPrefix="$1"
-    [ -n "$GitPathPrefix" ] || return 1
-
-    First=1
-    OldIFS="$IFS"
-    IFS=:
-    for Candidate in $GitPathPrefix; do
-        [ -n "$Candidate" ] || continue
-        if command -v wslpath >/dev/null 2>&1; then
-            WinCandidate="$(wslpath -w "$Candidate" 2>/dev/null || true)"
-        else
-            WinCandidate=""
-        fi
-        [ -n "$WinCandidate" ] || continue
-        if [ "$First" -eq 1 ]; then
-            printf '%s' "$WinCandidate"
-            First=0
-        else
-            printf ';%s' "$WinCandidate"
-        fi
-    done
-    IFS="$OldIFS"
-
-    [ "$First" -eq 0 ]
-}
-
-EnsureWindowsPathBridge()
+PrepareWindowsGitPathForGcm()
 {
     GitPathPrefix="$(BuildWindowsGitPathPrefix 2>/dev/null || true)"
     [ -n "$GitPathPrefix" ] || return 0
 
     export PATH="$GitPathPrefix:$PATH"
 
+    # Ask WSL interop to translate the Linux path-list into a Windows path-list
+    # for the Windows GCM process.  This lets GCM locate git.exe.
     case ":${WSLENV:-}:" in
         *":PATH/l:"*) ;;
         *) export WSLENV="${WSLENV:+$WSLENV:}PATH/l" ;;
     esac
 }
 
-RunThroughCmdFallback()
+RunDirectoryForWindowsExe()
 {
-    GcmPath="$1"
-    shift || true
+    GitRoot="$(FindWindowsGitRoot 2>/dev/null || true)"
+    if [ -n "$GitRoot" ] && [ -d "$GitRoot" ]; then
+        printf '%s\n' "$GitRoot"
+        return 0
+    fi
 
-    command -v cmd.exe >/dev/null 2>&1 || return 127
-    command -v wslpath >/dev/null 2>&1 || return 127
+    if [ -d /mnt/c/Windows/System32 ]; then
+        printf '%s\n' /mnt/c/Windows/System32
+        return 0
+    fi
 
-    WinGcmPath="$(wslpath -w "$GcmPath" 2>/dev/null || true)"
-    [ -n "$WinGcmPath" ] || return 127
-
-    GitPathPrefix="$(BuildWindowsGitPathPrefix 2>/dev/null || true)"
-    WinGitPathPrefix="$(BuildWindowsGitCmdPathPrefix "$GitPathPrefix" 2>/dev/null || true)"
-    [ -n "$WinGitPathPrefix" ] || return 127
-
-    Args=""
-    for Arg in "$@"; do
-        case "$Arg" in
-            *[!A-Za-z0-9._-]*) return 127 ;;
-        esac
-        Args="$Args $Arg"
-    done
-
-    cmd.exe /Q /C "set \"PATH=$WinGitPathPrefix;%PATH%\" && \"$WinGcmPath\"$Args" < /dev/stdin
+    pwd
 }
 
 GcmPath="$(FindWindowsGitCredentialManager 2>/dev/null || true)"
-if [ -z "$GcmPath" ]; then
-    if command -v git-credential-manager >/dev/null 2>&1; then
-        exec git-credential-manager "$@"
-    fi
+PrepareWindowsGitPathForGcm
 
-    printf 'Oryn GCM bridge could not find git-credential-manager.exe.\n' >&2
-    exit 1
+RunDir="$(RunDirectoryForWindowsExe 2>/dev/null || pwd)"
+cd "$RunDir" 2>/dev/null || true
+
+if [ -n "$GcmPath" ]; then
+    "$GcmPath" "$@" < "$InputFile"
+    exit "$?"
 fi
 
-EnsureWindowsPathBridge
-
-"$GcmPath" "$@"
-Status="$?"
-if [ "$Status" -eq 0 ]; then
-    exit 0
+if command -v git-credential-manager >/dev/null 2>&1; then
+    git-credential-manager "$@" < "$InputFile"
+    exit "$?"
 fi
 
-# Some Windows GCM builds launched from WSL still see the un-translated Linux PATH.
-# Retry through cmd.exe with a native Windows PATH so GCM can locate git.exe.
-RunThroughCmdFallback "$GcmPath" "$@"
-FallbackStatus="$?"
-if [ "$FallbackStatus" -eq 0 ]; then
-    exit 0
-fi
-
-exit "$Status"
+printf 'Oryn GCM bridge could not find Git Credential Manager.\n' >&2
+exit 1
 EOF
 
     chmod +x "$BridgePath" || return 1
@@ -718,11 +697,12 @@ ConfigureGitCredentialManager()
     ExistingHelper="$(git config --global --get credential.helper 2>/dev/null || true)"
     case "$ExistingHelper" in
         */.oryn/git-credential-manager-wsl-bridge.sh)
-            if [ -x "$ExistingHelper" ]; then
-                Ok "Git Credential Manager is already configured with the Oryn WSL bridge."
+            BridgePath="$(BuildWindowsGcmBridgeScript 2>/dev/null || true)"
+            if [ -n "$BridgePath" ]; then
+                Ok "Git Credential Manager is configured with the refreshed Oryn WSL bridge."
                 return 0
             fi
-            Warn "Existing Oryn Git Credential Manager bridge is missing. Recreating it."
+            Warn "Existing Oryn Git Credential Manager bridge could not be refreshed. Recreating it."
             ;;
         '!'*git-credential-manager*'WSLENV'*'PATH/l'*)
             Ok "Git Credential Manager is already configured with WSL PATH translation."
