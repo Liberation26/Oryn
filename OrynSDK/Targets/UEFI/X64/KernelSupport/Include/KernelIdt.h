@@ -11,6 +11,7 @@ typedef struct OrynKernelIdtState
     unsigned int Verified;
     unsigned int EntryCount;
     unsigned short CodeSelector;
+    unsigned char ExceptionIst;
     unsigned short Limit;
     unsigned long long Base;
     unsigned long long LoadedBase;

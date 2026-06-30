@@ -33,6 +33,10 @@ static void WriteBootReport(
     int bootinfo_received = TextContains(debug_text, "[KERNEL] PASS: BootInfo received");
     int kernel_boot_config = TextContains(debug_text, "[KERNEL] PASS: Boot configuration block received");
     int kernel_command_line = TextContains(debug_text, "[KERNEL] PASS: Kernel command line received");
+    int gdt_installing = TextContains(debug_text, "[KERNEL] GDT: installing");
+    int gdt_installed = TextContains(debug_text, "[KERNEL] PASS: GDT installed.");
+    int gdt_entries = TextContains(debug_text, "[KERNEL] GDT entries: 7");
+    int tss_loaded = TextContains(debug_text, "[KERNEL] PASS: TSS loaded.");
     int idt_installing = TextContains(debug_text, "[KERNEL] IDT: installing");
     int idt_installed = TextContains(debug_text, "[KERNEL] PASS: IDT installed.");
     int idt_entries = TextContains(debug_text, "[KERNEL] IDT entries: 256");
@@ -48,6 +52,7 @@ static void WriteBootReport(
         kernel_loaded && entry_printed && virtual_map_prepared && virtual_map_active &&
         bootinfo_created && boot_config_prepared && bootinfo_memory_map && boot_services_exited && kernel_jump &&
         kernel_entered && serial_ok && bootinfo_received && kernel_boot_config && kernel_command_line &&
+        gdt_installing && gdt_installed && gdt_entries && tss_loaded &&
         idt_installing && idt_installed && idt_entries && !cpu_exception && debug_exit;
 
     FILE* file = fopen(report_path, "wb");
@@ -83,6 +88,10 @@ static void WriteBootReport(
     fprintf(file, "  Kernel received BootInfo: %s\n", PassFail(bootinfo_received));
     fprintf(file, "  Kernel received boot configuration block: %s\n", PassFail(kernel_boot_config));
     fprintf(file, "  Kernel received command line: %s\n", PassFail(kernel_command_line));
+    fprintf(file, "  Kernel started GDT install: %s\n", PassFail(gdt_installing));
+    fprintf(file, "  Kernel installed and verified GDT: %s\n", PassFail(gdt_installed));
+    fprintf(file, "  Kernel installed all 7 GDT entries: %s\n", PassFail(gdt_entries));
+    fprintf(file, "  Kernel loaded TSS: %s\n", PassFail(tss_loaded));
     fprintf(file, "  Kernel started IDT install: %s\n", PassFail(idt_installing));
     fprintf(file, "  Kernel installed and verified IDT: %s\n", PassFail(idt_installed));
     fprintf(file, "  Kernel installed all 256 IDT entries: %s\n", PassFail(idt_entries));
@@ -108,6 +117,14 @@ static void WriteBootReport(
             "The kernel did not validate the boot configuration block." :
         !kernel_command_line ?
             "The kernel did not validate the command line." :
+        !gdt_installing ?
+            "The kernel did not start GDT installation." :
+        !gdt_installed ?
+            "The kernel did not verify the GDT install." :
+        !gdt_entries ?
+            "The kernel did not install the expected GDT entries." :
+        !tss_loaded ?
+            "The kernel did not load the TSS selector." :
         !idt_installing ?
             "The kernel did not start IDT installation." :
         !idt_installed ?
@@ -379,6 +396,9 @@ int OrynRunQemu(const OrynProject* project)
 
     int boot_pass = TextContains(debug_text, "[KERNEL] PASS: Kernel entered successfully") &&
         TextContains(debug_text, "[KERNEL] PASS: BootInfo received") &&
+        TextContains(debug_text, "[KERNEL] PASS: GDT installed.") &&
+        TextContains(debug_text, "[KERNEL] GDT entries: 7") &&
+        TextContains(debug_text, "[KERNEL] PASS: TSS loaded.") &&
         TextContains(debug_text, "[KERNEL] PASS: IDT installed.") &&
         !TextContains(debug_text, "[KERNEL] EXCEPTION:") &&
         TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success") && command_ok;

@@ -2,6 +2,7 @@
 #include "KernelBootInfo.h"
 #include "KernelConsole.h"
 #include "KernelIo.h"
+#include "KernelGdt.h"
 #include "KernelIdt.h"
 #include "KernelMemoryMap.h"
 #include "KernelPhysicalMemory.h"

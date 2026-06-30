@@ -513,3 +513,10 @@ Expected proof lines include:
 
 0.5.26 x64 IDT
   Kernel startup now installs a target-owned 256-entry x86_64 IDT before BootInfo consumers and virtual-memory work. CPU exceptions 0-31 print vector, error code, RIP, CS, RFLAGS, and CR2 for page faults.
+
+0.5.27 x64 GDT
+- The UEFI x64 SDK target now owns a kernel GDT/TSS path.
+- KernelStart loads the kernel-owned GDT before installing the IDT.
+- The GDT contains null, kernel code/data, user code/data placeholders, and a 64-bit TSS descriptor.
+- The TSS provides an exception IST stack used by CPU exception gates.
+- BootReport checks GDT, TSS, and IDT proof markers.

@@ -1,9 +1,11 @@
 #include "KernelIdt.h"
+#include "KernelGdt.h"
 #include "KernelIo.h"
 
 #define ORYN_IDT_PRESENT 0x80U
 #define ORYN_IDT_TYPE_INTERRUPT 0x0EU
 #define ORYN_IDT_DEFAULT_IST 0U
+#define ORYN_IDT_EXCEPTION_IST_MASK 0x07U
 #define ORYN_QEMU_EXIT_PORT 0xF4
 
 #define ORYN_IDT_ASSERT(name, condition) typedef char name[(condition) ? 1 : -1]
@@ -142,13 +144,6 @@ static void ClearBytes(void* target, unsigned long long count)
     }
 }
 
-static unsigned short ReadCs(void)
-{
-    unsigned short value;
-    __asm__ volatile ("mov %%cs, %0" : "=r"(value));
-    return value;
-}
-
 static void LoadIdt(const OrynIdtPointer* pointer)
 {
     __asm__ volatile ("lidt (%0)" :: "r"(pointer) : "memory");
@@ -164,12 +159,16 @@ static void Out32(unsigned short port, unsigned int value)
     __asm__ volatile ("outl %0, %1" : : "a"(value), "Nd"(port));
 }
 
-static void SetGate(unsigned int vector, void (*handler)(void), unsigned short selector)
+static void SetGate(
+    unsigned int vector,
+    void (*handler)(void),
+    unsigned short selector,
+    unsigned char ist)
 {
     unsigned long long address = (unsigned long long)handler;
     gIdt[vector].OffsetLow = (unsigned short)(address & 0xFFFFULL);
     gIdt[vector].Selector = selector;
-    gIdt[vector].Ist = ORYN_IDT_DEFAULT_IST;
+    gIdt[vector].Ist = ist & ORYN_IDT_EXCEPTION_IST_MASK;
     gIdt[vector].TypeAttributes = ORYN_IDT_PRESENT | ORYN_IDT_TYPE_INTERRUPT;
     gIdt[vector].OffsetMiddle = (unsigned short)((address >> 16) & 0xFFFFULL);
     gIdt[vector].OffsetHigh = (unsigned int)((address >> 32) & 0xFFFFFFFFULL);
@@ -215,15 +214,18 @@ int OrynKernelIdtInit(void)
     OrynIdtPointer pointer;
     OrynIdtPointer loaded;
     unsigned short selector;
+    unsigned char exceptionIst;
 
     KernelIoWriteString("[KERNEL] IDT: installing\n");
     ClearBytes(gIdt, sizeof(gIdt));
     ClearBytes(&gIdtState, sizeof(gIdtState));
 
-    selector = ReadCs();
+    selector = OrynKernelGdtCodeSelector();
+    exceptionIst = OrynKernelGdtExceptionIstIndex();
     for (unsigned int vector = 0; vector < ORYN_IDT_ENTRY_COUNT; ++vector)
     {
-        SetGate(vector, gIdtStubs[vector], selector);
+        unsigned char ist = vector < ORYN_IDT_EXCEPTION_COUNT ? exceptionIst : ORYN_IDT_DEFAULT_IST;
+        SetGate(vector, gIdtStubs[vector], selector, ist);
     }
 
     pointer.Limit = (unsigned short)(sizeof(gIdt) - 1U);
@@ -234,6 +236,7 @@ int OrynKernelIdtInit(void)
     gIdtState.Installed = 1U;
     gIdtState.EntryCount = ORYN_IDT_ENTRY_COUNT;
     gIdtState.CodeSelector = selector;
+    gIdtState.ExceptionIst = exceptionIst;
     gIdtState.Limit = pointer.Limit;
     gIdtState.Base = pointer.Base;
     gIdtState.LoadedBase = loaded.Base;

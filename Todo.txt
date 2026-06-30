@@ -11,12 +11,15 @@ Boot and handoff:
        BootInfo checksum OK: loader handoff data verified
 [ OK ] Kernel ELF/native image loading separate from the EFI loader application.
 [ OK ] Kernel ELF image is named from the user kernel/OS name.
-[TOBE] Higher-half or chosen virtual address kernel layout.
-[TOBE] Kernel command line and boot configuration block.
-{TOBE} We need IDT
+[ OK ] Higher-half or chosen virtual address kernel layout.
+[ OK ] Kernel command line and boot configuration block.
+[ OK ] We need IDT
 [TOBE] We need GDT
+[TOBE] We need PIC,APIC, and HPET
 [TOBE] We need Interrupts
 [TOBE] We Need SysCalls
+[TOBE] We need PCI Discovery
+[TOBE] We Need Multi-Core processing
 
 Kernel entry and ownership:
 [TOBE] KernelMain is minimal.
