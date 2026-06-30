@@ -149,6 +149,20 @@ static void BuildProjectImagePath(const OrynProject* project, char* output, size
     OrynJoinPath(output, output_size, project->output_dir, image_name);
 }
 
+static void BuildQemuStageProjectName(const OrynProject* project, char* output, size_t output_size)
+{
+    char output_base[ORYN_MAX_PATH];
+    OrynGetBaseName(output_base, sizeof(output_base), project->output_dir);
+
+    if (output_base[0] != 0 && strcmp(output_base, "Output") != 0)
+    {
+        snprintf(output, output_size, "%s-%s", project->name, output_base);
+        return;
+    }
+
+    snprintf(output, output_size, "%s", project->name);
+}
+
 static void WriteBootReport(
     const OrynProject* project,
     const char* report_path,
@@ -946,8 +960,10 @@ int OrynRunQemu(const OrynProject* project)
         return 0;
     }
 
-    OrynMakeStageFilePath(stage_disk_image, sizeof(stage_disk_image), stage_root, project->name, ".img");
-    OrynMakeStageFilePath(stage_debug_log, sizeof(stage_debug_log), stage_root, project->name, "-Debug.log");
+    char stage_project_name[512];
+    BuildQemuStageProjectName(project, stage_project_name, sizeof(stage_project_name));
+    OrynMakeStageFilePath(stage_disk_image, sizeof(stage_disk_image), stage_root, stage_project_name, ".img");
+    OrynMakeStageFilePath(stage_debug_log, sizeof(stage_debug_log), stage_root, stage_project_name, "-Debug.log");
     remove(stage_disk_image);
     remove(stage_debug_log);
 

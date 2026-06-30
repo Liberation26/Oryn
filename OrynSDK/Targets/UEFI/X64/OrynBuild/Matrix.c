@@ -32,6 +32,8 @@ static const OrynVmMatrixProfile gProfiles[] =
     { "PIC_APIC_APIC2_HPET", 1, 1, 1, 1 }
 };
 
+static const unsigned int gProfileCount = sizeof(gProfiles) / sizeof(gProfiles[0]);
+
 static const char* OnOff(int value)
 {
     return value ? "on" : "off";
@@ -128,7 +130,8 @@ static void WriteProfileReportLine(
     FILE* report,
     const OrynProject* project,
     const OrynVmMatrixProfile* profile,
-    int ok)
+    const char* phase,
+    const char* result)
 {
     char kernel_file_name[256];
     char kernel_elf[ORYN_MAX_PATH];
@@ -144,8 +147,9 @@ static void WriteProfileReportLine(
     OrynJoinPath(debug_log, sizeof(debug_log), project->output_dir, "Debug.log");
     OrynJoinPath(boot_report, sizeof(boot_report), project->output_dir, "BootReport.txt");
 
-    fprintf(report, "%s: %s PIC=%s APIC=%s APIC2=%s HPET=%s SMP=%s\n",
-        ok ? "PASS" : "FAIL",
+    fprintf(report, "%s: %s %s PIC=%s APIC=%s APIC2=%s HPET=%s SMP=%s\n",
+        result,
+        phase,
         profile->Name,
         project->run_pic,
         project->run_apic,
@@ -159,6 +163,48 @@ static void WriteProfileReportLine(
     fflush(report);
 }
 
+static void AppendProfileReport(
+    const char* matrix_report_path,
+    const OrynProject* project,
+    const OrynVmMatrixProfile* profile,
+    const char* phase,
+    const char* result)
+{
+    FILE* report = fopen(matrix_report_path, "ab");
+    if (report != 0)
+    {
+        WriteProfileReportLine(report, project, profile, phase, result);
+        fclose(report);
+    }
+}
+
+static void LogProfileSettings(const OrynProject* project, const OrynVmMatrixProfile* profile, unsigned int index)
+{
+    char message[256];
+    snprintf(message, sizeof(message), "Matrix profile %u/%u: %s",
+        index + 1U,
+        gProfileCount,
+        profile->Name);
+    OrynLogStep(message);
+    OrynLogKeyValue("PIC", project->run_pic);
+    OrynLogKeyValue("APIC", project->run_apic);
+    OrynLogKeyValue("APIC2/x2APIC", project->run_apic2);
+    OrynLogKeyValue("HPET", project->run_hpet);
+    OrynLogKeyValue("SMP CPUs", project->run_smp);
+    OrynLogKeyValue("Build", project->build_dir);
+    OrynLogKeyValue("Output", project->output_dir);
+}
+
+static void AppendMatrixSection(const char* matrix_report_path, const char* title)
+{
+    FILE* report = fopen(matrix_report_path, "ab");
+    if (report != 0)
+    {
+        fprintf(report, "%s\n", title);
+        fclose(report);
+    }
+}
+
 int OrynCommandMatrix(const char* executable_path, const char* project_file)
 {
     OrynProject base_project;
@@ -166,8 +212,19 @@ int OrynCommandMatrix(const char* executable_path, const char* project_file)
     char output_run_root[ORYN_MAX_PATH];
     char run_id[128];
     char matrix_report_path[ORYN_MAX_PATH];
-    int passed = 0;
-    int failed = 0;
+    int build_ok[16];
+    int test_ok[16];
+    int built = 0;
+    int build_failed = 0;
+    int tested = 0;
+    int test_failed = 0;
+    int test_skipped = 0;
+
+    for (unsigned int index = 0; index < gProfileCount; ++index)
+    {
+        build_ok[index] = 0;
+        test_ok[index] = 0;
+    }
 
     if (!OrynLoadProject(executable_path, project_file, &base_project))
     {
@@ -189,34 +246,25 @@ int OrynCommandMatrix(const char* executable_path, const char* project_file)
     fprintf(report, "Version: %s\n", ORYN_VERSION);
     fprintf(report, "Project: %s\n", base_project.name);
     fprintf(report, "Run: %s\n", run_id);
+    fprintf(report, "Mode: build all profile kernels first, then run headless QEMU tests\n");
     fprintf(report, "Build root: %s\n", build_run_root);
     fprintf(report, "Output root: %s\n\n", output_run_root);
     fclose(report);
 
-    OrynLogStep("Running full headless PIC/APIC/APIC2/HPET matrix.");
+    OrynLogStep("Building every PIC/APIC/APIC2/HPET matrix kernel first.");
     OrynLogKeyValue("Matrix run", run_id);
     OrynLogKeyValue("Matrix build root", build_run_root);
     OrynLogKeyValue("Matrix output root", output_run_root);
+    AppendMatrixSection(matrix_report_path, "Build phase:");
 
-    for (unsigned int index = 0; index < sizeof(gProfiles) / sizeof(gProfiles[0]); ++index)
+    for (unsigned int index = 0; index < gProfileCount; ++index)
     {
         OrynProject profile_project;
         int ok = 1;
-        char message[256];
 
         ConfigureProfileProject(&profile_project, &base_project, &gProfiles[index],
             build_run_root, output_run_root);
-        snprintf(message, sizeof(message), "Matrix profile %u/%u: %s",
-            index + 1U,
-            (unsigned int)(sizeof(gProfiles) / sizeof(gProfiles[0])),
-            gProfiles[index].Name);
-        OrynLogStep(message);
-        OrynLogKeyValue("PIC", profile_project.run_pic);
-        OrynLogKeyValue("APIC", profile_project.run_apic);
-        OrynLogKeyValue("APIC2/x2APIC", profile_project.run_apic2);
-        OrynLogKeyValue("HPET", profile_project.run_hpet);
-        OrynLogKeyValue("SMP CPUs", profile_project.run_smp);
-        OrynLogKeyValue("Output", profile_project.output_dir);
+        LogProfileSettings(&profile_project, &gProfiles[index], index);
 
         if (!OrynBuildKernel(&profile_project))
         {
@@ -226,40 +274,72 @@ int OrynCommandMatrix(const char* executable_path, const char* project_file)
         {
             ok = 0;
         }
-        if (ok && !OrynRunQemu(&profile_project))
-        {
-            ok = 0;
-        }
 
-        report = fopen(matrix_report_path, "ab");
-        if (report != 0)
-        {
-            WriteProfileReportLine(report, &profile_project, &gProfiles[index], ok);
-            fclose(report);
-        }
+        build_ok[index] = ok;
+        AppendProfileReport(matrix_report_path, &profile_project, &gProfiles[index],
+            "BUILD", ok ? "PASS" : "FAIL");
 
         if (ok)
         {
-            passed += 1;
-            OrynLogOk("Matrix profile passed.");
+            built += 1;
+            OrynLogOk("Matrix profile built and kept in its own folder.");
         }
         else
         {
-            failed += 1;
-            OrynLogFail("Matrix profile failed. Its kernel, image, debug log, and boot report were kept in its profile folder.");
+            build_failed += 1;
+            OrynLogFail("Matrix profile build failed. Its build/output folder was kept for diagnostics.");
+        }
+    }
+
+    OrynLogStep("Testing built matrix kernels in headless QEMU.");
+    OrynLogInfo("Each headless kernel requests QEMU debug-exit after its proof tasks complete.");
+    AppendMatrixSection(matrix_report_path, "Test phase:");
+
+    for (unsigned int index = 0; index < gProfileCount; ++index)
+    {
+        OrynProject profile_project;
+
+        ConfigureProfileProject(&profile_project, &base_project, &gProfiles[index],
+            build_run_root, output_run_root);
+
+        if (!build_ok[index])
+        {
+            test_skipped += 1;
+            AppendProfileReport(matrix_report_path, &profile_project, &gProfiles[index],
+                "TEST", "SKIP");
+            OrynLogWarn("Skipping QEMU test because this profile did not build.");
+            continue;
+        }
+
+        LogProfileSettings(&profile_project, &gProfiles[index], index);
+        test_ok[index] = OrynRunQemu(&profile_project);
+        AppendProfileReport(matrix_report_path, &profile_project, &gProfiles[index],
+            "TEST", test_ok[index] ? "PASS" : "FAIL");
+
+        if (test_ok[index])
+        {
+            tested += 1;
+            OrynLogOk("Matrix profile passed its headless QEMU test and exited QEMU.");
+        }
+        else
+        {
+            test_failed += 1;
+            OrynLogFail("Matrix profile QEMU test failed. Its kernel, image, debug log, and boot report were kept.");
         }
     }
 
     report = fopen(matrix_report_path, "ab");
     if (report != 0)
     {
-        fprintf(report, "Summary: %d passed, %d failed\n", passed, failed);
+        fprintf(report, "Summary: %d built, %d build failed, %d tested, %d test failed, %d test skipped\n",
+            built, build_failed, tested, test_failed, test_skipped);
         fclose(report);
     }
 
     OrynLogKeyValue("Matrix report", matrix_report_path);
-    snprintf(run_id, sizeof(run_id), "%d passed, %d failed", passed, failed);
-    if (failed == 0)
+    snprintf(run_id, sizeof(run_id), "%d built, %d build failed, %d tested, %d test failed, %d test skipped",
+        built, build_failed, tested, test_failed, test_skipped);
+    if (build_failed == 0 && test_failed == 0 && test_skipped == 0)
     {
         OrynLogOk(run_id);
         return 0;

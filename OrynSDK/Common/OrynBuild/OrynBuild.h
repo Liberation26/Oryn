@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#define ORYN_VERSION "0.5.50"
+#define ORYN_VERSION "0.5.51"
 #define ORYN_MAX_PATH 4096
 #define ORYN_MAX_ITEMS 512
 
