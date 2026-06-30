@@ -1,0 +1,348 @@
+OrynWsl ToDo2 - Linux-like Full Kernel Roadmap
+Version: 0.5.61
+Purpose: Define the work needed to grow OrynWsl from the current boot-proven kernel into a full kernel that behaves like a small Linux-class operating system.
+
+Meaning of "Linux-like":
+Oryn is not meant to copy Linux source code or become a Linux distribution.
+Oryn is meant to provide the same kind of kernel capability that makes Linux useful:
+- protected processes;
+- pre-emptive multitasking;
+- user/kernel isolation;
+- a virtual filesystem;
+- block devices and filesystems;
+- external userland programs;
+- a network stack;
+- drivers bound through a device model;
+- stable kernel/user ABI;
+- diagnostics, logging, panic, crash, and recovery paths;
+- repeatable builds and automated boot tests.
+
+Status tags:
+[ OK ] Implemented enough for the current release target.
+[WARN] Present but partial, smoke-test only, or not production-safe.
+[TOBE] Required future work.
+[FAIL] Known blocker or contradiction.
+
+Hard project rules:
+[ OK ] Native C SDK only. No .NET runtime inside the kernel path.
+[ OK ] UEFI is a loader target only. The kernel must not call UEFI after handoff.
+[ OK ] Kernel receives plain OrynBootInfo and then owns the machine.
+[ OK ] Screen output rule: framebuffer status screen shows only OK, WARN, or FAIL category lines.
+[ OK ] Detailed proof output belongs on serial/debug output and boot reports.
+[ OK ] Exactly three kernel syscall concepts: Get, Set, Event.
+[ OK ] Shell commands must become external programs, not hardcoded internal commands.
+[ OK ] No .inc files in delivered source.
+[ OK ] Source code must follow the Single Responsibility Principle.
+[ OK ] Keep source files under 500 lines. Split by function or responsibility.
+[ OK ] Incremental C-to-object compilation must remain the default.
+
+Current foundation already proven:
+[ OK ] UEFI x64 BOOTX64.EFI loader exists.
+[ OK ] ELF64 kernel loading is separate from the EFI loader application.
+[ OK ] OrynBootInfo handoff exists with version, size, flags, and checksum validation.
+[ OK ] Kernel-owned BootInfo copy exists.
+[ OK ] Kernel owns its lifecycle and halt path.
+[ OK ] Kernel-owned panic screen/report path exists.
+[ OK ] GDT and IDT foundations exist.
+[ OK ] CPU exception report path exists.
+[ OK ] PIC IRQ0 proof exists.
+[ OK ] APIC/x2APIC proof exists.
+[ OK ] HPET detection and counter proof exist.
+[ OK ] SMP topology and AP startup proof exist.
+[ OK ] PCI discovery foundation exists.
+[ OK ] Framebuffer/VGA console foundation exists.
+[ OK ] Keyboard IRQ1 screen scrolling proof exists.
+[ OK ] Physical memory allocator foundation exists.
+[ OK ] Higher-half virtual-memory foundation exists.
+[WARN] KernelMain still contains too much smoke-test orchestration.
+[WARN] Console exists but is still too close to the kernel proof flow.
+[WARN] FAT32 image creation exists, but kernel-side FAT32/VFS is not production-ready.
+
+Milestone 0.6 - Clean kernel entry and module ownership:
+[TOBE] Reduce KernelMain to one responsibility: enter kernel runtime and start the boot sequence.
+[TOBE] Move all boot proof category checks out of KernelMain into a KernelSelfTest or BootProof module.
+[TOBE] Move screen status category emission into KernelScreenReport only.
+[TOBE] Move serial proof detail into Diagnostics/Logger only.
+[TOBE] Add a KernelInit graph with ordered stages and explicit dependencies.
+[TOBE] Add per-stage status objects with OK/WARN/FAIL and serial detail text.
+[TOBE] Add module init, start, stop, panic, and shutdown callbacks.
+[TOBE] Add a registry of compiled-in kernel modules.
+[TOBE] Add dependency validation so a module cannot start before its prerequisites.
+[TOBE] Add fatal/non-fatal boot policy per module.
+
+Milestone 0.7 - Production memory management:
+[ OK ] Physical page allocator foundation exists.
+[ OK ] Higher-half kernel mapping foundation exists.
+[TOBE] Create a real kernel heap: kmalloc, kfree, krealloc, kcalloc.
+[TOBE] Add heap statistics and leak counters.
+[TOBE] Add slab/object caches for fixed-size kernel structures.
+[TOBE] Add guard pages for kernel stacks and critical heaps.
+[TOBE] Add page-fault handler policy instead of only reporting faults.
+[TOBE] Add virtual memory map/unmap/protect APIs.
+[TOBE] Add per-process address spaces.
+[TOBE] Add user/kernel address split.
+[TOBE] Add copy_from_user and copy_to_user safety helpers.
+[TOBE] Add demand allocation for user pages.
+[TOBE] Add page reference counts.
+[TOBE] Add copy-on-write foundation for fork-like process creation later.
+[TOBE] Add DMA-safe physical allocation constraints.
+[TOBE] Add memory pressure and out-of-memory policy.
+[TOBE] Add mmap-style region tracking for files, devices, and anonymous memory.
+[TOBE] Add W^X page policy for kernel and user mappings.
+
+Milestone 0.8 - Timers, clocks, and scheduler base:
+[ OK ] PIT/PIC one-shot proof exists.
+[ OK ] APIC timer proof exists.
+[ OK ] HPET proof exists.
+[TOBE] Select a monotonic kernel clock source at boot.
+[TOBE] Add clocksource registration and priority.
+[TOBE] Add clockevent/tick registration.
+[TOBE] Add calibration between TSC, APIC timer, and HPET where available.
+[TOBE] Add sleep queues that do not busy-wait.
+[TOBE] Add timer wheel or red-black tree timer queue.
+[TOBE] Add per-CPU scheduler tick.
+[TOBE] Add jiffies/tick counter only as an implementation detail, not the public clock API.
+[TOBE] Add RTC read path for wall-clock time.
+[TOBE] Treat UEFI boot time as boot handoff data only.
+[TOBE] Define UTC/local timezone policy.
+
+Milestone 0.9 - Interrupt and deferred-work system:
+[ OK ] IDT dispatch and exception reporting exist.
+[ OK ] PIC/APIC EOI counters exist.
+[ OK ] IRQ1 keyboard scrolling proof exists.
+[TOBE] Add IOAPIC discovery and routing.
+[TOBE] Add MSI/MSI-X foundation for PCI devices.
+[TOBE] Add interrupt handler registration by vector and device.
+[TOBE] Add per-CPU interrupt accounting.
+[TOBE] Add interrupt-safe lock primitives.
+[TOBE] Add bottom halves/deferred procedure calls.
+[TOBE] Add work queues for non-interrupt context device work.
+[TOBE] Add wait queues for sleeping threads.
+[TOBE] Add safe IRQ masking/unmasking APIs.
+[TOBE] Add panic-on-unhandled-exception policy with crash details.
+
+Milestone 1.0 - Threads, processes, and scheduler:
+[TOBE] Define kernel thread structure.
+[TOBE] Define user process structure.
+[TOBE] Define user thread structure.
+[TOBE] Implement x86_64 context switch.
+[TOBE] Implement per-CPU run queues.
+[TOBE] Implement pre-emptive round-robin scheduler first.
+[TOBE] Add priorities after round-robin is stable.
+[TOBE] Add thread states: running, ready, sleeping, blocked, zombie, stopped.
+[TOBE] Add wait/wake primitives.
+[TOBE] Add kernel idle thread per CPU.
+[TOBE] Add process IDs and thread IDs.
+[TOBE] Add parent/child relationships.
+[TOBE] Add exit status and wait semantics.
+[TOBE] Add signal/event delivery design mapped onto Oryn Event.
+[TOBE] Add CPU affinity later, after stable SMP scheduling.
+[TOBE] Add scheduler diagnostics and run-queue dumps.
+
+Milestone 1.1 - User mode and syscall entry:
+[TOBE] Enter ring 3 user mode from a controlled test process.
+[TOBE] Add TSS/user stack handling for syscalls and interrupts.
+[TOBE] Choose syscall entry mechanisms: syscall/sysret where supported, interrupt fallback where needed.
+[TOBE] Route all user requests into Get, Set, or Event packets.
+[TOBE] Add syscall ABI versioning.
+[TOBE] Add syscall argument validation.
+[TOBE] Add user pointer validation.
+[TOBE] Add process credentials placeholder.
+[TOBE] Add errno/status mapping for POSIX-like compatibility.
+[TOBE] Add syscall tracing for debug builds.
+[TOBE] Add syscall fuzz tests for invalid pointers and invalid packet sizes.
+
+Milestone 1.2 - Executable loading and external commands:
+[TOBE] Define Oryn user executable ABI.
+[TOBE] Load ELF64 user executables from VFS.
+[TOBE] Load external commands only from /System/Commands.
+[TOBE] Reject path traversal and slash-separated internal command names.
+[TOBE] Create a command image descriptor with ABI version, entry, stack, permissions, and arguments.
+[TOBE] Add argv/envp construction.
+[TOBE] Add process standard handles: stdin, stdout, stderr.
+[TOBE] Add executable permissions.
+[TOBE] Add shared library policy later; start with static user programs.
+[TOBE] Convert help into /System/Commands/help/help.ocmd or ELF equivalent.
+[TOBE] Convert dir, ls, cd, pwd, type, mkdir, del, copy into external commands.
+[TOBE] Make the shell a separate loaded userland application.
+
+Milestone 1.3 - VFS and file descriptor model:
+[TOBE] Define vnode/inode/file structures.
+[TOBE] Define file descriptor table per process.
+[TOBE] Add open, close, read, write, seek, stat, readdir, mkdir, unlink, rename primitives.
+[TOBE] Add path parser and normalizer.
+[TOBE] Add mount table.
+[TOBE] Add root filesystem mount.
+[TOBE] Add current working directory per process.
+[TOBE] Add permissions and ownership metadata.
+[TOBE] Add device files through devfs.
+[TOBE] Add procfs-style process/kernel information filesystem later.
+[TOBE] Add tmpfs/ramfs for early boot and tests.
+[TOBE] Add page cache/buffer cache foundation.
+[TOBE] Add sync/flush policy.
+
+Milestone 1.4 - Storage stack:
+[WARN] PCI storage-class discovery exists.
+[TOBE] Define block device abstraction: sector size, block count, read, write, flush.
+[TOBE] Add partition table parser: MBR first, GPT next.
+[TOBE] Add AHCI/SATA driver.
+[TOBE] Add NVMe driver.
+[TOBE] Add USB mass storage driver later.
+[TOBE] Add virtio-blk driver for QEMU if selected as a target profile.
+[TOBE] Add block cache.
+[TOBE] Add request queue and completion events.
+[TOBE] Add read-only mount mode for unsafe drivers.
+[TOBE] Add FAT32 production read.
+[TOBE] Add FAT32 production write after read path is proven.
+[TOBE] Add ext2 read support as the next simple Linux-like filesystem target.
+[TOBE] Add filesystem corruption checks and safe failure modes.
+
+Milestone 1.5 - Device model and drivers:
+[ OK ] PCI enumerator foundation exists.
+[WARN] ACPI parsing is currently table-specific, not a full shared ACPI module.
+[TOBE] Create a device object model: bus, device, driver, resource, class.
+[TOBE] Create driver registry and probe/bind/unbind lifecycle.
+[TOBE] Add resource manager for MMIO, I/O ports, IRQs, DMA ranges, and PCI BARs.
+[TOBE] Add ACPI module with RSDP, RSDT/XSDT, MADT, HPET, MCFG, FADT parsing.
+[TOBE] Add power-management hooks later.
+[TOBE] Add PS/2 keyboard driver as a real input device.
+[TOBE] Add PS/2 mouse driver.
+[TOBE] Add serial driver.
+[TOBE] Add framebuffer/display driver model.
+[TOBE] Add NIC driver model.
+[TOBE] Add safe host hardware access policy for VM and real hardware targets.
+
+Milestone 1.6 - Console, display, text, and input:
+[ OK ] Framebuffer status output exists.
+[ OK ] Scrollback and keyboard scrolling proof exist.
+[WARN] TTF loader/renderer foundation exists, but packaged fonts are not yet complete.
+[TOBE] Finalize Shell -> Console -> Display ownership.
+[TOBE] Ensure Shell never draws directly.
+[TOBE] Ensure Console only uses Display APIs for drawing.
+[TOBE] Add input event queue from keyboard IRQ driver.
+[TOBE] Add keymaps and language layouts.
+[TOBE] Add modifier, lock key, and repeat handling.
+[TOBE] Add line editor with history and completion.
+[TOBE] Add cursor blink through real timer events.
+[TOBE] Add dirty-rectangle framebuffer flushing.
+[TOBE] Add display mode enumeration through driver layer, not GOP.
+[TOBE] Add EDID mode discovery.
+[TOBE] Package default TTF fonts in System/Fonts.
+[TOBE] Add font get/set/set size command as external user commands.
+
+Milestone 1.7 - Networking stack:
+[TOBE] Add NIC driver model and at least one QEMU NIC driver.
+[TOBE] Add Ethernet frame receive/transmit.
+[TOBE] Add MAC address management.
+[TOBE] Add ARP.
+[TOBE] Add IPv4.
+[TOBE] Add ICMP ping.
+[TOBE] Add UDP.
+[TOBE] Add TCP.
+[TOBE] Add DHCP client.
+[TOBE] Add DNS client.
+[TOBE] Add sockets mapped through Get/Set/Event.
+[TOBE] Add HTTP client/server later.
+[TOBE] Add TLS later, after entropy and crypto foundation.
+[TOBE] Add firewall/capability hooks later.
+
+Milestone 1.8 - Security, users, and isolation:
+[TOBE] Define kernel capability model.
+[TOBE] Define user and group IDs.
+[TOBE] Add process credentials.
+[TOBE] Add filesystem permission checks.
+[TOBE] Add device permission checks.
+[TOBE] Add module permissions.
+[TOBE] Add W^X enforcement.
+[TOBE] Add SMAP/SMEP support when CPU supports it.
+[TOBE] Add stack canaries or equivalent kernel hardening.
+[TOBE] Add random number source and entropy collection.
+[TOBE] Add secure boot/platform-key handoff reporting as data only.
+[TOBE] Add audit log for security-relevant events.
+
+Milestone 1.9 - Diagnostics, testing, and recovery:
+[WARN] BootReport exists, but there is not yet a complete module-level test framework.
+[TOBE] Add unit tests for pure C helper modules.
+[TOBE] Add boot tests for every kernel subsystem.
+[TOBE] Add negative tests for missing devices and disabled VM features.
+[TOBE] Add QEMU matrix profiles: minimal, normal, SMP, no-HPET, no-APIC2, storage, network.
+[TOBE] Add crash dump format.
+[TOBE] Add panic ring buffer dump.
+[TOBE] Add last-known-good boot marker.
+[TOBE] Add watchdog/recovery policy.
+[TOBE] Add kernel log levels and ring buffer export.
+[TOBE] Add module health status query through Get.
+[TOBE] Add build artifact manifest and boot artifact manifest.
+[TOBE] Add link map and dead-code report.
+[TOBE] Add regression tests for no .inc files and source line-count limits.
+
+Milestone 2.0 - POSIX/Linux compatibility layer:
+[TOBE] Keep Oryn internal ABI as Get, Set, Event.
+[TOBE] Add POSIX-like compatibility headers for userland.
+[TOBE] Add libc userland wrapper over Get/Set/Event.
+[TOBE] Add file descriptor syscalls through wrapper functions.
+[TOBE] Add process APIs: spawn/exec, wait, exit.
+[TOBE] Add time APIs.
+[TOBE] Add directory APIs.
+[TOBE] Add sockets API after networking exists.
+[TOBE] Add signals/events compatibility design.
+[TOBE] Add minimal shell script runner later.
+[TOBE] Add toolchain story for compiling external user programs.
+
+Milestone 2.1 - Build system maturity:
+[ OK ] Incremental C-to-object compilation exists.
+[TOBE] Add full dependency graph resolver for SDK modules and LibC units.
+[TOBE] Replace textual symbol preparse with an archive/dependency resolver.
+[TOBE] Build reusable static archives for stable SDK modules.
+[TOBE] Add per-module manifests.
+[TOBE] Add generated compile database for editor tooling.
+[TOBE] Add object cache invalidation by compiler version, flags, source hash, and dependency hash.
+[TOBE] Add parallel compile worker count from project settings.
+[TOBE] Add reproducible build mode.
+[TOBE] Add package manifest for FullSource and ChangedFiles.
+[TOBE] Add update validation before copying files.
+
+Recommended implementation order:
+1. Clean KernelMain and move proof/report logic into modules.
+2. Finish kernel heap and virtual-memory APIs.
+3. Finish interrupt queues, deferred work, and monotonic clock.
+4. Build scheduler and kernel threads.
+5. Enter user mode with one test process.
+6. Build VFS and file descriptors.
+7. Build block device + FAT32 read path.
+8. Load external shell from /System/Commands or /System/Shell.
+9. Convert commands into external programs.
+10. Add process isolation, exec, wait, and stdout/stderr routing.
+11. Add storage write support.
+12. Add networking.
+13. Add security, permissions, and crash recovery.
+14. Add POSIX/Linux compatibility wrappers on top of Get/Set/Event.
+
+Immediate next 10 tasks:
+[TOBE] 1. Create KernelInit module and move stage ordering out of KernelMain.
+[TOBE] 2. Create KernelSelfTest module for boot proof checks.
+[TOBE] 3. Create Diagnostics module with ring buffer and serial/debug sinks.
+[TOBE] 4. Create KernelHeap module with kmalloc/kfree and boot proof.
+[TOBE] 5. Create KernelVmmMap module for map/unmap/protect APIs.
+[TOBE] 6. Create ClockSource module and select HPET/APIC/TSC policy.
+[TOBE] 7. Create DeferredWork module for interrupt bottom halves.
+[TOBE] 8. Create Scheduler module with kernel threads only.
+[TOBE] 9. Create VFS skeleton with mount table and ramfs.
+[TOBE] 10. Create ExecutableLoader skeleton that resolves only external command paths.
+
+Definition of "full Kernel works like Linux" for Oryn 2.x:
+[TOBE] Boots on QEMU UEFI x64 without returning to loader.
+[TOBE] Owns CPU, memory, interrupts, timers, devices, and halt/panic paths.
+[TOBE] Runs multiple isolated user processes.
+[TOBE] Schedules threads pre-emptively.
+[TOBE] Loads external user programs from the filesystem.
+[TOBE] Provides a VFS and file descriptors.
+[TOBE] Reads and writes persistent files safely.
+[TOBE] Supports at least one real block storage path.
+[TOBE] Supports at least one network device and basic TCP/IP.
+[TOBE] Provides a shell as a userland program.
+[TOBE] Keeps internal kernel ABI as Get, Set, Event.
+[TOBE] Provides POSIX/Linux-like wrappers above the Oryn ABI.
+[TOBE] Has clear OK/WARN/FAIL screen status and detailed serial diagnostics.
+[TOBE] Has automated QEMU regression tests for every major subsystem.
+
