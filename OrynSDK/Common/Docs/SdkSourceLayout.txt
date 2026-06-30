@@ -55,7 +55,7 @@ Rules
   Kernel-5 now owns only its project entry point, project manifest, BootInfo selection variants, and project assets.
   Target-neutral support lives in Common/Kernel.
   UEFI x64-specific support lives in Targets/UEFI/X64/KernelSupport.
-  The Oryn build stage compiles SDK common kernel source, SDK target kernel source, and project source into one linked Kernel.elf.
+  The Oryn build stage compiles SDK common kernel source, SDK target kernel source, and project source into one linked OS-named ELF image, for example Build/Kernel-5.elf or Build/<OSName>.elf.
 
 
 0.5.18 handoff checksum ABI

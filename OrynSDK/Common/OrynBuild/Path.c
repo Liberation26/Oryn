@@ -126,6 +126,55 @@ void OrynMakeFatDirectoryName(char* output, size_t output_size, const char* inpu
     output[used] = 0;
 }
 
+
+void OrynMakeSafeFileBaseName(char* output, size_t output_size, const char* input)
+{
+    size_t used = 0;
+    if (output_size == 0)
+    {
+        return;
+    }
+
+    for (const char* current = input; *current != 0 && used + 1 < output_size; ++current)
+    {
+        char ch = *current;
+        if ((ch >= 'A' && ch <= 'Z') ||
+            (ch >= 'a' && ch <= 'z') ||
+            (ch >= '0' && ch <= '9') ||
+            ch == '-' || ch == '_')
+        {
+            output[used++] = ch;
+        }
+        else if (ch == ' ' || ch == '.')
+        {
+            if (used > 0 && output[used - 1] != '_')
+            {
+                output[used++] = '_';
+            }
+        }
+    }
+
+    while (used > 0 && output[used - 1] == '_')
+    {
+        --used;
+    }
+
+    if (used == 0)
+    {
+        snprintf(output, output_size, "Kernel");
+        return;
+    }
+
+    output[used] = 0;
+}
+
+void OrynMakeKernelElfFileName(char* output, size_t output_size, const char* kernel_name)
+{
+    char base_name[256];
+    OrynMakeSafeFileBaseName(base_name, sizeof(base_name), kernel_name);
+    snprintf(output, output_size, "%s.elf", base_name);
+}
+
 void OrynNormalizePath(char* path)
 {
     for (char* current = path; *current != 0; ++current)

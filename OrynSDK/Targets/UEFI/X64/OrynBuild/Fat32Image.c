@@ -301,7 +301,8 @@ int OrynCreateFat32EspImage(
     const char* kernel_elf_path,
     const char* font_ttf_path,
     const char* image_path,
-    const char* kernel_directory_name)
+    const char* kernel_directory_name,
+    const char* kernel_file_name)
 {
     uint8_t* boot_data = 0;
     uint8_t* kernel_data = 0;
@@ -315,7 +316,7 @@ int OrynCreateFat32EspImage(
     {
         free(boot_data);
         free(kernel_data);
-        OrynLogFail("Could not read BOOTX64.EFI or Kernel.elf for FAT32 image.");
+        OrynLogFail("Could not read BOOTX64.EFI or the OS-named kernel ELF for FAT32 image.");
         return 0;
     }
 
@@ -332,6 +333,17 @@ int OrynCreateFat32EspImage(
 
     char kernel_directory_base[16];
     OrynMakeFatDirectoryName(kernel_directory_base, sizeof(kernel_directory_base), kernel_directory_name);
+
+    char kernel_file_without_extension[256];
+    snprintf(kernel_file_without_extension, sizeof(kernel_file_without_extension), "%s", kernel_file_name);
+    char* kernel_file_dot = strchr(kernel_file_without_extension, '.');
+    if (kernel_file_dot != 0)
+    {
+        *kernel_file_dot = 0;
+    }
+
+    char kernel_file_base[16];
+    OrynMakeFatDirectoryName(kernel_file_base, sizeof(kernel_file_base), kernel_file_without_extension);
 
     OrynFat32Writer writer;
     memset(&writer, 0, sizeof(writer));
@@ -375,7 +387,7 @@ int OrynCreateFat32EspImage(
     WriteDirEntry(Cluster(&writer, system_cluster), 2, kernel_directory_base, "", 0x10U, kernel_dir_cluster, 0);
     WriteDirEntry(Cluster(&writer, system_cluster), 3, "FONTS", "", 0x10U, fonts_dir_cluster, 0);
     WriteDotEntries(Cluster(&writer, kernel_dir_cluster), kernel_dir_cluster, system_cluster);
-    WriteDirEntry(Cluster(&writer, kernel_dir_cluster), 2, "KERNEL", "ELF", 0x20U, kernel_file_cluster, kernel_size);
+    WriteDirEntry(Cluster(&writer, kernel_dir_cluster), 2, kernel_file_base, "ELF", 0x20U, kernel_file_cluster, kernel_size);
     WriteDotEntries(Cluster(&writer, fonts_dir_cluster), fonts_dir_cluster, system_cluster);
     if (font_file_cluster != 0)
     {

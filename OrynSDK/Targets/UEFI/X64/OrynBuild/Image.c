@@ -80,6 +80,8 @@ static int WriteBootTargetHeader(const OrynProject* project, char* include_dir, 
     char generated_root[ORYN_MAX_PATH];
     char header_path[ORYN_MAX_PATH];
     char kernel_directory[16];
+    char kernel_file_name[256];
+    char kernel_file_base[16];
 
     OrynJoinPath(generated_root, sizeof(generated_root), project->build_dir, "Generated/UEFI/X64/Boot");
     OrynJoinPath(include_dir, include_dir_size, generated_root, "Include");
@@ -90,6 +92,8 @@ static int WriteBootTargetHeader(const OrynProject* project, char* include_dir, 
     }
 
     OrynMakeFatDirectoryName(kernel_directory, sizeof(kernel_directory), project->name);
+    OrynMakeKernelElfFileName(kernel_file_name, sizeof(kernel_file_name), project->name);
+    OrynMakeFatDirectoryName(kernel_file_base, sizeof(kernel_file_base), project->name);
     OrynJoinPath(header_path, sizeof(header_path), include_dir, "OrynBootTarget.h");
 
     FILE* file = fopen(header_path, "wb");
@@ -103,14 +107,15 @@ static int WriteBootTargetHeader(const OrynProject* project, char* include_dir, 
     fprintf(file, "#define ORYN_BOOT_TARGET_H\n\n");
     fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_NAME \"%s\"\n", project->name);
     fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_DIRECTORY \"%s\"\n", kernel_directory);
-    fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_FILE \"Kernel.elf\"\n");
-    fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_PATH_TEXT \"\\\\System\\\\%s\\\\Kernel.elf\"\n", kernel_directory);
-    fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_PATH L\"\\\\System\\\\%s\\\\Kernel.elf\"\n\n", kernel_directory);
+    fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_HOST_FILE \"%s\"\n", kernel_file_name);
+    fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_FILE \"%s.elf\"\n", kernel_file_base);
+    fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_PATH_TEXT \"\\\\System\\\\%s\\\\%s.elf\"\n", kernel_directory, kernel_file_base);
+    fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_PATH L\"\\\\System\\\\%s\\\\%s.elf\"\n\n", kernel_directory, kernel_file_base);
     fprintf(file, "#endif\n");
     fclose(file);
 
     char message[ORYN_MAX_PATH + 128];
-    snprintf(message, sizeof(message), "Generated loader boot target: \\System\\%s\\Kernel.elf", kernel_directory);
+    snprintf(message, sizeof(message), "Generated loader boot target: \\System\\%s\\%s.elf", kernel_directory, kernel_file_base);
     OrynLogOk(message);
     return 1;
 }
@@ -268,8 +273,13 @@ int OrynBuildImage(const OrynProject* project)
     char boot_efi[ORYN_MAX_PATH];
     OrynJoinPath(boot_efi, sizeof(boot_efi), project->esp_dir, "EFI/BOOT/BOOTX64.EFI");
 
+    char kernel_file_name[256];
+    char kernel_file_base[16];
+    OrynMakeKernelElfFileName(kernel_file_name, sizeof(kernel_file_name), project->name);
+    OrynMakeFatDirectoryName(kernel_file_base, sizeof(kernel_file_base), project->name);
+
     char kernel_source[ORYN_MAX_PATH];
-    OrynJoinPath(kernel_source, sizeof(kernel_source), project->build_dir, "Kernel.elf");
+    OrynJoinPath(kernel_source, sizeof(kernel_source), project->build_dir, kernel_file_name);
 
     char system_dir[ORYN_MAX_PATH];
     OrynJoinPath(system_dir, sizeof(system_dir), project->esp_dir, "System");
@@ -281,12 +291,15 @@ int OrynBuildImage(const OrynProject* project)
     OrynJoinPath(kernel_dir, sizeof(kernel_dir), system_dir, kernel_directory_name);
     OrynMakeDirectoryRecursive(kernel_dir);
 
+    char kernel_target_name[32];
+    snprintf(kernel_target_name, sizeof(kernel_target_name), "%s.elf", kernel_file_base);
+
     char kernel_target[ORYN_MAX_PATH];
-    OrynJoinPath(kernel_target, sizeof(kernel_target), kernel_dir, "Kernel.elf");
+    OrynJoinPath(kernel_target, sizeof(kernel_target), kernel_dir, kernel_target_name);
 
     if (!OrynCopyFile(kernel_source, kernel_target))
     {
-        OrynLogFail("Could not copy Kernel.elf into ESP.");
+        OrynLogFail("Could not copy the OS-named kernel ELF into ESP.");
         return 0;
     }
 
@@ -321,13 +334,13 @@ int OrynBuildImage(const OrynProject* project)
     OrynJoinPath(disk_image, sizeof(disk_image), project->output_dir, image_name);
     remove(disk_image);
 
-    if (!OrynCreateFat32EspImage(boot_efi, kernel_source, has_font ? font_source : 0, disk_image, kernel_directory_name))
+    if (!OrynCreateFat32EspImage(boot_efi, kernel_source, has_font ? font_source : 0, disk_image, kernel_directory_name, kernel_target_name))
     {
         OrynLogFail("Could not create FAT32 partition disk image.");
         return 0;
     }
 
-    snprintf(message, sizeof(message), "Copied pure ELF kernel to staged ESP: System/%s/Kernel.elf", kernel_directory_name);
+    snprintf(message, sizeof(message), "Copied pure ELF kernel to staged ESP: System/%s/%s", kernel_directory_name, kernel_target_name);
     OrynLogOk(message);
 
     snprintf(message, sizeof(message), "Created Output/%s with an MBR FAT32 EFI System Partition.", image_name);

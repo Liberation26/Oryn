@@ -162,7 +162,7 @@ EFI_STATUS LoadElfSegments(const void* kernelBuffer, UINTN kernelSize, UINT64* o
     const Elf64_Ehdr* elf = (const Elf64_Ehdr*)kernelBuffer;
     if (!ValidateElf(elf, kernelSize))
     {
-        Print("[BOOT] FAIL: Kernel.elf is not a valid x86_64 executable ELF.\n");
+        Print("[BOOT] FAIL: kernel image is not a valid x86_64 executable ELF.\n");
         return EFI_LOAD_ERROR;
     }
 

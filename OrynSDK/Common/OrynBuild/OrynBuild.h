@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#define ORYN_VERSION "0.5.19"
+#define ORYN_VERSION "0.5.20"
 #define ORYN_MAX_PATH 4096
 #define ORYN_MAX_ITEMS 512
 
@@ -65,7 +65,8 @@ int OrynCreateFat32EspImage(
     const char* kernel_elf_path,
     const char* font_ttf_path,
     const char* image_path,
-    const char* kernel_directory_name);
+    const char* kernel_directory_name,
+    const char* kernel_file_name);
 int OrynRunQemu(const OrynProject* project);
 int OrynCleanProject(const OrynProject* project);
 
@@ -81,6 +82,8 @@ void OrynGetBaseName(char* output, size_t output_size, const char* path);
 void OrynReplaceExtension(char* output, size_t output_size, const char* path, const char* extension);
 void OrynNormalizePath(char* path);
 void OrynMakeFatDirectoryName(char* output, size_t output_size, const char* input);
+void OrynMakeSafeFileBaseName(char* output, size_t output_size, const char* input);
+void OrynMakeKernelElfFileName(char* output, size_t output_size, const char* kernel_name);
 
 int OrynRunCommand(const char* command);
 int OrynRunCommandCapture(const char* command, char* output, size_t output_size);

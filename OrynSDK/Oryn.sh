@@ -117,6 +117,99 @@ WriteProjectRunDisplay()
     return 0
 }
 
+
+ProjectOSName()
+{
+    ProjectFile="$1"
+    awk '
+        BEGIN { name="" }
+        /^[[:space:]]*Name[[:space:]]*=/ {
+            sub(/^[[:space:]]*Name[[:space:]]*=[[:space:]]*/, "")
+            gsub(/\r/, "")
+            name=$0
+        }
+        END { print name }
+    ' "$ProjectFile"
+}
+
+IsValidOSNameShell()
+{
+    Candidate="$1"
+    case "$Candidate" in
+        ''|*[!ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-]*) return 1 ;;
+        *) return 0 ;;
+    esac
+}
+
+WriteProjectOSName()
+{
+    ProjectFile="$1"
+    OSName="$2"
+    TempFile="$(mktemp)"
+
+    awk -v os_name="$OSName" '
+        BEGIN { wrote_name=0 }
+        /^[[:space:]]*Name[[:space:]]*=/ {
+            if (wrote_name == 0) {
+                print "Name=" os_name
+                wrote_name=1
+            }
+            next
+        }
+        { print }
+        END {
+            if (wrote_name == 0) {
+                print "Name=" os_name
+            }
+        }
+    ' "$ProjectFile" > "$TempFile" || {
+        rm -f "$TempFile"
+        return 1
+    }
+
+    cat "$TempFile" > "$ProjectFile"
+    rm -f "$TempFile"
+    return 0
+}
+
+RunOSNameQuestionnaire()
+{
+    ProjectFile="$1"
+    shift || true
+
+    if [ ! -f "$ProjectFile" ]; then
+        Fail "Project was not found: $ProjectFile"
+        exit 1
+    fi
+
+    CurrentName="$(ProjectOSName "$ProjectFile")"
+    [ -n "$CurrentName" ] || CurrentName="Kernel-5"
+
+    Info "Kernel/OS name questionnaire."
+    Info "Current project OS name: $CurrentName"
+    while true; do
+        printf 'What is this kernel/OS called? [%s]: ' "$CurrentName"
+        IFS= read -r NewName || NewName=""
+        NewName="$(printf '%s' "$NewName" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+        [ -n "$NewName" ] || NewName="$CurrentName"
+
+        if IsValidOSNameShell "$NewName"; then
+            break
+        fi
+
+        Warn "Use only letters, numbers, dash, and underscore for the kernel/OS name."
+    done
+
+    if ! WriteProjectOSName "$ProjectFile" "$NewName"; then
+        Fail "Could not save the kernel/OS name to: $ProjectFile"
+        exit 1
+    fi
+
+    Ok "Saved kernel/OS name: $NewName"
+    Info "Continuing to Headless questionnaire."
+    RunHeadlessQuestionnaire "$ProjectFile" "$@"
+}
+
 RunHeadlessQuestionnaire()
 {
     ProjectFile="$1"
@@ -441,6 +534,23 @@ case "$Command" in
         exec "$OrynBin" "$Command" "$@"
         ;;
 
+    OSName|osname|name)
+        if [ "$#" -eq 0 ]; then
+            RunOSNameQuestionnaire "$DefaultProject"
+        fi
+
+        case "$1" in
+            *.oryn)
+                ProjectFile="$1"
+                shift || true
+                RunOSNameQuestionnaire "$ProjectFile" "$@"
+                ;;
+            *)
+                RunOSNameQuestionnaire "$DefaultProject" "$@"
+                ;;
+        esac
+        ;;
+
     Headless|headless)
         if [ "$#" -eq 0 ]; then
             RunHeadlessQuestionnaire "$DefaultProject"
@@ -497,6 +607,7 @@ case "$Command" in
         printf '  ./Oryn.sh build [project] Build project, defaulting to Kernel-5\n'
         printf '  ./Oryn.sh image [project] Build image, defaulting to Kernel-5\n'
         printf '  ./Oryn.sh run [project]   Run project, defaulting to Kernel-5\n'
+        printf '  ./Oryn.sh OSName [project]   Ask kernel/OS name first, then Headless, then BootInfo\n'
         printf '  ./Oryn.sh Headless [project] Ask whether the VM is headless, save Display, then ask BootInfo\n'
         printf '  ./Oryn.sh clean [project] Clean project, defaulting to Kernel-5\n'
         printf '  ./Oryn.sh bootinfo [project] Ask which UEFI BootInfo items to pass, then build and run\n'

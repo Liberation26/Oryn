@@ -77,7 +77,9 @@ EFI_STATUS ReadKernelFile(EFI_FILE_PROTOCOL* file, void** outBuffer, UINTN* outS
         return status;
     }
 
-    Print("[BOOT] Stage 03: Reading Kernel.elf.\n");
+    Print("[BOOT] Stage 03: Reading kernel image: ");
+    Print(ORYN_BOOT_TARGET_KERNEL_FILE);
+    Print(".\n");
     UINTN size = MAX_KERNEL_FILE_SIZE;
     status = file->Read(file, &size, buffer);
     if (IsError(status))

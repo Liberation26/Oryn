@@ -352,8 +352,11 @@ int OrynBuildKernel(const OrynProject* project)
     char linker_script[ORYN_MAX_PATH];
     OrynJoinPath(linker_script, sizeof(linker_script), project->sdk_root, "Targets/UEFI/X64/Kernel.ld");
 
+    char kernel_file_name[256];
+    OrynMakeKernelElfFileName(kernel_file_name, sizeof(kernel_file_name), project->name);
+
     char kernel_elf[ORYN_MAX_PATH];
-    OrynJoinPath(kernel_elf, sizeof(kernel_elf), project->build_dir, "Kernel.elf");
+    OrynJoinPath(kernel_elf, sizeof(kernel_elf), project->build_dir, kernel_file_name);
 
     char command[ORYN_MAX_PATH * 8];
     snprintf(command, sizeof(command),
@@ -374,6 +377,8 @@ int OrynBuildKernel(const OrynProject* project)
         return 0;
     }
 
-    OrynLogOk("Linked Build/Kernel.elf");
+    char link_message[ORYN_MAX_PATH + 64];
+    snprintf(link_message, sizeof(link_message), "Linked Build/%s", kernel_file_name);
+    OrynLogOk(link_message);
     return 1;
 }

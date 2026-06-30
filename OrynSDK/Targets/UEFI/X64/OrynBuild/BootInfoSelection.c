@@ -855,7 +855,7 @@ static int OrynBootInfoQuestionnaire(const char* executable_path, const char* pr
     printf("  %s/<number>\n\n", project->kernel_variants_root);
 
     printf("Available UEFI BootInfo items:\n");
-    printf("  1. Kernel physical range: physical base and loaded size of Kernel.elf.\n");
+    printf("  1. Kernel physical range: physical base and loaded size of the OS-named kernel ELF.\n");
     printf("  2. UEFI memory map: memory descriptors copied before ExitBootServices.\n");
     printf("  3. Linear framebuffer: framebuffer base, size, resolution, pitch, bytes-per-pixel, and pixel format.\n");
     printf("  4. ACPI RSDP pointer: ACPI root pointer discovered from UEFI configuration tables.\n");
