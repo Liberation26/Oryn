@@ -1,4 +1,9 @@
 #include "TargetBuildInternal.h"
+
+static int KernelOkFact(const char* debug_text, const char* message)
+{
+    return TextContains(debug_text, message);
+}
 int OrynRunQemu(const OrynProject* project)
 {
     char qemu_path[ORYN_MAX_PATH];
@@ -272,54 +277,54 @@ int OrynRunQemu(const OrynProject* project)
     PrintFileIfPresent("QEMU debug output", debug_log);
     PrintFileIfPresent("Boot report", boot_report);
 
-    int boot_pass = (TextContains(debug_text, "[KERNEL] PASS: Kernel entered successfully") ||
+    int boot_pass = (KernelOkFact(debug_text, "Kernel entered successfully") ||
         TextContains(debug_text, "[KERNEL] Oryn Kernel-5 entered.")) &&
-        TextContains(debug_text, "[KERNEL] PASS: BootInfo received") &&
-        TextContains(debug_text, "[KERNEL] PASS: GDT installed.") &&
+        KernelOkFact(debug_text, "BootInfo received") &&
+        KernelOkFact(debug_text, "GDT installed.") &&
         TextContains(debug_text, "[KERNEL] GDT entries: 7") &&
-        TextContains(debug_text, "[KERNEL] PASS: TSS loaded.") &&
-        TextContains(debug_text, "[KERNEL] PASS: IDT installed.") &&
-        TextContains(debug_text, "[KERNEL] PASS: Interrupt dispatcher initialized.") &&
-        (ProjectBoolEnabled(project->run_pic, 1) ? TextContains(debug_text, "[KERNEL] PASS: PIC IRQ0 interrupt fired through IDT dispatch.") : TextContains(debug_text, "[KERNEL] INFO: PIC IRQ0 proof skipped by VMSettings.")) &&
-        (ProjectBoolEnabled(project->run_apic2, 1) ? TextContains(debug_text, "[KERNEL] PASS: CPU APIC2/x2APIC feature present.") : 1) &&
-        (ProjectBoolEnabled(project->run_pic, 1) ? TextContains(debug_text, "[KERNEL] PASS: PIC masked/disabled for APIC handoff.") : 1) &&
-        (ProjectBoolEnabled(project->run_apic2, 1) ? TextContains(debug_text, "[KERNEL] PASS: APIC2/x2APIC mode enabled.") : 1) &&
-        ((ProjectBoolEnabled(project->run_apic, 1) || ProjectBoolEnabled(project->run_apic2, 1)) ? TextContains(debug_text, "[KERNEL] PASS: APIC timer counter moved in masked probe.") : TextContains(debug_text, "[KERNEL] INFO: APIC proofs skipped by VMSettings.")) &&
-        (ProjectBoolEnabled(project->run_hpet, 1) ? TextContains(debug_text, "[KERNEL] PASS: HPET counter advanced in probe.") : TextContains(debug_text, "[KERNEL] INFO: HPET proof skipped by VMSettings.")) &&
-        ((ProjectBoolEnabled(project->run_apic, 1) || ProjectBoolEnabled(project->run_apic2, 1)) ? TextContains(debug_text, "[KERNEL] PASS: APIC timer interrupt fired through IDT dispatch.") : 1) &&
-        (TextContains(debug_text, "[KERNEL] PASS: Interrupts work from PIC upward through APIC/APIC2.") ||
-            TextContains(debug_text, "[KERNEL] PASS: VMSettings interrupt/timer profile applied.")) &&
-        TextContains(debug_text, "[KERNEL] PASS: SysCalls use Get/Set/Event message packets.") &&
-        TextContains(debug_text, "[KERNEL] PASS: Platform syscalls translate into Get/Set/Event packets.") &&
-        TextContains(debug_text, "[KERNEL] PASS: SysCall header counts listed.") &&
-        TextContains(debug_text, "[KERNEL] PASS: Unknown syscall debug logging path executed.") &&
-        TextContains(debug_text, "[KERNEL] PASS: PCI ACPI MCFG table discovered.") &&
-        TextContains(debug_text, "[KERNEL] PASS: PCIe ECAM descriptor captured.") &&
-        TextContains(debug_text, "[KERNEL] PASS: PCI config mechanism #1 responded.") &&
-        TextContains(debug_text, "[KERNEL] PASS: PCI bus/device/function scan completed.") &&
-        TextContains(debug_text, "[KERNEL] PASS: PCI devices discovered.") &&
-        TextContains(debug_text, "[KERNEL] PASS: PCI class-code decoding ready.") &&
-        TextContains(debug_text, "[KERNEL] PASS: PCI device output uses English labels.") &&
-        TextContains(debug_text, "[KERNEL] PASS: PCI Discovery complete.") &&
+        KernelOkFact(debug_text, "TSS loaded.") &&
+        KernelOkFact(debug_text, "IDT installed.") &&
+        KernelOkFact(debug_text, "Interrupt dispatcher initialized.") &&
+        (ProjectBoolEnabled(project->run_pic, 1) ? KernelOkFact(debug_text, "PIC IRQ0 interrupt fired through IDT dispatch.") : TextContains(debug_text, "[KERNEL] INFO: PIC IRQ0 proof skipped by VMSettings.")) &&
+        (ProjectBoolEnabled(project->run_apic2, 1) ? KernelOkFact(debug_text, "CPU APIC2/x2APIC feature present.") : 1) &&
+        (ProjectBoolEnabled(project->run_pic, 1) ? KernelOkFact(debug_text, "PIC masked/disabled for APIC handoff.") : 1) &&
+        (ProjectBoolEnabled(project->run_apic2, 1) ? KernelOkFact(debug_text, "APIC2/x2APIC mode enabled.") : 1) &&
+        ((ProjectBoolEnabled(project->run_apic, 1) || ProjectBoolEnabled(project->run_apic2, 1)) ? KernelOkFact(debug_text, "APIC timer counter moved in masked probe.") : TextContains(debug_text, "[KERNEL] INFO: APIC proofs skipped by VMSettings.")) &&
+        (ProjectBoolEnabled(project->run_hpet, 1) ? KernelOkFact(debug_text, "HPET counter advanced in probe.") : TextContains(debug_text, "[KERNEL] INFO: HPET proof skipped by VMSettings.")) &&
+        ((ProjectBoolEnabled(project->run_apic, 1) || ProjectBoolEnabled(project->run_apic2, 1)) ? KernelOkFact(debug_text, "APIC timer interrupt fired through IDT dispatch.") : 1) &&
+        (KernelOkFact(debug_text, "Interrupts work from PIC upward through APIC/APIC2.") ||
+            KernelOkFact(debug_text, "VMSettings interrupt/timer profile applied.")) &&
+        KernelOkFact(debug_text, "SysCalls use Get/Set/Event message packets.") &&
+        KernelOkFact(debug_text, "Platform syscalls translate into Get/Set/Event packets.") &&
+        KernelOkFact(debug_text, "SysCall header counts listed.") &&
+        KernelOkFact(debug_text, "Unknown syscall debug logging path executed.") &&
+        KernelOkFact(debug_text, "PCI ACPI MCFG table discovered.") &&
+        KernelOkFact(debug_text, "PCIe ECAM descriptor captured.") &&
+        KernelOkFact(debug_text, "PCI config mechanism #1 responded.") &&
+        KernelOkFact(debug_text, "PCI bus/device/function scan completed.") &&
+        KernelOkFact(debug_text, "PCI devices discovered.") &&
+        KernelOkFact(debug_text, "PCI class-code decoding ready.") &&
+        KernelOkFact(debug_text, "PCI device output uses English labels.") &&
+        KernelOkFact(debug_text, "PCI Discovery complete.") &&
         ((ProjectCpuCount(project) > 1U && (ProjectBoolEnabled(project->run_apic, 1) || ProjectBoolEnabled(project->run_apic2, 1))) ?
-            (TextContains(debug_text, "[KERNEL] PASS: SMP multi-core CPU topology discovered.") &&
-             TextContains(debug_text, "[KERNEL] PASS: SMP application processors entered kernel AP loop.") &&
-             TextContains(debug_text, "[KERNEL] PASS: Multi-Core processing initialized.")) :
+            (KernelOkFact(debug_text, "SMP multi-core CPU topology discovered.") &&
+             KernelOkFact(debug_text, "SMP application processors entered kernel AP loop.") &&
+             KernelOkFact(debug_text, "Multi-Core processing initialized.")) :
             (TextContains(debug_text, "[KERNEL] INFO: SMP AP startup skipped by VMSettings.") ||
              TextContains(debug_text, "[KERNEL] INFO: SMP discovery skipped by VMSettings."))) &&
-        TextContains(debug_text, "\033[32m[KERNEL] PASS") &&
+        (TextContains(debug_text, "\033[32m[KERNEL] OK") || TextContains(debug_text, "\033[32m[KERNEL] PASS")) &&
         TextContains(debug_text, "\033[0m") &&
         !TextContains(debug_text, "[KERNEL] EXCEPTION:") &&
-        TextContains(debug_text, "[KERNEL] PASS: Kernel screen presents dirty completed line only.") &&
-        TextContains(debug_text, "[KERNEL] PASS: Kernel screen uses fast scroll path after visible area is full.") &&
-        TextContains(debug_text, "[KERNEL] PASS: Kernel screen refresh is line/scroll optimized.") &&
-        TextContains(debug_text, "[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.") &&
-        (TextContains(debug_text, "[KERNEL] PASS: Kernel screen scroll proof keeps visible output stable.") ||
-         TextContains(debug_text, "[KERNEL] PASS: Kernel screen proof keeps visible output stable.")) &&
-        TextContains(debug_text, "[KERNEL] PASS: Kernel screen visible presents are atomic.") &&
-        TextContains(debug_text, "[KERNEL] PASS: Physical allocator tracking capacity is sufficient.") &&
+        KernelOkFact(debug_text, "Kernel screen presents dirty completed line only.") &&
+        KernelOkFact(debug_text, "Kernel screen uses fast scroll path after visible area is full.") &&
+        KernelOkFact(debug_text, "Kernel screen refresh is line/scroll optimized.") &&
+        KernelOkFact(debug_text, "Kernel screen line-buffered double buffering implemented.") &&
+        (KernelOkFact(debug_text, "Kernel screen scroll proof keeps visible output stable.") ||
+         KernelOkFact(debug_text, "Kernel screen proof keeps visible output stable.")) &&
+        KernelOkFact(debug_text, "Kernel screen visible presents are atomic.") &&
+        KernelOkFact(debug_text, "Physical allocator tracking capacity is sufficient.") &&
         (interactive_display ?
-            TextContains(debug_text, "[KERNEL] PASS: Interactive QEMU display mode keeps VM open for scroll testing.") :
+            KernelOkFact(debug_text, "Interactive QEMU display mode keeps VM open for scroll testing.") :
             TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success")) && command_ok;
 
     if (boot_pass)

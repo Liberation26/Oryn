@@ -213,6 +213,13 @@ void KernelIoWriteChar(char value)
 
 void KernelIoWriteString(const char* text)
 {
+    char normalizedStatusLine[384];
+    if (gOutputAtLineStart &&
+        OrynKernelScreenReportNormalizeStatusLine(text, normalizedStatusLine, sizeof(normalizedStatusLine)))
+    {
+        text = normalizedStatusLine;
+    }
+
     BeginColoredLine(text);
 
     while (*text != 0)

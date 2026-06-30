@@ -1,5 +1,6 @@
 #include "KernelScreenReport.h"
 #include "KernelConsole.h"
+#include "KernelIo.h"
 
 #define SCREEN_STATUS_NONE 0
 #define SCREEN_STATUS_OK 1
@@ -81,7 +82,8 @@ static int Contains(const char* text, const char* needle)
 
 static int StatusForLine(const char* line)
 {
-    if (StartsWith(line, "[KERNEL] PASS:") || StartsWith(line, "[PASS]"))
+    if (StartsWith(line, "[KERNEL] PASS:") || StartsWith(line, "[KERNEL] OK:") ||
+        StartsWith(line, "[PASS]") || StartsWith(line, "[OK]"))
     {
         return SCREEN_STATUS_OK;
     }
@@ -122,6 +124,49 @@ static int CategoryForLine(const char* line)
     if (Contains(line, "Physical") || Contains(line, "allocator")) return 18;
     if (Contains(line, "Virtual memory") || Contains(line, "VirtualMemory")) return 19;
     return 0;
+}
+
+
+static const char* StatusPayload(const char* line)
+{
+    if (StartsWith(line, "[KERNEL] PASS:")) return line + 14;
+    if (StartsWith(line, "[KERNEL] OK:")) return line + 12;
+    if (StartsWith(line, "[KERNEL] WARN:")) return line + 14;
+    if (StartsWith(line, "[KERNEL] FAIL:")) return line + 14;
+    return 0;
+}
+
+static void CopyText(char* output, unsigned int outputSize, const char* text)
+{
+    unsigned int index = 0U;
+    if (outputSize == 0U)
+    {
+        return;
+    }
+    while (text != 0 && text[index] != 0 && index + 1U < outputSize)
+    {
+        output[index] = text[index];
+        ++index;
+    }
+    output[index] = 0;
+}
+
+static void AppendText(char* output, unsigned int outputSize, const char* text)
+{
+    unsigned int index = 0U;
+    while (index < outputSize && output[index] != 0)
+    {
+        ++index;
+    }
+    if (index >= outputSize)
+    {
+        return;
+    }
+    while (text != 0 && *text != 0 && index + 1U < outputSize)
+    {
+        output[index++] = *text++;
+    }
+    output[index] = 0;
 }
 
 static const char* StatusName(int status)
@@ -190,6 +235,71 @@ void OrynKernelScreenReportWriteStatusLine(
     ScreenWriteText(category);
     KConsole.WriteChar('\n');
     KConsole.ResetForegroundColour();
+}
+
+
+int OrynKernelScreenReportNormalizeStatusLine(
+    const char* input,
+    char* output,
+    unsigned int outputSize)
+{
+    const char* payload;
+    if (input == 0 || output == 0 || outputSize == 0U)
+    {
+        return 0;
+    }
+
+    if (StartsWith(input, "[KERNEL] PASS:"))
+    {
+        payload = StatusPayload(input);
+        CopyText(output, outputSize, "[KERNEL] OK:");
+        AppendText(output, outputSize, payload);
+        return 1;
+    }
+
+    if (StartsWith(input, "[KERNEL] OK:") ||
+        StartsWith(input, "[KERNEL] WARN:") ||
+        StartsWith(input, "[KERNEL] FAIL:"))
+    {
+        CopyText(output, outputSize, input);
+        return 1;
+    }
+
+    return 0;
+}
+
+static void EmitKernelStatus(
+    const char* status,
+    const char* category,
+    const char* message)
+{
+    char line[384];
+    CopyText(line, sizeof(line), "[KERNEL] ");
+    AppendText(line, sizeof(line), status);
+    AppendText(line, sizeof(line), ": ");
+    if (category != 0 && *category != 0)
+    {
+        AppendText(line, sizeof(line), category);
+        AppendText(line, sizeof(line), ": ");
+    }
+    AppendText(line, sizeof(line), message != 0 ? message : "");
+    AppendText(line, sizeof(line), "\n");
+    KernelIoWriteString(line);
+}
+
+void OrynKernelScreenReportOk(const char* category, const char* message)
+{
+    EmitKernelStatus("OK", category, message);
+}
+
+void OrynKernelScreenReportWarn(const char* category, const char* message)
+{
+    EmitKernelStatus("WARN", category, message);
+}
+
+void OrynKernelScreenReportFail(const char* category, const char* message)
+{
+    EmitKernelStatus("FAIL", category, message);
 }
 
 void OrynKernelScreenReportPrint(void)
