@@ -244,6 +244,13 @@ static void WriteBootReport(
     int smp_complete = TextContains(debug_text, "[KERNEL] PASS: Multi-Core processing initialized.");
     int qemu_debug_colour = TextContains(debug_text, "\033[32m[KERNEL] PASS") &&
         TextContains(debug_text, "\033[0m");
+    int kernel_console = TextContains(debug_text, "[KERNEL] PASS: Kernel console initialized.");
+    int screen_scrollback = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scrollback buffer initialized.");
+    int screen_coloured_cells = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scrollback stores coloured cells.");
+    int screen_scroll_lines = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scroll up/down works.");
+    int screen_page_scroll = TextContains(debug_text, "[KERNEL] PASS: Kernel screen page up/down works.");
+    int screen_bottom = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scroll-to-bottom works.");
+    int screen_scrolling = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scrolling implemented.");
     int qemu_preboot_failure = (!command_ok) && !loader_started && DebugTextIsEmpty(debug_text);
 
     int want_pic = ProjectBoolEnabled(project->run_pic, 1);
@@ -289,7 +296,9 @@ static void WriteBootReport(
         unknown_linux && unknown_ms && syscall_three && platform_syscalls && syscall_counts &&
         pci_started && pci_rsdp && pci_checksum && pci_mcfg && pci_ecam && pci_config &&
         pci_scan && pci_devices && pci_class && pci_complete && pci_english &&
-        smp_ok && qemu_debug_colour && virtual_memory_active && debug_exit;
+        smp_ok && qemu_debug_colour && kernel_console && screen_scrollback &&
+        screen_coloured_cells && screen_scroll_lines && screen_page_scroll &&
+        screen_bottom && screen_scrolling && virtual_memory_active && debug_exit;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -433,6 +442,13 @@ static void WriteBootReport(
     fprintf(file, "  SMP APs entered kernel loop: %s\n", PassFail(want_smp ? smp_aps_started : smp_skipped));
     fprintf(file, "  Multi-Core processing initialized: %s\n", PassFail(want_smp ? smp_complete : smp_skipped));
     fprintf(file, "  QEMU debug output includes ANSI colour: %s\n", PassFail(qemu_debug_colour));
+    fprintf(file, "  Kernel console initialized: %s\n", PassFail(kernel_console));
+    fprintf(file, "  Kernel screen scrollback buffer initialized: %s\n", PassFail(screen_scrollback));
+    fprintf(file, "  Kernel screen coloured scrollback cells: %s\n", PassFail(screen_coloured_cells));
+    fprintf(file, "  Kernel screen line scroll up/down: %s\n", PassFail(screen_scroll_lines));
+    fprintf(file, "  Kernel screen page up/down: %s\n", PassFail(screen_page_scroll));
+    fprintf(file, "  Kernel screen scroll-to-bottom: %s\n", PassFail(screen_bottom));
+    fprintf(file, "  Kernel screen scrolling implemented: %s\n", PassFail(screen_scrolling));
     fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
     fprintf(file, "  Kernel virtual memory required ranges mapped: %s\n", PassFail(virtual_memory_required_mapped));
     fprintf(file, "  Kernel virtual memory CR3 switch requested: %s\n", PassFail(virtual_memory_switching_cr3));
@@ -600,6 +616,20 @@ static void WriteBootReport(
             "The SMP module did not emit its completion marker." :
         !qemu_debug_colour ?
             "The QEMU debug log did not include ANSI colour sequences for status lines." :
+        !kernel_console ?
+            "The kernel console did not initialize." :
+        !screen_scrollback ?
+            "The kernel screen scrollback buffer was not initialized." :
+        !screen_coloured_cells ?
+            "The kernel screen did not preserve coloured scrollback cells." :
+        !screen_scroll_lines ?
+            "The kernel screen line scrolling proof did not pass." :
+        !screen_page_scroll ?
+            "The kernel screen page scrolling proof did not pass." :
+        !screen_bottom ?
+            "The kernel screen did not return to the live bottom view." :
+        !screen_scrolling ?
+            "Kernel screen scrolling did not complete." :
         !virtual_memory_started ?
             "The kernel stopped before virtual-memory initialization." :
         !virtual_memory_required_mapped ?

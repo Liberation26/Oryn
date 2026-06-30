@@ -12,6 +12,9 @@
 #define KCONSOLE_TTF_CELL_HEIGHT (KCONSOLE_TTF_PIXEL_HEIGHT + KCONSOLE_LINE_SPACING_Y)
 #define KCONSOLE_MARGIN_X 8U
 #define KCONSOLE_MARGIN_Y 8U
+#define KCONSOLE_SCROLLBAR_WIDTH 4U
+#define KCONSOLE_SCROLLBACK_ROWS 512U
+#define KCONSOLE_SCROLLBACK_COLS 160U
 
 #define KCONSOLE_WHITE KCONSOLE_COLOUR_DEFAULT
 #define KCONSOLE_BLACK 0x00000000U
@@ -90,6 +93,13 @@ static const unsigned char gRightParen[7] = { 8,  4,  2,  2,  2,  4,  8 };
 static const unsigned char gEquals[7] = { 0,  0, 31,  0, 31,  0,  0 };
 static const unsigned char gUnderscore[7] = { 0,  0,  0,  0,  0,  0, 31 };
 
+typedef struct KConsoleCell
+{
+    char Value;
+    unsigned int Colour;
+    unsigned char VgaAttribute;
+} KConsoleCell;
+
 typedef struct KConsoleState
 {
     volatile unsigned int* Framebuffer;
@@ -102,9 +112,19 @@ typedef struct KConsoleState
     unsigned int Mode;
     unsigned int ForegroundColour;
     unsigned char VgaAttribute;
+    unsigned int VisibleColumns;
+    unsigned int VisibleRows;
+    unsigned int CellWidth;
+    unsigned int CellHeight;
+    unsigned int CurrentLine;
+    unsigned int CurrentColumn;
+    unsigned int TotalLines;
+    unsigned int ViewTopLine;
+    int ViewFollowsTail;
     int Available;
     int TtfReady;
     OrynTtfFont Font;
+    KConsoleCell Cells[KCONSOLE_SCROLLBACK_ROWS][KCONSOLE_SCROLLBACK_COLS];
 } KConsoleState;
 
 static KConsoleState gConsole;
@@ -113,16 +133,6 @@ static volatile unsigned short* const gVgaText = (volatile unsigned short*)0xB80
 static unsigned int KConsoleActiveCellHeight(void)
 {
     return gConsole.TtfReady ? KCONSOLE_TTF_CELL_HEIGHT : KCONSOLE_CELL_HEIGHT;
-}
-
-static unsigned int KConsoleActiveGlyphWidth(void)
-{
-    return gConsole.TtfReady ? KCONSOLE_TTF_PIXEL_HEIGHT : (KCONSOLE_GLYPH_WIDTH * KCONSOLE_SCALE);
-}
-
-static unsigned short KConsoleVgaEntry(char value)
-{
-    return (unsigned short)(((unsigned short)gConsole.VgaAttribute << 8) | (unsigned char)value);
 }
 
 static void KConsoleUseVgaTextFallback(void)
@@ -139,82 +149,6 @@ static void KConsoleUseVgaTextFallback(void)
     gConsole.VgaAttribute = KCONSOLE_VGA_ATTRIBUTE_DEFAULT;
     gConsole.TtfReady = 0;
     gConsole.Available = 1;
-}
-
-static void KConsoleVgaClearScreen(void)
-{
-    for (unsigned int row = 0U; row < KCONSOLE_VGA_HEIGHT; ++row)
-    {
-        for (unsigned int col = 0U; col < KCONSOLE_VGA_WIDTH; ++col)
-        {
-            gVgaText[(row * KCONSOLE_VGA_WIDTH) + col] = KConsoleVgaEntry(' ');
-        }
-    }
-
-    gConsole.CursorX = 0U;
-    gConsole.CursorY = 0U;
-}
-
-static void KConsoleVgaScrollOneLine(void)
-{
-    for (unsigned int row = 1U; row < KCONSOLE_VGA_HEIGHT; ++row)
-    {
-        for (unsigned int col = 0U; col < KCONSOLE_VGA_WIDTH; ++col)
-        {
-            gVgaText[((row - 1U) * KCONSOLE_VGA_WIDTH) + col] =
-                gVgaText[(row * KCONSOLE_VGA_WIDTH) + col];
-        }
-    }
-
-    for (unsigned int col = 0U; col < KCONSOLE_VGA_WIDTH; ++col)
-    {
-        gVgaText[((KCONSOLE_VGA_HEIGHT - 1U) * KCONSOLE_VGA_WIDTH) + col] = KConsoleVgaEntry(' ');
-    }
-
-    gConsole.CursorY = KCONSOLE_VGA_HEIGHT - 1U;
-}
-
-static void KConsoleVgaNewLine(void)
-{
-    gConsole.CursorX = 0U;
-    gConsole.CursorY += 1U;
-
-    if (gConsole.CursorY >= KCONSOLE_VGA_HEIGHT)
-    {
-        KConsoleVgaScrollOneLine();
-    }
-}
-
-static void KConsoleVgaWriteChar(char value)
-{
-    if (value == '\r')
-    {
-        gConsole.CursorX = 0U;
-        return;
-    }
-
-    if (value == '\n')
-    {
-        KConsoleVgaNewLine();
-        return;
-    }
-
-    if (value == '\t')
-    {
-        for (unsigned int index = 0U; index < 4U; ++index)
-        {
-            KConsoleVgaWriteChar(' ');
-        }
-        return;
-    }
-
-    if (gConsole.CursorX >= KCONSOLE_VGA_WIDTH)
-    {
-        KConsoleVgaNewLine();
-    }
-
-    gVgaText[(gConsole.CursorY * KCONSOLE_VGA_WIDTH) + gConsole.CursorX] = KConsoleVgaEntry(value);
-    gConsole.CursorX += 1U;
 }
 
 static int KConsoleBootInfoHasUsableFramebuffer(const OrynBootInfo* bootInfo)
@@ -304,60 +238,15 @@ static void KConsolePutPixel(unsigned int x, unsigned int y, unsigned int colour
 
 static void KConsoleClearCell(unsigned int x, unsigned int y)
 {
-    for (unsigned int py = 0U; py < KCONSOLE_CELL_HEIGHT; ++py)
+    unsigned int width = gConsole.CellWidth != 0U ? gConsole.CellWidth : KCONSOLE_CELL_WIDTH;
+    unsigned int height = gConsole.CellHeight != 0U ? gConsole.CellHeight : KCONSOLE_CELL_HEIGHT;
+
+    for (unsigned int py = 0U; py < height; ++py)
     {
-        for (unsigned int px = 0U; px < KCONSOLE_CELL_WIDTH; ++px)
+        for (unsigned int px = 0U; px < width; ++px)
         {
             KConsolePutPixel(x + px, y + py, KCONSOLE_BLACK);
         }
-    }
-}
-
-static void KConsoleScrollOneLine(void)
-{
-    unsigned int cellHeight = KConsoleActiveCellHeight();
-    unsigned int fromY = KCONSOLE_MARGIN_Y + cellHeight;
-    unsigned int toY = KCONSOLE_MARGIN_Y;
-    unsigned int bottom = gConsole.Height - KCONSOLE_MARGIN_Y;
-
-    if (bottom <= fromY)
-    {
-        gConsole.CursorX = KCONSOLE_MARGIN_X;
-        gConsole.CursorY = KCONSOLE_MARGIN_Y;
-        KConsoleClearScreen();
-        return;
-    }
-
-    for (unsigned int y = fromY; y < bottom; ++y)
-    {
-        for (unsigned int x = 0U; x < gConsole.Width; ++x)
-        {
-            unsigned long long source = ((unsigned long long)y * gConsole.Pitch) + x;
-            unsigned long long target = ((unsigned long long)(toY + (y - fromY)) * gConsole.Pitch) + x;
-            gConsole.Framebuffer[target] = gConsole.Framebuffer[source];
-        }
-    }
-
-    for (unsigned int y = bottom - cellHeight; y < bottom; ++y)
-    {
-        for (unsigned int x = 0U; x < gConsole.Width; ++x)
-        {
-            KConsolePutPixel(x, y, KCONSOLE_BLACK);
-        }
-    }
-
-    gConsole.CursorY = bottom - cellHeight;
-}
-
-static void KConsoleNewLine(void)
-{
-    unsigned int cellHeight = KConsoleActiveCellHeight();
-    gConsole.CursorX = KCONSOLE_MARGIN_X;
-    gConsole.CursorY += cellHeight;
-
-    if ((gConsole.CursorY + cellHeight) >= (gConsole.Height - KCONSOLE_MARGIN_Y))
-    {
-        KConsoleScrollOneLine();
     }
 }
 
@@ -409,44 +298,108 @@ static unsigned int KConsoleDrawGlyph(char value)
     return KCONSOLE_GLYPH_WIDTH * KCONSOLE_SCALE;
 }
 
-void KConsoleInit(const OrynBootInfo* bootInfo)
-{
-    KConsoleUseVgaTextFallback();
 
-    if (!KConsoleBootInfoHasUsableFramebuffer(bootInfo))
+static unsigned int KConsoleActiveCellWidth(void)
+{
+    return gConsole.TtfReady ? (KCONSOLE_TTF_PIXEL_HEIGHT + KCONSOLE_CHAR_SPACING_X) : KCONSOLE_CELL_WIDTH;
+}
+
+static KConsoleCell KConsoleBlankCell(void)
+{
+    KConsoleCell cell;
+    cell.Value = ' ';
+    cell.Colour = KCONSOLE_COLOUR_DEFAULT;
+    cell.VgaAttribute = KCONSOLE_VGA_ATTRIBUTE_DEFAULT;
+    return cell;
+}
+
+static void KConsoleClearLogicalLine(unsigned int line)
+{
+    if (line >= KCONSOLE_SCROLLBACK_ROWS)
     {
         return;
     }
 
-    gConsole.Framebuffer = (volatile unsigned int*)bootInfo->Framebuffer.Base;
-    gConsole.FramebufferSize = bootInfo->Framebuffer.Size;
-    gConsole.Width = bootInfo->Framebuffer.Width;
-    gConsole.Height = KConsoleVisibleHeight(bootInfo);
-    gConsole.Pitch = bootInfo->Framebuffer.PixelsPerScanLine;
-    gConsole.CursorX = KCONSOLE_MARGIN_X;
-    gConsole.CursorY = KCONSOLE_MARGIN_Y;
-    gConsole.Mode = KCONSOLE_MODE_FRAMEBUFFER;
-    gConsole.ForegroundColour = KCONSOLE_COLOUR_DEFAULT;
-    gConsole.VgaAttribute = KCONSOLE_VGA_ATTRIBUTE_DEFAULT;
-    gConsole.TtfReady = OrynTtfLoadFromBootInfo(bootInfo, &gConsole.Font);
-    gConsole.Available = (gConsole.Height >= (KCONSOLE_MARGIN_Y + KConsoleActiveCellHeight() + KCONSOLE_MARGIN_Y)) ? 1 : 0;
-
-    if (!gConsole.Available)
+    KConsoleCell blank = KConsoleBlankCell();
+    for (unsigned int col = 0U; col < KCONSOLE_SCROLLBACK_COLS; ++col)
     {
-        KConsoleUseVgaTextFallback();
+        gConsole.Cells[line][col] = blank;
     }
 }
 
-void KConsoleClearScreen(void)
+static void KConsoleClearScrollback(void)
 {
-    if (!gConsole.Available)
+    for (unsigned int row = 0U; row < KCONSOLE_SCROLLBACK_ROWS; ++row)
     {
-        return;
+        KConsoleClearLogicalLine(row);
     }
+
+    gConsole.CurrentLine = 0U;
+    gConsole.CurrentColumn = 0U;
+    gConsole.TotalLines = 1U;
+    gConsole.ViewTopLine = 0U;
+    gConsole.ViewFollowsTail = 1;
+}
+
+static void KConsoleConfigureGeometry(void)
+{
+    unsigned int usableWidth;
+    unsigned int usableHeight;
+
+    gConsole.CellWidth = KConsoleActiveCellWidth();
+    gConsole.CellHeight = KConsoleActiveCellHeight();
 
     if (gConsole.Mode == KCONSOLE_MODE_VGA_TEXT)
     {
-        KConsoleVgaClearScreen();
+        gConsole.VisibleColumns = KCONSOLE_VGA_WIDTH;
+        gConsole.VisibleRows = KCONSOLE_VGA_HEIGHT;
+    }
+    else
+    {
+        usableWidth = gConsole.Width > ((KCONSOLE_MARGIN_X * 2U) + KCONSOLE_SCROLLBAR_WIDTH) ?
+            gConsole.Width - (KCONSOLE_MARGIN_X * 2U) - KCONSOLE_SCROLLBAR_WIDTH : 0U;
+        usableHeight = gConsole.Height > (KCONSOLE_MARGIN_Y * 2U) ?
+            gConsole.Height - (KCONSOLE_MARGIN_Y * 2U) : 0U;
+
+        gConsole.VisibleColumns = gConsole.CellWidth != 0U ? usableWidth / gConsole.CellWidth : 0U;
+        gConsole.VisibleRows = gConsole.CellHeight != 0U ? usableHeight / gConsole.CellHeight : 0U;
+    }
+
+    if (gConsole.VisibleColumns > KCONSOLE_SCROLLBACK_COLS)
+    {
+        gConsole.VisibleColumns = KCONSOLE_SCROLLBACK_COLS;
+    }
+
+    if (gConsole.VisibleRows > KCONSOLE_SCROLLBACK_ROWS)
+    {
+        gConsole.VisibleRows = KCONSOLE_SCROLLBACK_ROWS;
+    }
+
+    if (gConsole.VisibleColumns == 0U)
+    {
+        gConsole.VisibleColumns = 1U;
+    }
+
+    if (gConsole.VisibleRows == 0U)
+    {
+        gConsole.VisibleRows = 1U;
+    }
+}
+
+static unsigned int KConsoleMaximumViewTop(void)
+{
+    if (gConsole.TotalLines <= gConsole.VisibleRows)
+    {
+        return 0U;
+    }
+
+    return gConsole.TotalLines - gConsole.VisibleRows;
+}
+
+static void KConsoleFramebufferClearPixels(void)
+{
+    if (gConsole.Mode != KCONSOLE_MODE_FRAMEBUFFER)
+    {
         return;
     }
 
@@ -457,9 +410,293 @@ void KConsoleClearScreen(void)
             KConsolePutPixel(x, y, KCONSOLE_BLACK);
         }
     }
+}
 
-    gConsole.CursorX = KCONSOLE_MARGIN_X;
-    gConsole.CursorY = KCONSOLE_MARGIN_Y;
+static void KConsoleVgaClearPixels(void)
+{
+    for (unsigned int row = 0U; row < KCONSOLE_VGA_HEIGHT; ++row)
+    {
+        for (unsigned int col = 0U; col < KCONSOLE_VGA_WIDTH; ++col)
+        {
+            gVgaText[(row * KCONSOLE_VGA_WIDTH) + col] =
+                (unsigned short)(((unsigned short)KCONSOLE_VGA_ATTRIBUTE_DEFAULT << 8) | (unsigned char)' ');
+        }
+    }
+}
+
+static void KConsoleDrawScrollbar(void)
+{
+    if (gConsole.Mode != KCONSOLE_MODE_FRAMEBUFFER || gConsole.TotalLines <= gConsole.VisibleRows)
+    {
+        return;
+    }
+
+    unsigned int xStart = gConsole.Width > KCONSOLE_SCROLLBAR_WIDTH ?
+        gConsole.Width - KCONSOLE_SCROLLBAR_WIDTH : 0U;
+    unsigned int yStart = KCONSOLE_MARGIN_Y;
+    unsigned int yEnd = gConsole.Height > KCONSOLE_MARGIN_Y ?
+        gConsole.Height - KCONSOLE_MARGIN_Y : gConsole.Height;
+    unsigned int trackHeight = yEnd > yStart ? yEnd - yStart : 0U;
+    unsigned int thumbHeight = (trackHeight * gConsole.VisibleRows) / gConsole.TotalLines;
+    unsigned int maxTop = KConsoleMaximumViewTop();
+    unsigned int thumbTop;
+
+    if (trackHeight == 0U)
+    {
+        return;
+    }
+
+    if (thumbHeight < 4U)
+    {
+        thumbHeight = 4U;
+    }
+
+    if (thumbHeight > trackHeight)
+    {
+        thumbHeight = trackHeight;
+    }
+
+    thumbTop = maxTop == 0U ? 0U : ((trackHeight - thumbHeight) * gConsole.ViewTopLine) / maxTop;
+
+    for (unsigned int y = yStart; y < yEnd; ++y)
+    {
+        for (unsigned int x = xStart; x < gConsole.Width; ++x)
+        {
+            KConsolePutPixel(x, y, 0x00202020U);
+        }
+    }
+
+    for (unsigned int y = yStart + thumbTop; y < yStart + thumbTop + thumbHeight && y < yEnd; ++y)
+    {
+        for (unsigned int x = xStart; x < gConsole.Width; ++x)
+        {
+            KConsolePutPixel(x, y, 0x00808080U);
+        }
+    }
+}
+
+static void KConsoleRenderCell(unsigned int screenRow, unsigned int screenColumn)
+{
+    if (screenRow >= gConsole.VisibleRows || screenColumn >= gConsole.VisibleColumns)
+    {
+        return;
+    }
+
+    unsigned int logicalRow = gConsole.ViewTopLine + screenRow;
+    KConsoleCell cell = KConsoleBlankCell();
+
+    if (logicalRow < gConsole.TotalLines && logicalRow < KCONSOLE_SCROLLBACK_ROWS &&
+        screenColumn < KCONSOLE_SCROLLBACK_COLS)
+    {
+        cell = gConsole.Cells[logicalRow][screenColumn];
+    }
+
+    if (gConsole.Mode == KCONSOLE_MODE_VGA_TEXT)
+    {
+        if (screenRow < KCONSOLE_VGA_HEIGHT && screenColumn < KCONSOLE_VGA_WIDTH)
+        {
+            gVgaText[(screenRow * KCONSOLE_VGA_WIDTH) + screenColumn] =
+                (unsigned short)(((unsigned short)cell.VgaAttribute << 8) | (unsigned char)cell.Value);
+        }
+        return;
+    }
+
+    unsigned int savedX = gConsole.CursorX;
+    unsigned int savedY = gConsole.CursorY;
+    unsigned int savedColour = gConsole.ForegroundColour;
+    unsigned char savedVga = gConsole.VgaAttribute;
+
+    gConsole.CursorX = KCONSOLE_MARGIN_X + (screenColumn * gConsole.CellWidth);
+    gConsole.CursorY = KCONSOLE_MARGIN_Y + (screenRow * gConsole.CellHeight);
+    gConsole.ForegroundColour = cell.Colour;
+    gConsole.VgaAttribute = cell.VgaAttribute;
+    KConsoleClearCell(gConsole.CursorX, gConsole.CursorY);
+    if (cell.Value != ' ')
+    {
+        (void)KConsoleDrawGlyph(cell.Value);
+    }
+
+    gConsole.CursorX = savedX;
+    gConsole.CursorY = savedY;
+    gConsole.ForegroundColour = savedColour;
+    gConsole.VgaAttribute = savedVga;
+}
+
+static void KConsoleRenderVisible(void)
+{
+    if (!gConsole.Available)
+    {
+        return;
+    }
+
+    if (gConsole.Mode == KCONSOLE_MODE_VGA_TEXT)
+    {
+        KConsoleVgaClearPixels();
+    }
+    else
+    {
+        KConsoleFramebufferClearPixels();
+    }
+
+    for (unsigned int row = 0U; row < gConsole.VisibleRows; ++row)
+    {
+        for (unsigned int col = 0U; col < gConsole.VisibleColumns; ++col)
+        {
+            KConsoleRenderCell(row, col);
+        }
+    }
+
+    KConsoleDrawScrollbar();
+}
+
+static int KConsoleCurrentLineIsVisible(void)
+{
+    return gConsole.CurrentLine >= gConsole.ViewTopLine &&
+        gConsole.CurrentLine < (gConsole.ViewTopLine + gConsole.VisibleRows);
+}
+
+static void KConsoleShiftScrollbackUp(void)
+{
+    for (unsigned int row = 1U; row < KCONSOLE_SCROLLBACK_ROWS; ++row)
+    {
+        for (unsigned int col = 0U; col < KCONSOLE_SCROLLBACK_COLS; ++col)
+        {
+            gConsole.Cells[row - 1U][col] = gConsole.Cells[row][col];
+        }
+    }
+
+    KConsoleClearLogicalLine(KCONSOLE_SCROLLBACK_ROWS - 1U);
+    if (!gConsole.ViewFollowsTail && gConsole.ViewTopLine > 0U)
+    {
+        gConsole.ViewTopLine -= 1U;
+    }
+}
+
+static void KConsoleAppendNewLine(void)
+{
+    gConsole.CurrentColumn = 0U;
+
+    if ((gConsole.CurrentLine + 1U) < KCONSOLE_SCROLLBACK_ROWS)
+    {
+        gConsole.CurrentLine += 1U;
+        if (gConsole.CurrentLine >= gConsole.TotalLines)
+        {
+            gConsole.TotalLines = gConsole.CurrentLine + 1U;
+        }
+    }
+    else
+    {
+        KConsoleShiftScrollbackUp();
+        gConsole.TotalLines = KCONSOLE_SCROLLBACK_ROWS;
+    }
+
+    KConsoleClearLogicalLine(gConsole.CurrentLine);
+    if (gConsole.ViewFollowsTail)
+    {
+        gConsole.ViewTopLine = KConsoleMaximumViewTop();
+        KConsoleRenderVisible();
+    }
+}
+
+static void KConsoleStorePrintable(char value)
+{
+    if (gConsole.CurrentColumn >= gConsole.VisibleColumns)
+    {
+        KConsoleAppendNewLine();
+    }
+
+    if (gConsole.CurrentLine >= KCONSOLE_SCROLLBACK_ROWS ||
+        gConsole.CurrentColumn >= KCONSOLE_SCROLLBACK_COLS)
+    {
+        return;
+    }
+
+    gConsole.Cells[gConsole.CurrentLine][gConsole.CurrentColumn].Value = value;
+    gConsole.Cells[gConsole.CurrentLine][gConsole.CurrentColumn].Colour = gConsole.ForegroundColour;
+    gConsole.Cells[gConsole.CurrentLine][gConsole.CurrentColumn].VgaAttribute = gConsole.VgaAttribute;
+
+    if (KConsoleCurrentLineIsVisible())
+    {
+        KConsoleRenderCell(gConsole.CurrentLine - gConsole.ViewTopLine, gConsole.CurrentColumn);
+        KConsoleDrawScrollbar();
+    }
+
+    gConsole.CurrentColumn += 1U;
+}
+
+static void KConsoleWriteProofDecimal(unsigned int value)
+{
+    char buffer[16];
+    unsigned int index = 0U;
+
+    if (value == 0U)
+    {
+        KConsoleWriteChar('0');
+        return;
+    }
+
+    while (value != 0U && index < sizeof(buffer))
+    {
+        buffer[index++] = (char)('0' + (value % 10U));
+        value /= 10U;
+    }
+
+    while (index > 0U)
+    {
+        KConsoleWriteChar(buffer[--index]);
+    }
+}
+
+static void KConsoleWriteProofText(const char* text)
+{
+    while (*text != 0)
+    {
+        KConsoleWriteChar(*text);
+        ++text;
+    }
+}
+
+void KConsoleInit(const OrynBootInfo* bootInfo)
+{
+    KConsoleUseVgaTextFallback();
+
+    if (KConsoleBootInfoHasUsableFramebuffer(bootInfo))
+    {
+        gConsole.Framebuffer = (volatile unsigned int*)bootInfo->Framebuffer.Base;
+        gConsole.FramebufferSize = bootInfo->Framebuffer.Size;
+        gConsole.Width = bootInfo->Framebuffer.Width;
+        gConsole.Height = KConsoleVisibleHeight(bootInfo);
+        gConsole.Pitch = bootInfo->Framebuffer.PixelsPerScanLine;
+        gConsole.CursorX = KCONSOLE_MARGIN_X;
+        gConsole.CursorY = KCONSOLE_MARGIN_Y;
+        gConsole.Mode = KCONSOLE_MODE_FRAMEBUFFER;
+        gConsole.ForegroundColour = KCONSOLE_COLOUR_DEFAULT;
+        gConsole.VgaAttribute = KCONSOLE_VGA_ATTRIBUTE_DEFAULT;
+        gConsole.TtfReady = OrynTtfLoadFromBootInfo(bootInfo, &gConsole.Font);
+        gConsole.Available = (gConsole.Height >= (KCONSOLE_MARGIN_Y + KConsoleActiveCellHeight() + KCONSOLE_MARGIN_Y)) ? 1 : 0;
+
+        if (!gConsole.Available)
+        {
+            KConsoleUseVgaTextFallback();
+        }
+    }
+
+    KConsoleConfigureGeometry();
+    KConsoleClearScrollback();
+    KConsoleRenderVisible();
+}
+
+void KConsoleClearScreen(void)
+{
+    if (!gConsole.Available)
+    {
+        return;
+    }
+
+    KConsoleClearScrollback();
+    gConsole.CursorX = gConsole.Mode == KCONSOLE_MODE_VGA_TEXT ? 0U : KCONSOLE_MARGIN_X;
+    gConsole.CursorY = gConsole.Mode == KCONSOLE_MODE_VGA_TEXT ? 0U : KCONSOLE_MARGIN_Y;
+    KConsoleRenderVisible();
 }
 
 void KConsoleWriteChar(char value)
@@ -469,21 +706,15 @@ void KConsoleWriteChar(char value)
         return;
     }
 
-    if (gConsole.Mode == KCONSOLE_MODE_VGA_TEXT)
-    {
-        KConsoleVgaWriteChar(value);
-        return;
-    }
-
     if (value == '\r')
     {
-        gConsole.CursorX = KCONSOLE_MARGIN_X;
+        gConsole.CurrentColumn = 0U;
         return;
     }
 
     if (value == '\n')
     {
-        KConsoleNewLine();
+        KConsoleAppendNewLine();
         return;
     }
 
@@ -496,17 +727,134 @@ void KConsoleWriteChar(char value)
         return;
     }
 
-    if ((gConsole.CursorX + KConsoleActiveGlyphWidth() + KCONSOLE_CHAR_SPACING_X) >= (gConsole.Width - KCONSOLE_MARGIN_X))
+    KConsoleStorePrintable(value);
+}
+
+
+int KConsoleScrollUpLines(unsigned int lines)
+{
+    if (!gConsole.Available || lines == 0U || gConsole.ViewTopLine == 0U)
     {
-        KConsoleNewLine();
+        return 0;
     }
 
-    unsigned int advance = KConsoleDrawGlyph(value);
-    if (advance == 0U)
+    if (lines > gConsole.ViewTopLine)
     {
-        advance = KConsoleActiveGlyphWidth();
+        gConsole.ViewTopLine = 0U;
     }
-    gConsole.CursorX += advance + KCONSOLE_CHAR_SPACING_X;
+    else
+    {
+        gConsole.ViewTopLine -= lines;
+    }
+
+    gConsole.ViewFollowsTail = 0;
+    KConsoleRenderVisible();
+    return 1;
+}
+
+int KConsoleScrollDownLines(unsigned int lines)
+{
+    unsigned int maxTop = KConsoleMaximumViewTop();
+
+    if (!gConsole.Available || lines == 0U || gConsole.ViewTopLine >= maxTop)
+    {
+        if (gConsole.Available && gConsole.ViewTopLine >= maxTop)
+        {
+            gConsole.ViewFollowsTail = 1;
+        }
+        return 0;
+    }
+
+    if (lines > (maxTop - gConsole.ViewTopLine))
+    {
+        gConsole.ViewTopLine = maxTop;
+    }
+    else
+    {
+        gConsole.ViewTopLine += lines;
+    }
+
+    gConsole.ViewFollowsTail = gConsole.ViewTopLine >= maxTop ? 1 : 0;
+    KConsoleRenderVisible();
+    return 1;
+}
+
+int KConsolePageUp(void)
+{
+    unsigned int amount = gConsole.VisibleRows > 1U ? gConsole.VisibleRows - 1U : 1U;
+    return KConsoleScrollUpLines(amount);
+}
+
+int KConsolePageDown(void)
+{
+    unsigned int amount = gConsole.VisibleRows > 1U ? gConsole.VisibleRows - 1U : 1U;
+    return KConsoleScrollDownLines(amount);
+}
+
+void KConsoleScrollToBottom(void)
+{
+    if (!gConsole.Available)
+    {
+        return;
+    }
+
+    gConsole.ViewTopLine = KConsoleMaximumViewTop();
+    gConsole.ViewFollowsTail = 1;
+    KConsoleRenderVisible();
+}
+
+unsigned int KConsoleVisibleRows(void)
+{
+    return gConsole.VisibleRows;
+}
+
+unsigned int KConsoleVisibleColumns(void)
+{
+    return gConsole.VisibleColumns;
+}
+
+unsigned int KConsoleScrollbackRows(void)
+{
+    return KCONSOLE_SCROLLBACK_ROWS;
+}
+
+int KConsoleRunScrollProof(void)
+{
+    if (!gConsole.Available || gConsole.VisibleRows == 0U || gConsole.VisibleColumns == 0U)
+    {
+        return 0;
+    }
+
+    unsigned int originalColour = gConsole.ForegroundColour;
+    unsigned char originalVga = gConsole.VgaAttribute;
+    unsigned int proofLines = gConsole.VisibleRows + 4U;
+    int ok;
+
+    if (proofLines > 80U)
+    {
+        proofLines = 80U;
+    }
+
+    KConsoleSetForegroundColour(KCONSOLE_COLOUR_STEP);
+    for (unsigned int index = 0U; index < proofLines; ++index)
+    {
+        KConsoleWriteProofText("[SCROLL] proof line ");
+        KConsoleWriteProofDecimal(index + 1U);
+        KConsoleWriteChar('\n');
+    }
+
+    ok = gConsole.TotalLines > gConsole.VisibleRows &&
+        KConsoleScrollUpLines(1U) &&
+        KConsoleScrollDownLines(1U) &&
+        KConsolePageUp() &&
+        KConsolePageDown();
+
+    KConsoleScrollToBottom();
+    ok = ok && gConsole.ViewFollowsTail && gConsole.ViewTopLine == KConsoleMaximumViewTop();
+
+    gConsole.ForegroundColour = originalColour;
+    gConsole.VgaAttribute = originalVga;
+    return ok;
 }
 
 static unsigned char KConsoleVgaAttributeForColour(unsigned int colour)
@@ -567,5 +915,13 @@ const KConsoleApi KConsole =
     KConsoleSetForegroundColour,
     KConsoleResetForegroundColour,
     KConsoleIsAvailable,
-    KConsoleIsTtfActive
+    KConsoleIsTtfActive,
+    KConsoleScrollUpLines,
+    KConsoleScrollDownLines,
+    KConsolePageUp,
+    KConsolePageDown,
+    KConsoleScrollToBottom,
+    KConsoleVisibleRows,
+    KConsoleVisibleColumns,
+    KConsoleScrollbackRows
 };

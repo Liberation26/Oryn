@@ -20,6 +20,14 @@ typedef struct KConsoleApi
     void (*ResetForegroundColour)(void);
     int (*IsAvailable)(void);
     int (*IsTtfActive)(void);
+    int (*ScrollUpLines)(unsigned int lines);
+    int (*ScrollDownLines)(unsigned int lines);
+    int (*PageUp)(void);
+    int (*PageDown)(void);
+    void (*ScrollToBottom)(void);
+    unsigned int (*VisibleRows)(void);
+    unsigned int (*VisibleColumns)(void);
+    unsigned int (*ScrollbackRows)(void);
 } KConsoleApi;
 
 extern const KConsoleApi KConsole;
@@ -31,5 +39,14 @@ void KConsoleSetForegroundColour(unsigned int colour);
 void KConsoleResetForegroundColour(void);
 int KConsoleIsAvailable(void);
 int KConsoleIsTtfActive(void);
+int KConsoleScrollUpLines(unsigned int lines);
+int KConsoleScrollDownLines(unsigned int lines);
+int KConsolePageUp(void);
+int KConsolePageDown(void);
+void KConsoleScrollToBottom(void);
+unsigned int KConsoleVisibleRows(void);
+unsigned int KConsoleVisibleColumns(void);
+unsigned int KConsoleScrollbackRows(void);
+int KConsoleRunScrollProof(void);
 
 #endif

@@ -118,6 +118,35 @@ static void PrintBootInfoOwnership(const OrynBootInfo* kernelBootInfo)
     }
 }
 
+
+static void RunKernelScreenScrollProof(void)
+{
+    KernelIoWriteString("[KERNEL] Kernel screen scrolling: starting proof.\n");
+    KernelIoWriteString("[KERNEL] Kernel screen visible rows: ");
+    KernelIoWriteDec64(KConsole.VisibleRows());
+    KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] Kernel screen visible columns: ");
+    KernelIoWriteDec64(KConsole.VisibleColumns());
+    KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] Kernel screen scrollback rows: ");
+    KernelIoWriteDec64(KConsole.ScrollbackRows());
+    KernelIoWriteString("\n");
+
+    if (KConsoleRunScrollProof())
+    {
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen scrollback buffer initialized.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen scrollback stores coloured cells.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen scroll up/down works.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen page up/down works.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen scroll-to-bottom works.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen scrolling implemented.\n");
+    }
+    else
+    {
+        KernelIoWriteString("[KERNEL] FAIL: Kernel screen scrolling proof failed.\n");
+    }
+}
+
 static void RunDescriptorAndSysCallProofs(void)
 {
     (void)OrynKernelGdtInit();
@@ -270,6 +299,7 @@ void KernelStart(const OrynBootInfo* bootInfo)
         KernelIoWriteString(KConsole.IsTtfActive() ?
             "[KERNEL] TTF renderer: active\n" :
             "[KERNEL] TTF renderer: fallback bitmap glyphs\n");
+        RunKernelScreenScrollProof();
         KernelBootInfoPrintSummary(kernelBootInfo);
         RunMemoryProofs(kernelBootInfo);
     }

@@ -1,4 +1,4 @@
-OrynWsl 0.5.39 Quick Start
+OrynWsl 0.5.40 Quick Start
 
 This package is a WSL-native Oryn SDK baseline.
 
@@ -737,3 +737,26 @@ OrynWsl 0.5.39 VMSettings CPU safety
 CPU=host is not valid for the current Windows QEMU from WSL runner because QEMU requires hardware acceleration for the host CPU model. The VMSettings questionnaire now saves CPU=max instead when host/native is entered, and the run path also resolves stale CPU=host projects to CPU=max before launching QEMU. The BootReport now treats a QEMU pre-boot command rejection as a pre-boot failure and skips loader/kernel checks instead of printing a wall of unrelated FAIL lines.
 
 The OSName questionnaire now continues into VMSettings before BootConfig and BootInfo so VM format, memory, CPU, SMP, PIC, APIC, APIC2, HPET, and display settings are refreshed during the normal setup flow.
+
+OrynWsl 0.5.40 Kernel screen scrolling
+--------------------------------------
+Kernel-5 now uses a real kernel-screen scrollback buffer instead of only shifting framebuffer pixels upward when the display fills.
+
+Implemented behaviour:
+- the console stores printed characters as scrollback cells,
+- each scrollback cell keeps its foreground colour,
+- framebuffer and VGA fallback screens are redrawn from the selected scroll offset,
+- line scrolling is available through KConsole.ScrollUpLines and KConsole.ScrollDownLines,
+- page scrolling is available through KConsole.PageUp and KConsole.PageDown,
+- KConsole.ScrollToBottom returns to the live output tail,
+- framebuffer mode draws a right-side scrollbar when scrollback is larger than the visible screen,
+- the BootReport checks the scrolling proof markers.
+
+Expected proof markers:
+
+[KERNEL] PASS: Kernel screen scrollback buffer initialized.
+[KERNEL] PASS: Kernel screen scrollback stores coloured cells.
+[KERNEL] PASS: Kernel screen scroll up/down works.
+[KERNEL] PASS: Kernel screen page up/down works.
+[KERNEL] PASS: Kernel screen scroll-to-bottom works.
+[KERNEL] PASS: Kernel screen scrolling implemented.
