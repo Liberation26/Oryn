@@ -45,6 +45,10 @@ void OrynPhysicalMemoryPrintSummary(const OrynKernelPhysicalMemory* allocator)
     {
         KernelIoWriteString("[KERNEL] WARN: Physical allocator static capacity was reached.\n");
     }
+    else
+    {
+        KernelIoWriteString("[KERNEL] PASS: Physical allocator tracking capacity is sufficient.\n");
+    }
 }
 
 void OrynPhysicalMemoryPrintFinalState(const OrynKernelPhysicalMemory* allocator)

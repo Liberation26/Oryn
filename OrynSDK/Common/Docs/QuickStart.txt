@@ -1,4 +1,4 @@
-OrynWsl 0.5.44 Quick Start
+OrynWsl 0.5.45 Quick Start
 
 This package is a WSL-native Oryn SDK baseline.
 
@@ -791,7 +791,7 @@ Expected proof markers:
 [KERNEL] PASS: Kernel screen line-buffered double buffering implemented.
 
 
-OrynWsl 0.5.44 Interactive QEMU scroll testing
+OrynWsl 0.5.45 Interactive QEMU scroll testing
 -----------------------------------------------
 When [Run] Display is set to sdl/windowed instead of none, Oryn now treats the run as an interactive screen-test session.
 
@@ -812,3 +812,10 @@ Use:
 Then answer No to the headless/display question, or set:
   [Run]
   Display=sdl
+
+
+OrynWsl 0.5.45 Fast interactive screen refresh
+------------------------------------------------
+Kernel screen double buffering is now line/scroll optimized. Printable characters update the kernel-owned back buffer only; the visible framebuffer is presented after a completed line. When the live view reaches the bottom of the screen, the console uses a fast scroll path instead of redrawing every visible cell for every line. In interactive Display=sdl mode, QEMU serial is connected to a null sink so the WSL terminal is not flooded while the QEMU window is being used for manual scrolling tests. Debug output is still captured through QEMU debugcon in Output/Debug.log.
+
+The physical allocator tracking capacity was increased to cover the normal 2G VM profile without reporting that the static page tracker was full. The allocator now prints a PASS marker when all usable pages are tracked.

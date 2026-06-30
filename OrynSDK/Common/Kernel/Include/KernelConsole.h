@@ -55,6 +55,7 @@ unsigned long long KConsoleBackBufferBytes(void);
 unsigned int KConsolePresentCount(void);
 int KConsoleRunDoubleBufferProof(void);
 int KConsoleRunLineBufferedFlipProof(void);
+int KConsoleRunFastRefreshProof(void);
 int KConsoleRunScrollProof(void);
 
 #endif

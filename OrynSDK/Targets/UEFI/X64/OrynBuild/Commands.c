@@ -265,8 +265,12 @@ static void WriteBootReport(
     int screen_present = TextContains(debug_text, "[KERNEL] PASS: Kernel screen presents completed frame to visible output.");
     int screen_deferred_flip = TextContains(debug_text, "[KERNEL] PASS: Kernel screen defers visible flip while line is being written.");
     int screen_line_flip = TextContains(debug_text, "[KERNEL] PASS: Kernel screen flips after completed line.");
+    int screen_dirty_line = TextContains(debug_text, "[KERNEL] PASS: Kernel screen presents dirty completed line only.");
+    int screen_fast_scroll = TextContains(debug_text, "[KERNEL] PASS: Kernel screen uses fast scroll path after visible area is full.");
+    int screen_refresh_optimized = TextContains(debug_text, "[KERNEL] PASS: Kernel screen refresh is line/scroll optimized.");
     int screen_line_buffered = TextContains(debug_text, "[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.");
     int screen_double_buffer = TextContains(debug_text, "[KERNEL] PASS: Kernel screen double buffering implemented.");
+    int physical_capacity = TextContains(debug_text, "[KERNEL] PASS: Physical allocator tracking capacity is sufficient.");
     int qemu_preboot_failure = (!command_ok) && !loader_started && DebugTextIsEmpty(debug_text);
     const char* report_display_mode = ResolveQemuDisplayMode(project);
     int interactive_display = IsInteractiveDisplayMode(report_display_mode);
@@ -320,8 +324,9 @@ static void WriteBootReport(
         smp_ok && qemu_debug_colour && kernel_console && screen_scrollback &&
         screen_coloured_cells && screen_scroll_lines && screen_page_scroll &&
         screen_bottom && screen_scrolling && screen_back_buffer && screen_renders_back &&
-        screen_deferred_flip && screen_line_flip && screen_line_buffered &&
-        screen_present && screen_double_buffer && virtual_memory_active && qemu_exit_or_hold;
+        screen_deferred_flip && screen_line_flip && screen_dirty_line && screen_fast_scroll &&
+        screen_refresh_optimized && screen_line_buffered && screen_present && screen_double_buffer &&
+        physical_capacity && virtual_memory_active && qemu_exit_or_hold;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -478,9 +483,13 @@ static void WriteBootReport(
     fprintf(file, "  Kernel screen renders into back buffer first: %s\n", PassFail(screen_renders_back));
     fprintf(file, "  Kernel screen defers flip while line is being written: %s\n", PassFail(screen_deferred_flip));
     fprintf(file, "  Kernel screen flips after completed line: %s\n", PassFail(screen_line_flip));
+    fprintf(file, "  Kernel screen presents dirty completed line only: %s\n", PassFail(screen_dirty_line));
+    fprintf(file, "  Kernel screen fast scroll path active: %s\n", PassFail(screen_fast_scroll));
+    fprintf(file, "  Kernel screen refresh line/scroll optimized: %s\n", PassFail(screen_refresh_optimized));
     fprintf(file, "  Kernel screen line-buffered double buffering implemented: %s\n", PassFail(screen_line_buffered));
     fprintf(file, "  Kernel screen presents completed frame: %s\n", PassFail(screen_present));
     fprintf(file, "  Kernel screen double buffering implemented: %s\n", PassFail(screen_double_buffer));
+    fprintf(file, "  Physical allocator tracking capacity sufficient: %s\n", PassFail(physical_capacity));
     fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
     fprintf(file, "  Kernel virtual memory required ranges mapped: %s\n", PassFail(virtual_memory_required_mapped));
     fprintf(file, "  Kernel virtual memory CR3 switch requested: %s\n", PassFail(virtual_memory_switching_cr3));
@@ -683,12 +692,20 @@ static void WriteBootReport(
             "The kernel screen still flipped while a line was being written." :
         !screen_line_flip ?
             "The kernel screen did not flip after a completed line." :
+        !screen_dirty_line ?
+            "The kernel screen still presents more than the dirty completed line during normal output." :
+        !screen_fast_scroll ?
+            "The kernel screen did not use the fast scroll path after the visible area filled." :
+        !screen_refresh_optimized ?
+            "Kernel screen refresh optimization did not complete." :
         !screen_line_buffered ?
             "Kernel screen line-buffered double buffering did not complete." :
         !screen_present ?
             "The kernel screen did not present completed frames to visible output." :
         !screen_double_buffer ?
             "Kernel screen double buffering did not complete." :
+        !physical_capacity ?
+            "The physical allocator did not have enough static tracking capacity for this VM memory size." :
         !virtual_memory_started ?
             "The kernel stopped before virtual-memory initialization." :
         !virtual_memory_required_mapped ?
@@ -966,7 +983,10 @@ int OrynRunQemu(const OrynProject* project)
     remove(debug_log);
     remove(boot_report);
 
-    OrynLogKeyValue("Serial", "live WSL terminal stdio");
+    const char* serial_argument = interactive_display ? "-serial null" : "-serial stdio";
+    OrynLogKeyValue("Serial", interactive_display ?
+        "null sink for faster interactive screen refresh" :
+        "live WSL terminal stdio");
     OrynLogKeyValue("Debug log", debug_log);
     OrynLogKeyValue("Debug log staged", stage_debug_windows);
     OrynLogKeyValue("Boot report", boot_report);
@@ -1009,7 +1029,7 @@ int OrynRunQemu(const OrynProject* project)
     char command[ORYN_MAX_PATH * 8];
     snprintf(command, sizeof(command),
         "%s -machine %s -cpu %s -smp %u -m %s -drive %s -no-reboot -display %s "
-        "-monitor none -serial stdio -debugcon %s -global isa-debugcon.iobase=0xe9 "
+        "-monitor none %s -debugcon %s -global isa-debugcon.iobase=0xe9 "
         "%s-drive %s",
         qemu_quoted,
         machine_argument,
@@ -1018,6 +1038,7 @@ int OrynRunQemu(const OrynProject* project)
         project->run_memory,
         firmware_quoted,
         display_mode,
+        serial_argument,
         debug_quoted,
         debug_exit_argument,
         drive_quoted);
@@ -1082,7 +1103,11 @@ int OrynRunQemu(const OrynProject* project)
         TextContains(debug_text, "\033[32m[KERNEL] PASS") &&
         TextContains(debug_text, "\033[0m") &&
         !TextContains(debug_text, "[KERNEL] EXCEPTION:") &&
+        TextContains(debug_text, "[KERNEL] PASS: Kernel screen presents dirty completed line only.") &&
+        TextContains(debug_text, "[KERNEL] PASS: Kernel screen uses fast scroll path after visible area is full.") &&
+        TextContains(debug_text, "[KERNEL] PASS: Kernel screen refresh is line/scroll optimized.") &&
         TextContains(debug_text, "[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.") &&
+        TextContains(debug_text, "[KERNEL] PASS: Physical allocator tracking capacity is sufficient.") &&
         (interactive_display ?
             TextContains(debug_text, "[KERNEL] PASS: Interactive QEMU display mode keeps VM open for scroll testing.") :
             TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success")) && command_ok;
