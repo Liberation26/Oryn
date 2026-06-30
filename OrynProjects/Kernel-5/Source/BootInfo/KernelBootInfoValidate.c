@@ -9,6 +9,13 @@ static void WriteBootInfoField(const char* label, unsigned long long value)
     KernelIoWriteString("\n");
 }
 
+static void WriteBootInfoDecimalField(const char* label, unsigned long long value)
+{
+    KernelIoWriteString(label);
+    KernelIoWriteDec64(value);
+    KernelIoWriteString("\n");
+}
+
 static void WriteValidationFail(const char* message, OrynKernelBootInfoStatus* status)
 {
     KernelIoWriteString("[KERNEL] FAIL: ");
@@ -279,25 +286,40 @@ OrynKernelBootInfoStatus KernelBootInfoValidate(const OrynBootInfo* bootInfo)
         return status;
     }
 
-    if (bootInfo->Version != ORYN_BOOTINFO_VERSION)
+    WriteBootInfoDecimalField("[KERNEL] BootInfo ABI major: ", ORYN_BOOTINFO_ABI_MAJOR);
+    WriteBootInfoDecimalField("[KERNEL] BootInfo ABI minor: ", ORYN_BOOTINFO_ABI_MINOR);
+    WriteBootInfoDecimalField("[KERNEL] BootInfo ABI version: ", bootInfo->Version);
+    WriteBootInfoDecimalField("[KERNEL] BootInfo ABI size: ", bootInfo->Size);
+
+    if (!OrynBootInfoAbiIsVersionCompatible(bootInfo->Version))
     {
-        WriteValidationFail("BootInfo version is unsupported.", &status);
-        KernelIoWriteString("[KERNEL] BootInfo version: ");
-        KernelIoWriteDec64(bootInfo->Version);
-        KernelIoWriteString("\n");
+        WriteValidationFail("BootInfo ABI version is unsupported.", &status);
+        WriteBootInfoDecimalField("[KERNEL] Minimum compatible BootInfo ABI version: ", ORYN_BOOTINFO_ABI_MIN_COMPATIBLE_VERSION);
+        WriteBootInfoDecimalField("[KERNEL] Maximum compatible BootInfo ABI version: ", ORYN_BOOTINFO_ABI_CURRENT_VERSION);
         return status;
     }
 
-    if (bootInfo->Size < sizeof(OrynBootInfo))
+    if (!OrynBootInfoAbiIsSizeCompatible(bootInfo->Size))
     {
-        WriteValidationFail("BootInfo size is smaller than this kernel expects.", &status);
+        WriteValidationFail("BootInfo ABI size is smaller than the stable contract.", &status);
+        WriteBootInfoDecimalField("[KERNEL] Minimum compatible BootInfo ABI size: ", ORYN_BOOTINFO_ABI_MIN_COMPATIBLE_SIZE);
+        return status;
     }
 
-    if ((bootInfo->Flags & ~ORYN_KERNEL_BOOTINFO_KNOWN_FLAGS) != 0ULL)
+    if (bootInfo->Size > ORYN_BOOTINFO_ABI_CURRENT_SIZE)
     {
-        WriteValidationFail("BootInfo contains unknown flag bits.", &status);
-        WriteBootInfoField("[KERNEL] Unknown BootInfo flags: ", bootInfo->Flags & ~ORYN_KERNEL_BOOTINFO_KNOWN_FLAGS);
+        KernelIoWriteString("[KERNEL] WARN: BootInfo ABI size is newer than this kernel; known fields will be used.\n");
+        status.WarningCount += 1;
     }
+
+    if (!OrynBootInfoAbiFlagsCompatible(bootInfo->Flags))
+    {
+        WriteValidationFail("BootInfo contains unknown ABI flag bits.", &status);
+        WriteBootInfoField("[KERNEL] Unknown BootInfo flags: ", bootInfo->Flags & ~ORYN_KERNEL_BOOTINFO_KNOWN_FLAGS);
+        return status;
+    }
+
+    KernelIoWriteString("[KERNEL] PASS: BootInfo ABI compatible.\n");
 
     CheckDisabledFlag(bootInfo, ORYN_BOOTINFO_FLAG_KERNEL_RANGE, ORYN_BOOTINFO_WANT_KERNEL_RANGE, "kernel range", &status);
     CheckDisabledFlag(bootInfo, ORYN_BOOTINFO_FLAG_MEMORY_MAP, ORYN_BOOTINFO_WANT_MEMORY_MAP, "memory map", &status);

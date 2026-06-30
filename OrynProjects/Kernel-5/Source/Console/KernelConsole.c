@@ -209,8 +209,7 @@ static void KConsoleVgaWriteChar(char value)
 
 static int KConsoleBootInfoHasUsableFramebuffer(const OrynBootInfo* bootInfo)
 {
-    if (bootInfo == 0 || bootInfo->Signature != ORYN_BOOTINFO_SIGNATURE ||
-        bootInfo->Version != ORYN_BOOTINFO_VERSION || bootInfo->Size < sizeof(OrynBootInfo))
+    if (!OrynBootInfoAbiIsCompatible(bootInfo))
     {
         return 0;
     }

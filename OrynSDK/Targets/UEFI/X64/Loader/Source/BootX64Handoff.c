@@ -1,6 +1,66 @@
 #include "BootX64Internal.h"
 #include "OrynBootInfoSelection.h"
 
+
+static int ValidateBootInfoAbiForHandoff(const OrynBootInfo* bootInfo)
+{
+    if (bootInfo == ORYN_NULL)
+    {
+        Print("[BOOT] FAIL: BootInfo ABI check received a null pointer.\n");
+        return 0;
+    }
+
+    Print("[BOOT] BootInfo ABI name: ");
+    Print(ORYN_BOOTINFO_ABI_NAME);
+    Print("\n");
+
+    if (bootInfo->Signature != ORYN_BOOTINFO_SIGNATURE)
+    {
+        Print("[BOOT] FAIL: BootInfo ABI signature mismatch.\n");
+        return 0;
+    }
+
+    if (!OrynBootInfoAbiIsVersionCompatible(bootInfo->Version))
+    {
+        Print("[BOOT] FAIL: BootInfo ABI version is not compatible with this loader.\n");
+        return 0;
+    }
+
+    if (!OrynBootInfoAbiIsSizeCompatible(bootInfo->Size))
+    {
+        Print("[BOOT] FAIL: BootInfo ABI size is smaller than the stable contract.\n");
+        return 0;
+    }
+
+    if (!OrynBootInfoAbiFlagsCompatible(bootInfo->Flags))
+    {
+        Print("[BOOT] FAIL: BootInfo ABI contains unknown flag bits.\n");
+        return 0;
+    }
+
+    if (bootInfo->Size != sizeof(OrynBootInfo))
+    {
+        Print("[BOOT] FAIL: Loader-built BootInfo size does not match OrynBootInfo.\n");
+        return 0;
+    }
+
+    if (bootInfo->MemoryMapEntrySize != 0ULL && bootInfo->MemoryMapEntrySize != sizeof(OrynBootMemoryEntry))
+    {
+        Print("[BOOT] FAIL: BootInfo memory-map entry size is not ABI compatible.\n");
+        return 0;
+    }
+
+    if (bootInfo->ConfigurationTableEntrySize != 0U &&
+        bootInfo->ConfigurationTableEntrySize != sizeof(OrynBootConfigurationTableEntry))
+    {
+        Print("[BOOT] FAIL: BootInfo configuration-table entry size is not ABI compatible.\n");
+        return 0;
+    }
+
+    Print("[BOOT] PASS: BootInfo ABI compatible.\n");
+    return 1;
+}
+
 static EFI_STATUS AllocateMemoryMapStorage(
     EFI_MEMORY_DESCRIPTOR** outMemoryMap,
     UINTN* outMemoryMapSize,
@@ -134,6 +194,11 @@ EFI_STATUS ExitBootServicesWithBootInfo(EFI_HANDLE imageHandle, OrynBootInfo* bo
         (void)entryCapacity;
         Print("[BOOT] BootInfo memory map: disabled by user selection.\n");
 #endif
+
+        if (!ValidateBootInfoAbiForHandoff(bootInfo))
+        {
+            return EFI_INVALID_PARAMETER;
+        }
 
         status = gBootServices->ExitBootServices(imageHandle, mapKey);
         if (!IsError(status))
