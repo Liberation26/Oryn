@@ -6,6 +6,10 @@ static OrynVfsMount gMounts[ORYN_VFS_MAX_MOUNTS];
 static int VfsPrefixMatches(const char* path, const char* prefix)
 {
     uint32_t index = 0;
+    if (prefix[0] == '/' && prefix[1] == 0)
+    {
+        return path[0] == '/';
+    }
     while (prefix[index] != 0)
     {
         if (path[index] != prefix[index])
@@ -20,6 +24,10 @@ static int VfsPrefixMatches(const char* path, const char* prefix)
 static const char* VfsLocalPath(const char* path, const char* prefix)
 {
     uint32_t length = (uint32_t)OrynStrlen(prefix);
+    if (prefix[0] == '/' && prefix[1] == 0)
+    {
+        return path;
+    }
     if (path[length] == 0)
     {
         return "/";

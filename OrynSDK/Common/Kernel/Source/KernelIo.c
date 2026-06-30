@@ -99,8 +99,8 @@ static KernelIoLineStyle LineStyleForText(const char* text)
     style.AnsiColour = "";
     style.ConsoleColour = KCONSOLE_COLOUR_DEFAULT;
 
-    if (StartsWith(text, "[KERNEL] PASS") || StartsWith(text, "[PASS]") ||
-        StartsWith(text, "[ OK ]") || StartsWith(text, "[OK]"))
+    if (StartsWith(text, "[KERNEL] PASS") || StartsWith(text, "[KERNEL] OK") ||
+        StartsWith(text, "[PASS]") || StartsWith(text, "[ OK ]") || StartsWith(text, "[OK]"))
     {
         style.AnsiColour = OUTPUT_COLOR_PASS;
         style.ConsoleColour = KCONSOLE_COLOUR_PASS;

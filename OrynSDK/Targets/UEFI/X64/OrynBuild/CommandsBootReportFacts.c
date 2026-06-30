@@ -103,8 +103,9 @@ void CollectBootReportFacts(
     facts->smp_aps_started = KernelOkFact(debug_text, "SMP application processors entered kernel AP loop.");
     facts->smp_early_complete = KernelOkFact(debug_text, "SMP AP startup completed before PCI/HPET/console/memory proof.");
     facts->smp_complete = KernelOkFact(debug_text, "Multi-Core processing initialized.");
-    facts->qemu_debug_colour = (TextContains(debug_text, "\033[32m[KERNEL] OK") || TextContains(debug_text, "\033[32m[KERNEL] PASS")) &&
-        TextContains(debug_text, "\033[0m");
+    facts->qemu_debug_colour = (TextContains(debug_text, "\033[32m[KERNEL] OK") ||
+        TextContains(debug_text, "\033[36m[KERNEL] OK") ||
+        TextContains(debug_text, "\033[32m[KERNEL] PASS")) && TextContains(debug_text, "\033[0m");
     facts->kernel_console = KernelOkFact(debug_text, "Kernel console initialized.");
     facts->screen_scrollback = KernelOkFact(debug_text, "Kernel screen scrollback buffer initialized.");
     facts->screen_coloured_cells = KernelOkFact(debug_text, "Kernel screen scrollback stores coloured cells.");
@@ -179,7 +180,7 @@ void CollectBootReportFacts(
     facts->boot_pass = facts->qemu_completion_ok && facts->loader_started &&
         facts->kernel_loaded && facts->entry_printed && facts->virtual_map_prepared && facts->virtual_map_active &&
         facts->bootinfo_created && facts->boot_config_prepared && facts->bootinfo_memory_map && facts->boot_services_exited && facts->kernel_jump &&
-        facts->kernel_entered && facts->serial_ok && facts->bootinfo_received && facts->kernel_boot_config && facts->kernel_command_line &&
+        !TextContains(debug_text, "[KERNEL] FAIL:") && facts->kernel_entered && facts->serial_ok && facts->bootinfo_received && facts->kernel_boot_config && facts->kernel_command_line &&
         facts->gdt_installing && facts->gdt_installed && facts->gdt_entries && facts->tss_loaded &&
         facts->idt_installing && facts->idt_installed && facts->idt_entries &&
         facts->interrupt_dispatcher && facts->interrupt_handlers && facts->interrupt_controlled && !facts->cpu_exception &&

@@ -7,7 +7,7 @@
 #define SCREEN_STATUS_WARN 2
 #define SCREEN_STATUS_FAIL 3
 
-#define SCREEN_CATEGORY_COUNT 20
+#define SCREEN_CATEGORY_COUNT 22
 
 typedef struct OrynKernelScreenCategory
 {
@@ -37,7 +37,9 @@ static OrynKernelScreenCategory gScreenCategories[SCREEN_CATEGORY_COUNT] =
     { "Keyboard", SCREEN_STATUS_NONE, 0U },
     { "Memory Map", SCREEN_STATUS_NONE, 0U },
     { "Physical Memory", SCREEN_STATUS_NONE, 0U },
-    { "Virtual Memory", SCREEN_STATUS_NONE, 0U }
+    { "Virtual Memory", SCREEN_STATUS_NONE, 0U },
+    { "FAT32", SCREEN_STATUS_NONE, 0U },
+    { "VFS", SCREEN_STATUS_NONE, 0U }
 };
 
 static int StartsWith(const char* text, const char* prefix)
@@ -117,6 +119,8 @@ static int CategoryForLine(const char* line)
     if (Contains(line, "HPET")) return 11;
     if (Contains(line, "SMP")) return 12;
     if (Contains(line, "PCI")) return 13;
+    if (Contains(line, "FAT32")) return 20;
+    if (Contains(line, "VFS")) return 21;
     if (Contains(line, "SysCall") || Contains(line, "syscall")) return 14;
     if (Contains(line, "console") || Contains(line, "screen") || Contains(line, "TTF")) return 15;
     if (Contains(line, "Keyboard") || Contains(line, "keyboard")) return 16;

@@ -312,8 +312,11 @@ int OrynRunQemu(const OrynProject* project)
              KernelOkFact(debug_text, "Multi-Core processing initialized.")) :
             (TextContains(debug_text, "[KERNEL] INFO: SMP AP startup skipped by VMSettings.") ||
              TextContains(debug_text, "[KERNEL] INFO: SMP discovery skipped by VMSettings."))) &&
-        (TextContains(debug_text, "\033[32m[KERNEL] OK") || TextContains(debug_text, "\033[32m[KERNEL] PASS")) &&
+        (TextContains(debug_text, "\033[32m[KERNEL] OK") ||
+         TextContains(debug_text, "\033[36m[KERNEL] OK") ||
+         TextContains(debug_text, "\033[32m[KERNEL] PASS")) &&
         TextContains(debug_text, "\033[0m") &&
+        !TextContains(debug_text, "[KERNEL] FAIL:") &&
         !TextContains(debug_text, "[KERNEL] EXCEPTION:") &&
         KernelOkFact(debug_text, "Kernel screen presents dirty completed line only.") &&
         KernelOkFact(debug_text, "Kernel screen uses fast scroll path after visible area is full.") &&
