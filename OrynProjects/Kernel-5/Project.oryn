@@ -31,4 +31,4 @@ APIC=on
 APIC2=on
 HPET=on
 Serial=stdio
-Display=none
+Display=sdl

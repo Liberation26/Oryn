@@ -212,7 +212,7 @@ The VM profile is project-owned data in `OrynProjects/<Name>/Project.oryn` under
 `Oryn.sh VMSettings` owns user-facing VM hardware choices. It rejects `host`/`native` for the WSL Windows-QEMU runner by saving `CPU=max`, because `-cpu host` requires KVM/HVF/WHX acceleration. `Targets/UEFI/X64/OrynBuild/Commands.c` also resolves stale project files that still contain `CPU=host` to `CPU=max` before command construction and records the resolved CPU in BootReport.
 
 
-0.5.40 Kernel screen scrolling ownership
+0.5.41 Kernel screen scrolling ownership
 ----------------------------------------
 Kernel screen scrolling is owned by the common kernel console because the feature is not UEFI-specific. The target only supplies the framebuffer or VGA fallback; the common console owns scrollback cells, colour retention, redraw, line/page scrolling, scroll-to-bottom, and the framebuffer scrollbar.
 
@@ -221,3 +221,10 @@ Affected files:
 - OrynSDK/Common/Kernel/Source/Console/KernelConsole.c
 - OrynProjects/Kernel-5/Source/KernelMain.c
 - OrynSDK/Targets/UEFI/X64/OrynBuild/Commands.c
+
+
+0.5.41 Boot proof ownership
+---------------------------
+The OrynBuild QEMU runner owns reading Debug.log for BootReport checks. It now reads up to 1 MB so large kernel diagnostics do not hide later PASS markers.
+
+The UEFI x64 SMP support owns early ACPI MADT topology proof markers. These markers are emitted during cached discovery before virtual memory activation and are reused when AP startup proof is printed later.

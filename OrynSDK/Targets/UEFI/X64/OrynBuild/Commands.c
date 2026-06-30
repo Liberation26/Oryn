@@ -952,8 +952,15 @@ int OrynRunQemu(const OrynProject* project)
         OrynCopyFile(stage_debug_log, debug_log);
     }
 
-    char debug_text[65536];
-    ReadFileText(debug_log, debug_text, sizeof(debug_text));
+    size_t debug_text_capacity = 1024U * 1024U;
+    char* debug_text = (char*)malloc(debug_text_capacity);
+    if (debug_text == 0)
+    {
+        OrynLogFail("Could not allocate debug log read buffer.");
+        return 0;
+    }
+
+    ReadFileText(debug_log, debug_text, debug_text_capacity);
     WriteBootReport(project, boot_report, qemu_path, ovmf_windows, ovmf_qemu, disk_windows,
         debug_log, qemu_cpu_model, command, debug_text, exit_code, command_ok);
 
@@ -1001,10 +1008,12 @@ int OrynRunQemu(const OrynProject* project)
 
     if (boot_pass)
     {
+        free(debug_text);
         OrynLogOk("Boot proof passed. Kernel output was captured and QEMU exited cleanly.");
         return 1;
     }
 
+    free(debug_text);
     OrynLogFail("Boot proof failed. See Output/BootReport.txt and Output/Debug.log.");
     return 0;
 }

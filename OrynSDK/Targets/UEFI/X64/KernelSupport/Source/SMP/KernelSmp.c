@@ -297,6 +297,28 @@ static void DiscoverCpus(const OrynBootInfo* bootInfo)
     FinalizeCpuDiscovery();
 }
 
+static void PrintDiscoveryProof(void)
+{
+    KernelIoWriteString(gSmpState.RsdpPresent ?
+        "[KERNEL] PASS: SMP ACPI RSDP input present.\n" :
+        "[KERNEL] WARN: SMP ACPI RSDP input missing.\n");
+    KernelIoWriteString(gSmpState.AcpiChecksumOk ?
+        "[KERNEL] PASS: SMP ACPI checksum validation passed.\n" :
+        "[KERNEL] WARN: SMP ACPI checksum validation failed or was unavailable.\n");
+    KernelIoWriteString(gSmpState.MadtFound ?
+        "[KERNEL] PASS: SMP ACPI MADT table discovered.\n" :
+        "[KERNEL] WARN: SMP ACPI MADT table was not discovered.\n");
+    KernelIoWriteString("[KERNEL] SMP CPU entries discovered: ");
+    KernelIoWriteDec64(gSmpState.LocalApicEntryCount);
+    KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] SMP enabled CPU count: ");
+    KernelIoWriteDec64(gSmpState.EnabledCpuCount);
+    KernelIoWriteString("\n");
+    KernelIoWriteString(gSmpState.EnabledCpuCount > 1U ?
+        "[KERNEL] PASS: SMP multi-core CPU topology discovered.\n" :
+        "[KERNEL] WARN: SMP found only one enabled CPU.\n");
+}
+
 int OrynKernelSmpDiscover(const OrynBootInfo* bootInfo)
 {
     KernelIoWriteString("[KERNEL] SMP: multi-core processing discovery starting.\n");
@@ -305,6 +327,7 @@ int OrynKernelSmpDiscover(const OrynBootInfo* bootInfo)
     gSmpState.BootstrapApicId = OrynKernelApicGetState()->LocalApicId;
     gSmpState.AcpiReadBeforeVirtualMemory = 1U;
     DiscoverCpus(bootInfo);
+    PrintDiscoveryProof();
     KernelIoWriteString("[KERNEL] PASS: SMP ACPI topology cached before virtual memory switch.\n");
     return gSmpState.DiscoveryComplete ? 1 : 0;
 }
@@ -478,27 +501,10 @@ const OrynKernelSmpState* OrynKernelSmpGetState(void)
 
 void OrynKernelSmpPrintProof(void)
 {
-    KernelIoWriteString(gSmpState.RsdpPresent ?
-        "[KERNEL] PASS: SMP ACPI RSDP input present.\n" :
-        "[KERNEL] WARN: SMP ACPI RSDP input missing.\n");
-    KernelIoWriteString(gSmpState.AcpiChecksumOk ?
-        "[KERNEL] PASS: SMP ACPI checksum validation passed.\n" :
-        "[KERNEL] WARN: SMP ACPI checksum validation failed or was unavailable.\n");
+    PrintDiscoveryProof();
     KernelIoWriteString(gSmpState.AcpiReadBeforeVirtualMemory ?
         "[KERNEL] PASS: SMP ACPI topology cached before virtual memory switch.\n" :
         "[KERNEL] WARN: SMP ACPI topology was not cached before virtual memory switch.\n");
-    KernelIoWriteString(gSmpState.MadtFound ?
-        "[KERNEL] PASS: SMP ACPI MADT table discovered.\n" :
-        "[KERNEL] WARN: SMP ACPI MADT table was not discovered.\n");
-    KernelIoWriteString("[KERNEL] SMP CPU entries discovered: ");
-    KernelIoWriteDec64(gSmpState.LocalApicEntryCount);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] SMP enabled CPU count: ");
-    KernelIoWriteDec64(gSmpState.EnabledCpuCount);
-    KernelIoWriteString("\n");
-    KernelIoWriteString(gSmpState.EnabledCpuCount > 1U ?
-        "[KERNEL] PASS: SMP multi-core CPU topology discovered.\n" :
-        "[KERNEL] WARN: SMP found only one enabled CPU.\n");
     KernelIoWriteString("[KERNEL] SMP bootstrap APIC ID: ");
     KernelIoWriteHex64(gSmpState.BootstrapApicId);
     KernelIoWriteString("\n");

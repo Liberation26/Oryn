@@ -1,4 +1,4 @@
-OrynWsl 0.5.40 Quick Start
+OrynWsl 0.5.41 Quick Start
 
 This package is a WSL-native Oryn SDK baseline.
 
@@ -738,7 +738,7 @@ CPU=host is not valid for the current Windows QEMU from WSL runner because QEMU 
 
 The OSName questionnaire now continues into VMSettings before BootConfig and BootInfo so VM format, memory, CPU, SMP, PIC, APIC, APIC2, HPET, and display settings are refreshed during the normal setup flow.
 
-OrynWsl 0.5.40 Kernel screen scrolling
+OrynWsl 0.5.41 Kernel screen scrolling
 --------------------------------------
 Kernel-5 now uses a real kernel-screen scrollback buffer instead of only shifting framebuffer pixels upward when the display fills.
 
@@ -760,3 +760,10 @@ Expected proof markers:
 [KERNEL] PASS: Kernel screen page up/down works.
 [KERNEL] PASS: Kernel screen scroll-to-bottom works.
 [KERNEL] PASS: Kernel screen scrolling implemented.
+
+
+OrynWsl 0.5.41 BootReport debug-log reader fix
+-----------------------------------------------
+The QEMU Debug.log reader now uses a 1 MB heap buffer instead of a 64 KB stack buffer. This stops long successful boots from being falsely reported as FAIL when later virtual-memory, SMP, halt, and QEMU debug-exit proof markers appear after the first 64 KB of output.
+
+SMP discovery proof markers are also printed immediately during the pre-virtual-memory ACPI/MADT discovery stage, so BootReport can verify RSDP, checksum, MADT, and CPU topology before the verbose BootInfo summary grows the log.
