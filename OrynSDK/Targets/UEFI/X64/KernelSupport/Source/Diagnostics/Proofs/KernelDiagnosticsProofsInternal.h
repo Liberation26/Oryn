@@ -63,7 +63,7 @@ int OrynKernelDiagnosticsConsoleRunLineBufferedProbe(void);
 int OrynKernelDiagnosticsConsoleRunFastRefreshProbe(void);
 int OrynKernelDiagnosticsRunKeyboardScrollProof(void);
 void OrynKernelDiagnosticsRunMemoryProofs(const OrynBootInfo* kernelBootInfo);
-void OrynKernelDiagnosticsRunFat32VfsProof(void);
+void OrynKernelDiagnosticsRunFat32VfsProof(const OrynBootInfo* kernelBootInfo);
 void OrynKernelDiagnosticsRunBootInfoFailureProof(void);
 
 #endif

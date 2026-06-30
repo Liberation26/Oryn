@@ -66,10 +66,9 @@ void OrynKernelDiagnosticsRunBootProofs(const OrynBootInfo* kernelBootInfo)
             OrynKernelDiagnosticsRunConsoleProofs(kernelBootInfo);
         }
         KernelBootInfoPrintSummary(kernelBootInfo);
-        if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleFat32) &&
-            OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleVfs))
+        if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleFat32))
         {
-            OrynKernelDiagnosticsRunFat32VfsProof();
+            OrynKernelDiagnosticsRunFat32VfsProof(kernelBootInfo);
         }
         if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModulePhysicalMemory))
         {

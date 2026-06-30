@@ -19,6 +19,24 @@ static void ReportBlockedDependency(const OrynKernelModuleManifestItem* item)
     KernelIoWriteString("\n");
 }
 
+
+unsigned int OrynKernelModuleManifestRequireCount(OrynKernelModuleId id)
+{
+    const OrynKernelModuleManifestItem* item = OrynKernelModuleManifestGet(id);
+    return item ? item->RequireCount : 0U;
+}
+
+OrynKernelModuleId OrynKernelModuleManifestRequireAt(OrynKernelModuleId id, unsigned int index)
+{
+    const OrynKernelModuleManifestItem* item = OrynKernelModuleManifestGet(id);
+    if (!item || index >= item->RequireCount)
+    {
+        return OrynKernelModuleCount;
+    }
+
+    return item->Requires[index];
+}
+
 int OrynKernelModuleManifestCanStart(OrynKernelModuleId id)
 {
     const OrynKernelModuleManifestItem* item = OrynKernelModuleManifestGet(id);

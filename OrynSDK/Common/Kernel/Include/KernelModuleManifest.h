@@ -49,6 +49,8 @@ typedef struct OrynKernelModuleManifestItem
 void OrynKernelModuleManifestInit(void);
 const OrynKernelModuleManifestItem* OrynKernelModuleManifestGet(OrynKernelModuleId id);
 int OrynKernelModuleManifestCanStart(OrynKernelModuleId id);
+unsigned int OrynKernelModuleManifestRequireCount(OrynKernelModuleId id);
+OrynKernelModuleId OrynKernelModuleManifestRequireAt(OrynKernelModuleId id, unsigned int index);
 int OrynKernelModuleManifestIsReady(OrynKernelModuleId id);
 int OrynKernelModuleManifestBegin(OrynKernelModuleId id);
 void OrynKernelModuleManifestReady(OrynKernelModuleId id);
