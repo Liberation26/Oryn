@@ -46,7 +46,7 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
     KernelIoWriteHex64(virtualMemory->KernelEntryVirtual);
     KernelIoWriteString("\n");
 
-    WriteRange("[KERNEL] Identity mapped BootInfo: ",
+    WriteRange("[KERNEL] Mapped BootInfo range: ",
         virtualMemory->BootInfoMapStart,
         virtualMemory->BootInfoMapEnd);
 
@@ -54,7 +54,7 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
         virtualMemory->MemoryMapMapStart,
         virtualMemory->MemoryMapMapEnd);
 
-    WriteRange("[KERNEL] Identity mapped current stack: ",
+    WriteRange("[KERNEL] Mapped current stack range: ",
         virtualMemory->StackMapStart,
         virtualMemory->StackMapEnd);
 

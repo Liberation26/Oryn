@@ -159,7 +159,6 @@ static int MapRange(
     return 1;
 }
 
-
 static int MapVirtualRangeToPhysical(
     OrynPageTableEntry* pml4,
     unsigned long long virtualStart,
@@ -196,6 +195,52 @@ static int MapVirtualRangeToPhysical(
     return 1;
 }
 
+static int IsInsideKernelVirtualRange(
+    const OrynBootInfo* bootInfo,
+    unsigned long long start,
+    unsigned long long bytes)
+{
+    if (bootInfo == 0 ||
+        !KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_KERNEL_VIRTUAL_LAYOUT) ||
+        bootInfo->KernelVirtualSize == 0ULL || bytes == 0ULL)
+    {
+        return 0;
+    }
+
+    unsigned long long layoutEnd = bootInfo->KernelVirtualBase + bootInfo->KernelVirtualSize;
+    unsigned long long end = start + bytes;
+    if (layoutEnd < bootInfo->KernelVirtualBase || end < start)
+    {
+        return 0;
+    }
+
+    return start >= bootInfo->KernelVirtualBase && end <= layoutEnd;
+}
+
+static int MapKernelOrIdentityRange(
+    OrynPageTableEntry* pml4,
+    const OrynBootInfo* bootInfo,
+    unsigned long long start,
+    unsigned long long bytes,
+    OrynKernelPhysicalMemory* physicalMemory,
+    OrynKernelVirtualMemory* virtualMemory)
+{
+    if (IsInsideKernelVirtualRange(bootInfo, start, bytes))
+    {
+        unsigned long long physicalStart =
+            bootInfo->KernelPhysicalBase + (start - bootInfo->KernelVirtualBase);
+        return MapVirtualRangeToPhysical(
+            pml4,
+            start,
+            physicalStart,
+            bytes,
+            physicalMemory,
+            virtualMemory);
+    }
+
+    return MapRange(pml4, start, bytes, physicalMemory, virtualMemory);
+}
+
 static int BootInfoHasUsableFramebufferFields(const OrynBootInfo* bootInfo)
 {
     if (bootInfo == 0)
@@ -216,6 +261,7 @@ static int BootInfoHasUsableFramebufferFields(const OrynBootInfo* bootInfo)
 
 static int MapCurrentStackRange(
     OrynPageTableEntry* pml4,
+    const OrynBootInfo* bootInfo,
     OrynKernelPhysicalMemory* physicalMemory,
     OrynKernelVirtualMemory* virtualMemory)
 {
@@ -226,8 +272,9 @@ static int MapCurrentStackRange(
     virtualMemory->CurrentStackPointer = stackPointer;
     virtualMemory->StackMapStart = AlignDown(start);
     virtualMemory->StackMapEnd = AlignUp(stackPointer + halfWindow);
-    return MapRange(
+    return MapKernelOrIdentityRange(
         pml4,
+        bootInfo,
         virtualMemory->StackMapStart,
         virtualMemory->StackMapEnd - virtualMemory->StackMapStart,
         physicalMemory,
@@ -287,7 +334,7 @@ static int MapBootInfoRange(
 
     virtualMemory->BootInfoMapStart = AlignDown(start);
     virtualMemory->BootInfoMapEnd = AlignUp(start + bytes);
-    return MapRange(pml4, start, bytes, physicalMemory, virtualMemory);
+    return MapKernelOrIdentityRange(pml4, bootInfo, start, bytes, physicalMemory, virtualMemory);
 }
 
 static int MapBootMemoryMapRange(
@@ -423,7 +470,7 @@ int OrynVirtualMemoryInit(
     virtualMemory->NewPml4 = (unsigned long long)pml4;
     KernelIoWriteString("[KERNEL] Virtual memory: new PML4 allocated below early direct-map limit\n");
     if (!MapRange(pml4, 0ULL, ORYN_LOW_IDENTITY_BYTES, physicalMemory, virtualMemory) ||
-        !MapCurrentStackRange(pml4, physicalMemory, virtualMemory) ||
+        !MapCurrentStackRange(pml4, bootInfo, physicalMemory, virtualMemory) ||
         !MapVgaTextRange(pml4, physicalMemory, virtualMemory) ||
         !MapKernelRange(pml4, bootInfo, physicalMemory, virtualMemory) ||
         !MapKernelVirtualRange(pml4, bootInfo, physicalMemory, virtualMemory) ||
@@ -436,6 +483,7 @@ int OrynVirtualMemoryInit(
     }
 
     KernelIoWriteString("[KERNEL] Virtual memory: required ranges mapped\n");
+    KernelIoWriteString("[KERNEL] Virtual memory: switching CR3 to kernel-owned PML4\n");
     OrynVirtualMemoryWriteCr3(virtualMemory->NewPml4);
     KernelIoWriteString("[KERNEL] Virtual memory: CR3 switched to kernel-owned PML4\n");
     virtualMemory->Active = 1U;

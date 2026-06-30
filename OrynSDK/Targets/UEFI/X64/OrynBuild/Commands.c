@@ -225,6 +225,12 @@ static void WriteBootReport(
     int kernel_entered = TextContains(debug_text, "[KERNEL] PASS: Kernel entered successfully");
     int serial_ok = TextContains(debug_text, "[KERNEL] PASS: Serial/debug output path is working");
     int bootinfo_received = TextContains(debug_text, "[KERNEL] PASS: BootInfo received");
+    int virtual_memory_started = TextContains(debug_text, "[KERNEL] Virtual memory: starting");
+    int virtual_memory_required_mapped = TextContains(debug_text, "[KERNEL] Virtual memory: required ranges mapped");
+    int virtual_memory_switching_cr3 = TextContains(debug_text, "[KERNEL] Virtual memory: switching CR3 to kernel-owned PML4");
+    int virtual_memory_switched_cr3 = TextContains(debug_text, "[KERNEL] Virtual memory: CR3 switched to kernel-owned PML4");
+    int virtual_memory_active = TextContains(debug_text, "[KERNEL] Virtual memory: active");
+    int system_halted = TextContains(debug_text, "[KERNEL] System halted by Kernel-5");
     int debug_exit = TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success");
     int boot_pass = command_ok && (exit_code == 0 || exit_code == 33) && loader_started &&
         kernel_loaded && entry_printed && virtual_map_prepared && virtual_map_active &&
@@ -261,7 +267,34 @@ static void WriteBootReport(
     fprintf(file, "  Kernel entered: %s\n", PassFail(kernel_entered));
     fprintf(file, "  Serial/debug output reached kernel: %s\n", PassFail(serial_ok));
     fprintf(file, "  Kernel received BootInfo: %s\n", PassFail(bootinfo_received));
-    fprintf(file, "  Kernel requested QEMU debug-exit: %s\n\n", PassFail(debug_exit));
+    fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
+    fprintf(file, "  Kernel virtual memory required ranges mapped: %s\n", PassFail(virtual_memory_required_mapped));
+    fprintf(file, "  Kernel virtual memory CR3 switch requested: %s\n", PassFail(virtual_memory_switching_cr3));
+    fprintf(file, "  Kernel virtual memory CR3 switch completed: %s\n", PassFail(virtual_memory_switched_cr3));
+    fprintf(file, "  Kernel virtual memory active proof printed: %s\n", PassFail(virtual_memory_active));
+    fprintf(file, "  Kernel reached halt path: %s\n", PassFail(system_halted));
+    fprintf(file, "  Kernel requested QEMU debug-exit: %s\n", PassFail(debug_exit));
+
+    fprintf(file, "\nFailure hint:\n  %s\n\n",
+        debug_exit ?
+            "No kernel-side failure detected by the boot-proof markers." :
+        !loader_started ?
+            "The loader did not start." :
+        !kernel_jump ?
+            "The loader did not reach the kernel jump." :
+        !kernel_entered ?
+            "The kernel did not print the entry success marker." :
+        !virtual_memory_started ?
+            "The kernel stopped before virtual-memory initialization." :
+        !virtual_memory_required_mapped ?
+            "The kernel stopped while building required virtual-memory mappings." :
+        !virtual_memory_switching_cr3 ?
+            "The kernel stopped after mapping required ranges and before attempting the CR3 switch." :
+        !virtual_memory_switched_cr3 ?
+            "The kernel stopped during the CR3 switch to the kernel-owned PML4." :
+        !system_halted ?
+            "The kernel passed the CR3 switch but did not reach its halt path." :
+            "The kernel halted but did not request QEMU debug-exit success.");
 
     fprintf(file, "Paths:\n");
     fprintf(file, "  QEMU: %s\n", qemu_path);
