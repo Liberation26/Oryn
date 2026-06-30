@@ -135,7 +135,7 @@ The user can choose whether the loader also passes:
 
   Kernel physical base/size
   MemoryMap pointer/count/entry-size/version
-  Framebuffer base/size/width/height/pitch/pixel-format, if GOP is available
+  Plain linear framebuffer base/size/width/height/pitch/bytes-per-pixel/pixel-format, if available
   RSDP pointer, if ACPI is available
 
 The kernel proves the handoff by printing:
@@ -160,7 +160,7 @@ The questionnaire asks whether BOOTX64.EFI may pass each available UEFI BootInfo
 
   1. Kernel physical range
   2. UEFI memory map
-  3. GOP framebuffer
+  3. Linear framebuffer
   4. ACPI RSDP pointer
 
 The package includes Kernel/1 as the default full BootInfo selection.

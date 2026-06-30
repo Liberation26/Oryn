@@ -97,19 +97,29 @@ static void ValidateFramebuffer(const OrynBootInfo* bootInfo, OrynKernelBootInfo
         return;
     }
 
-    if (bootInfo->FramebufferBase == 0ULL || bootInfo->FramebufferSize == 0ULL)
+    if (bootInfo->Framebuffer.Base == 0ULL || bootInfo->Framebuffer.Size == 0ULL)
     {
         WriteValidationFail("Framebuffer base or size is zero.", status);
     }
 
-    if (bootInfo->FramebufferWidth == 0U || bootInfo->FramebufferHeight == 0U)
+    if (bootInfo->Framebuffer.Width == 0U || bootInfo->Framebuffer.Height == 0U)
     {
         WriteValidationFail("Framebuffer resolution is zero.", status);
     }
 
-    if (bootInfo->FramebufferPixelsPerScanLine < bootInfo->FramebufferWidth)
+    if (bootInfo->Framebuffer.PixelsPerScanLine < bootInfo->Framebuffer.Width)
     {
         WriteValidationFail("Framebuffer pitch is smaller than width.", status);
+    }
+
+    if (bootInfo->Framebuffer.BytesPerPixel != 4U)
+    {
+        WriteValidationFail("Framebuffer is not a 32-bit linear pixel buffer.", status);
+    }
+
+    if (bootInfo->Framebuffer.PixelFormat == ORYN_FRAMEBUFFER_PIXEL_FORMAT_UNKNOWN)
+    {
+        WriteValidationFail("Framebuffer pixel format is unknown.", status);
     }
 }
 

@@ -140,9 +140,10 @@ static void PrintRuntimeServices(const OrynBootInfo* bootInfo)
 
 static int BootInfoHasUsableScreenFields(const OrynBootInfo* bootInfo)
 {
-    if (bootInfo->FramebufferBase == 0ULL || bootInfo->FramebufferSize == 0ULL ||
-        bootInfo->FramebufferWidth == 0U || bootInfo->FramebufferHeight == 0U ||
-        bootInfo->FramebufferPixelsPerScanLine < bootInfo->FramebufferWidth)
+    if (bootInfo->Framebuffer.Base == 0ULL || bootInfo->Framebuffer.Size == 0ULL ||
+        bootInfo->Framebuffer.Width == 0U || bootInfo->Framebuffer.Height == 0U ||
+        bootInfo->Framebuffer.PixelsPerScanLine < bootInfo->Framebuffer.Width ||
+        bootInfo->Framebuffer.BytesPerPixel == 0U)
     {
         return 0;
     }
@@ -153,24 +154,22 @@ static int BootInfoHasUsableScreenFields(const OrynBootInfo* bootInfo)
 static void PrintScreenFields(const char* label, const OrynBootInfo* bootInfo)
 {
     KernelIoWriteString(label);
-    KernelIoWriteDec64(bootInfo->FramebufferWidth);
+    KernelIoWriteDec64(bootInfo->Framebuffer.Width);
     KernelIoWriteString("x");
-    KernelIoWriteDec64(bootInfo->FramebufferHeight);
+    KernelIoWriteDec64(bootInfo->Framebuffer.Height);
     KernelIoWriteString(" pitch ");
-    KernelIoWriteDec64(bootInfo->FramebufferPixelsPerScanLine);
+    KernelIoWriteDec64(bootInfo->Framebuffer.PixelsPerScanLine);
     KernelIoWriteString("\n");
-    WriteBootInfoField("[KERNEL] Screen base: ", bootInfo->FramebufferBase);
-    WriteBootInfoField("[KERNEL] Screen size: ", bootInfo->FramebufferSize);
-    KernelIoWriteString("[KERNEL] Screen mode/max: ");
-    KernelIoWriteDec64(bootInfo->FramebufferMode);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(bootInfo->FramebufferMaxMode);
+    WriteBootInfoField("[KERNEL] Screen base: ", bootInfo->Framebuffer.Base);
+    WriteBootInfoField("[KERNEL] Screen size: ", bootInfo->Framebuffer.Size);
+    KernelIoWriteString("[KERNEL] Screen bytes per pixel: ");
+    KernelIoWriteDec64(bootInfo->Framebuffer.BytesPerPixel);
     KernelIoWriteString("\n");
-    WriteBootInfoField("[KERNEL] Pixel format: ", bootInfo->FramebufferPixelFormat);
-    WriteBootInfoField("[KERNEL] Pixel red mask: ", bootInfo->FramebufferRedMask);
-    WriteBootInfoField("[KERNEL] Pixel green mask: ", bootInfo->FramebufferGreenMask);
-    WriteBootInfoField("[KERNEL] Pixel blue mask: ", bootInfo->FramebufferBlueMask);
-    WriteBootInfoField("[KERNEL] Pixel reserved mask: ", bootInfo->FramebufferReservedMask);
+    WriteBootInfoField("[KERNEL] Pixel format: ", bootInfo->Framebuffer.PixelFormat);
+    WriteBootInfoField("[KERNEL] Pixel red mask: ", bootInfo->Framebuffer.RedMask);
+    WriteBootInfoField("[KERNEL] Pixel green mask: ", bootInfo->Framebuffer.GreenMask);
+    WriteBootInfoField("[KERNEL] Pixel blue mask: ", bootInfo->Framebuffer.BlueMask);
+    WriteBootInfoField("[KERNEL] Pixel reserved mask: ", bootInfo->Framebuffer.ReservedMask);
 }
 
 void KernelBootInfoPrintSelection(void)

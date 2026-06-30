@@ -14,12 +14,14 @@ The questionnaire can choose these items. Kernel/1 enables all of them.
             reserved MMIO, and the loader/kernel allocations.
    Flag: ORYN_BOOTINFO_FLAG_MEMORY_MAP
 
-3. GOP framebuffer
-   Fields: FramebufferBase, FramebufferSize, FramebufferWidth, FramebufferHeight,
-           FramebufferPixelsPerScanLine, FramebufferPixelFormat, FramebufferMode,
-           FramebufferMaxMode, FramebufferInfoVersion, FramebufferInfoSize,
-           FramebufferRedMask, FramebufferGreenMask, FramebufferBlueMask,
-           FramebufferReservedMask
+3. Linear framebuffer
+   Fields: Framebuffer.Base, Framebuffer.Size, Framebuffer.Width, Framebuffer.Height,
+           Framebuffer.PixelsPerScanLine, Framebuffer.BytesPerPixel,
+           Framebuffer.PixelFormat, Framebuffer.RedMask, Framebuffer.GreenMask,
+           Framebuffer.BlueMask, Framebuffer.ReservedMask
+   Details: this is a plain physical linear framebuffer description. The kernel
+            receives no firmware graphics protocol pointer, mode object, mode
+            index, max-mode value, info structure, or firmware-owned graphics object.
    Flag: ORYN_BOOTINFO_FLAG_FRAMEBUFFER
 
 4. ACPI RSDP pointer

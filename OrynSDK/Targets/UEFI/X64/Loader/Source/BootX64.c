@@ -28,13 +28,6 @@ EFI_GUID gSimpleFileSystemProtocolGuid =
     { 0x8E, 0x39, 0x00, 0xA0, 0xC9, 0x69, 0x72, 0x3B }
 };
 
-static EFI_GUID gGraphicsOutputProtocolGuid =
-{
-    0x9042A9DEU, 0x23DCU, 0x4A38U,
-    { 0x96, 0xFB, 0x7A, 0xDE, 0xD0, 0x80, 0x51, 0x6A }
-};
-
-
 static void CopyAscii(char* target, UINTN targetSize, const char* source)
 {
     UINTN index = 0;
@@ -147,53 +140,6 @@ static void FillBaseBootInfo(
 
     CopyAscii(bootInfo->BootLoaderName, sizeof(bootInfo->BootLoaderName), "Oryn BOOTX64.EFI");
     CopyAscii(bootInfo->KernelName, sizeof(bootInfo->KernelName), "Kernel-5");
-}
-
-static int CaptureFramebufferToBootInfo(OrynBootInfo* bootInfo, int selected)
-{
-    EFI_GRAPHICS_OUTPUT_PROTOCOL* graphics = ORYN_NULL;
-    EFI_STATUS status = gBootServices->LocateProtocol(&gGraphicsOutputProtocolGuid, ORYN_NULL, (void**)&graphics);
-    if (IsError(status) || graphics == ORYN_NULL || graphics->Mode == ORYN_NULL || graphics->Mode->Info == ORYN_NULL)
-    {
-        if (selected)
-        {
-            Print("[BOOT] BootInfo framebuffer: not available.\n");
-        }
-        else
-        {
-            Print("[BOOT] Default screen framebuffer: not available.\n");
-        }
-        return 0;
-    }
-
-    bootInfo->FramebufferBase = (UINT64)graphics->Mode->FrameBufferBase;
-    bootInfo->FramebufferSize = (UINT64)graphics->Mode->FrameBufferSize;
-    bootInfo->FramebufferWidth = graphics->Mode->Info->HorizontalResolution;
-    bootInfo->FramebufferHeight = graphics->Mode->Info->VerticalResolution;
-    bootInfo->FramebufferPixelsPerScanLine = graphics->Mode->Info->PixelsPerScanLine;
-    bootInfo->FramebufferPixelFormat = graphics->Mode->Info->PixelFormat;
-    bootInfo->FramebufferMode = graphics->Mode->Mode;
-    bootInfo->FramebufferMaxMode = graphics->Mode->MaxMode;
-    bootInfo->FramebufferInfoVersion = graphics->Mode->Info->Version;
-    bootInfo->FramebufferInfoSize = (UINT32)graphics->Mode->SizeOfInfo;
-    bootInfo->FramebufferRedMask = graphics->Mode->Info->PixelInformation[0];
-    bootInfo->FramebufferGreenMask = graphics->Mode->Info->PixelInformation[1];
-    bootInfo->FramebufferBlueMask = graphics->Mode->Info->PixelInformation[2];
-    bootInfo->FramebufferReservedMask = graphics->Mode->Info->PixelInformation[3];
-
-    if (selected)
-    {
-        bootInfo->Flags |= ORYN_BOOTINFO_FLAG_FRAMEBUFFER;
-        Print("[BOOT] BootInfo framebuffer base: ");
-    }
-    else
-    {
-        Print("[BOOT] Default screen framebuffer base: ");
-    }
-
-    PrintHex64(bootInfo->FramebufferBase);
-    Print("\n");
-    return 1;
 }
 
 static void PrintBootInfoSelection(void)

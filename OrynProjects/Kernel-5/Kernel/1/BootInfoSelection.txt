@@ -4,7 +4,7 @@ BootInfoSelectionKey=0x1EF
 Selected UEFI BootInfo items:
   Kernel physical range: yes
   UEFI memory map: yes
-  GOP framebuffer: yes
+  Linear framebuffer: yes
   ACPI RSDP pointer: yes
   UEFI firmware data: yes
   UEFI configuration tables / platform pointers: yes

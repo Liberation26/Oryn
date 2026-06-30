@@ -2,7 +2,7 @@
 #define ORYN_BOOT_INFO_H
 
 #define ORYN_BOOTINFO_SIGNATURE 0x544F4F424E59524FULL
-#define ORYN_BOOTINFO_VERSION 3U
+#define ORYN_BOOTINFO_VERSION 4U
 #define ORYN_BOOTINFO_ABI_PLAIN_C 1U
 #define ORYN_BOOTINFO_X64_ENTRY_REGISTER_RDI 1U
 
@@ -20,6 +20,11 @@
 
 #define ORYN_BOOTINFO_MAX_CONFIGURATION_TABLES 32U
 #define ORYN_BOOTINFO_MAX_BOOT_ORDER_ENTRIES 32U
+
+#define ORYN_FRAMEBUFFER_PIXEL_FORMAT_UNKNOWN 0U
+#define ORYN_FRAMEBUFFER_PIXEL_FORMAT_RGBX8888 1U
+#define ORYN_FRAMEBUFFER_PIXEL_FORMAT_BGRX8888 2U
+#define ORYN_FRAMEBUFFER_PIXEL_FORMAT_BITMASK32 3U
 
 #define ORYN_BOOT_CONFIGURATION_TABLE_UNKNOWN 0U
 #define ORYN_BOOT_CONFIGURATION_TABLE_ACPI_10 1U
@@ -73,6 +78,22 @@ typedef struct OrynBootConfigurationTableEntry
     unsigned int Reserved;
     unsigned long long PhysicalAddress;
 } OrynBootConfigurationTableEntry;
+
+typedef struct OrynBootFramebuffer
+{
+    unsigned long long Base;
+    unsigned long long Size;
+    unsigned int Width;
+    unsigned int Height;
+    unsigned int PixelsPerScanLine;
+    unsigned int BytesPerPixel;
+    unsigned int PixelFormat;
+    unsigned int Reserved0;
+    unsigned int RedMask;
+    unsigned int GreenMask;
+    unsigned int BlueMask;
+    unsigned int ReservedMask;
+} OrynBootFramebuffer;
 
 typedef struct OrynBootFirmwareData
 {
@@ -139,20 +160,7 @@ typedef struct OrynBootInfo
     unsigned long long MemoryMapEntrySize;
     unsigned int MemoryMapVersion;
     unsigned int Reserved0;
-    unsigned long long FramebufferBase;
-    unsigned long long FramebufferSize;
-    unsigned int FramebufferWidth;
-    unsigned int FramebufferHeight;
-    unsigned int FramebufferPixelsPerScanLine;
-    unsigned int FramebufferPixelFormat;
-    unsigned int FramebufferMode;
-    unsigned int FramebufferMaxMode;
-    unsigned int FramebufferInfoVersion;
-    unsigned int FramebufferInfoSize;
-    unsigned int FramebufferRedMask;
-    unsigned int FramebufferGreenMask;
-    unsigned int FramebufferBlueMask;
-    unsigned int FramebufferReservedMask;
+    OrynBootFramebuffer Framebuffer;
     unsigned long long Rsdp;
     unsigned long long Acpi10Rsdp;
     unsigned long long Acpi20Rsdp;
@@ -177,8 +185,10 @@ typedef struct OrynBootInfo
 
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootGuid_must_be_plain_16_bytes, sizeof(OrynBootGuid) == 16U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootMemoryEntry_must_be_plain_40_bytes, sizeof(OrynBootMemoryEntry) == 40U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootFramebuffer_must_be_plain_56_bytes, sizeof(OrynBootFramebuffer) == 56U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_signature_must_be_64_bit, sizeof(((OrynBootInfo*)0)->Signature) == 8U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_flags_must_be_64_bit, sizeof(((OrynBootInfo*)0)->Flags) == 8U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_pointer_fields_are_plain_addresses, sizeof(((OrynBootInfo*)0)->MemoryMap) == 8U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_framebuffer_base_is_plain_address, sizeof(((OrynBootInfo*)0)->Framebuffer.Base) == 8U);
 
 #endif

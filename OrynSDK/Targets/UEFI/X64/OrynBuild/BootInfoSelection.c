@@ -353,7 +353,7 @@ static int WriteVariantNotes(const char* variant_dir, int number, int kernel_ran
     fprintf(file, "Selected UEFI BootInfo items:\n");
     fprintf(file, "  Kernel physical range: %s\n", kernel_range ? "yes" : "no");
     fprintf(file, "  UEFI memory map: %s\n", memory_map ? "yes" : "no");
-    fprintf(file, "  GOP framebuffer: %s\n", framebuffer ? "yes" : "no");
+    fprintf(file, "  Linear framebuffer: %s\n", framebuffer ? "yes" : "no");
     fprintf(file, "  ACPI RSDP pointer: %s\n", rsdp ? "yes" : "no");
     fprintf(file, "  UEFI firmware data: %s\n", firmware_data ? "yes" : "no");
     fprintf(file, "  UEFI configuration tables / platform pointers: %s\n", firmware_data ? "yes" : "no");
@@ -556,7 +556,7 @@ static int ShowVariantDetails(const OrynProject* project, int number)
     printf("Items:\n");
     printf("  Kernel physical range: %s\n", YesNoText(kernel_range));
     printf("  UEFI memory map: %s\n", YesNoText(memory_map));
-    printf("  GOP framebuffer: %s\n", YesNoText(framebuffer));
+    printf("  Linear framebuffer: %s\n", YesNoText(framebuffer));
     printf("  ACPI RSDP pointer: %s\n", YesNoText(rsdp));
     printf("  UEFI firmware data: %s\n", YesNoText(firmware_data));
     printf("  UEFI configuration tables / platform pointers: %s\n", YesNoText(firmware_data));
@@ -718,7 +718,7 @@ static int OrynBootInfoCompare(const OrynProject* project, int argument_count, c
     printf("Kernel B: Kernel/%d  BootInfoMask=0x%llX\n\n", right_number, right_mask);
     PrintCompareLine("Kernel physical range", left_kernel_range, right_kernel_range);
     PrintCompareLine("UEFI memory map", left_memory_map, right_memory_map);
-    PrintCompareLine("GOP framebuffer", left_framebuffer, right_framebuffer);
+    PrintCompareLine("Linear framebuffer", left_framebuffer, right_framebuffer);
     PrintCompareLine("ACPI RSDP pointer", left_rsdp, right_rsdp);
     PrintCompareLine("UEFI firmware data", left_firmware_data, right_firmware_data);
 
@@ -857,13 +857,13 @@ static int OrynBootInfoQuestionnaire(const char* executable_path, const char* pr
     printf("Available UEFI BootInfo items:\n");
     printf("  1. Kernel physical range: physical base and loaded size of Kernel.elf.\n");
     printf("  2. UEFI memory map: memory descriptors copied before ExitBootServices.\n");
-    printf("  3. GOP framebuffer: framebuffer base, size, resolution, pitch, and pixel format.\n");
+    printf("  3. Linear framebuffer: framebuffer base, size, resolution, pitch, bytes-per-pixel, and pixel format.\n");
     printf("  4. ACPI RSDP pointer: ACPI root pointer discovered from UEFI configuration tables.\n");
     printf("  5. UEFI firmware/platform data: vendor, UEFI revision, boot time, ACPI/SMBIOS/FDT pointers, NVRAM snapshot, and RuntimeServices pointers.\n\n");
 
     int kernel_range = AskYesNo("Pass item 1, Kernel physical range?", 1);
     int memory_map = AskYesNo("Pass item 2, UEFI memory map?", 1);
-    int framebuffer = AskYesNo("Pass item 3, GOP framebuffer?", 1);
+    int framebuffer = AskYesNo("Pass item 3, Linear framebuffer?", 1);
     int rsdp = AskYesNo("Pass item 4, ACPI RSDP pointer?", 1);
     int firmware_data = AskYesNo("Pass item 5, UEFI firmware/platform data?", 1);
 

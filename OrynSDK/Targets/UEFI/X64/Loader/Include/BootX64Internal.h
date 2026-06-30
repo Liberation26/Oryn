@@ -69,6 +69,7 @@ EFI_STATUS LoadElfSegments(const void* kernelBuffer, UINTN kernelSize, UINT64* o
 void OrynCapturePlatformTables(OrynBootInfo* bootInfo, int wantPlatformTables, int wantRsdp);
 void OrynCaptureNvramSnapshot(OrynBootInfo* bootInfo);
 void OrynCaptureRuntimeServices(OrynBootInfo* bootInfo);
+int CaptureFramebufferToBootInfo(OrynBootInfo* bootInfo, int selected);
 EFI_STATUS ExitBootServicesWithBootInfo(EFI_HANDLE imageHandle, OrynBootInfo* bootInfo);
 __attribute__((noreturn)) void JumpToKernel(UINT64 kernelEntry, OrynBootInfo* bootInfo);
 EFI_STATUS OrynUefiLoaderMain(EFI_HANDLE imageHandle, EFI_SYSTEM_TABLE* systemTable);

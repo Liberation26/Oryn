@@ -215,9 +215,10 @@ static int KConsoleBootInfoHasUsableFramebuffer(const OrynBootInfo* bootInfo)
         return 0;
     }
 
-    if (bootInfo->FramebufferBase == 0ULL || bootInfo->FramebufferSize == 0ULL ||
-        bootInfo->FramebufferWidth == 0U || bootInfo->FramebufferHeight == 0U ||
-        bootInfo->FramebufferPixelsPerScanLine < bootInfo->FramebufferWidth)
+    if (bootInfo->Framebuffer.Base == 0ULL || bootInfo->Framebuffer.Size == 0ULL ||
+        bootInfo->Framebuffer.Width == 0U || bootInfo->Framebuffer.Height == 0U ||
+        bootInfo->Framebuffer.PixelsPerScanLine < bootInfo->Framebuffer.Width ||
+        bootInfo->Framebuffer.BytesPerPixel != 4U)
     {
         return 0;
     }
@@ -227,7 +228,8 @@ static int KConsoleBootInfoHasUsableFramebuffer(const OrynBootInfo* bootInfo)
 
 static unsigned int KConsoleVisibleHeight(const OrynBootInfo* bootInfo)
 {
-    unsigned long long bytesPerLine = (unsigned long long)bootInfo->FramebufferPixelsPerScanLine * 4ULL;
+    unsigned long long bytesPerLine = (unsigned long long)bootInfo->Framebuffer.PixelsPerScanLine *
+        (unsigned long long)bootInfo->Framebuffer.BytesPerPixel;
     unsigned long long safeHeight;
 
     if (bytesPerLine == 0ULL)
@@ -235,10 +237,10 @@ static unsigned int KConsoleVisibleHeight(const OrynBootInfo* bootInfo)
         return 0U;
     }
 
-    safeHeight = bootInfo->FramebufferSize / bytesPerLine;
-    if (safeHeight > (unsigned long long)bootInfo->FramebufferHeight)
+    safeHeight = bootInfo->Framebuffer.Size / bytesPerLine;
+    if (safeHeight > (unsigned long long)bootInfo->Framebuffer.Height)
     {
-        safeHeight = (unsigned long long)bootInfo->FramebufferHeight;
+        safeHeight = (unsigned long long)bootInfo->Framebuffer.Height;
     }
 
     return (unsigned int)safeHeight;
@@ -407,11 +409,11 @@ void KConsoleInit(const OrynBootInfo* bootInfo)
         return;
     }
 
-    gConsole.Framebuffer = (volatile unsigned int*)bootInfo->FramebufferBase;
-    gConsole.FramebufferSize = bootInfo->FramebufferSize;
-    gConsole.Width = bootInfo->FramebufferWidth;
+    gConsole.Framebuffer = (volatile unsigned int*)bootInfo->Framebuffer.Base;
+    gConsole.FramebufferSize = bootInfo->Framebuffer.Size;
+    gConsole.Width = bootInfo->Framebuffer.Width;
     gConsole.Height = KConsoleVisibleHeight(bootInfo);
-    gConsole.Pitch = bootInfo->FramebufferPixelsPerScanLine;
+    gConsole.Pitch = bootInfo->Framebuffer.PixelsPerScanLine;
     gConsole.CursorX = KCONSOLE_MARGIN_X;
     gConsole.CursorY = KCONSOLE_MARGIN_Y;
     gConsole.Mode = KCONSOLE_MODE_FRAMEBUFFER;

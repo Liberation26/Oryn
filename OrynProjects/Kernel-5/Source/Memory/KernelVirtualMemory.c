@@ -173,9 +173,10 @@ static int BootInfoHasUsableFramebufferFields(const OrynBootInfo* bootInfo)
         return 0;
     }
 
-    if (bootInfo->FramebufferBase == 0ULL || bootInfo->FramebufferSize == 0ULL ||
-        bootInfo->FramebufferWidth == 0U || bootInfo->FramebufferHeight == 0U ||
-        bootInfo->FramebufferPixelsPerScanLine < bootInfo->FramebufferWidth)
+    if (bootInfo->Framebuffer.Base == 0ULL || bootInfo->Framebuffer.Size == 0ULL ||
+        bootInfo->Framebuffer.Width == 0U || bootInfo->Framebuffer.Height == 0U ||
+        bootInfo->Framebuffer.PixelsPerScanLine < bootInfo->Framebuffer.Width ||
+        bootInfo->Framebuffer.BytesPerPixel == 0U)
     {
         return 0;
     }
@@ -314,16 +315,16 @@ static int MapFramebufferRange(
 
     if (virtualMemory->FramebufferSelected)
     {
-        virtualMemory->FramebufferMapStart = AlignDown(bootInfo->FramebufferBase);
-        virtualMemory->FramebufferMapEnd = AlignUp(bootInfo->FramebufferBase + bootInfo->FramebufferSize);
+        virtualMemory->FramebufferMapStart = AlignDown(bootInfo->Framebuffer.Base);
+        virtualMemory->FramebufferMapEnd = AlignUp(bootInfo->Framebuffer.Base + bootInfo->Framebuffer.Size);
     }
     else
     {
-        virtualMemory->DefaultScreenMapStart = AlignDown(bootInfo->FramebufferBase);
-        virtualMemory->DefaultScreenMapEnd = AlignUp(bootInfo->FramebufferBase + bootInfo->FramebufferSize);
+        virtualMemory->DefaultScreenMapStart = AlignDown(bootInfo->Framebuffer.Base);
+        virtualMemory->DefaultScreenMapEnd = AlignUp(bootInfo->Framebuffer.Base + bootInfo->Framebuffer.Size);
     }
 
-    if (!MapRange(pml4, bootInfo->FramebufferBase, bootInfo->FramebufferSize, physicalMemory, virtualMemory))
+    if (!MapRange(pml4, bootInfo->Framebuffer.Base, bootInfo->Framebuffer.Size, physicalMemory, virtualMemory))
     {
         return 0;
     }
