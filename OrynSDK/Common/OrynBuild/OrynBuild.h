@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#define ORYN_VERSION "0.5.52"
+#define ORYN_VERSION "0.5.54"
 #define ORYN_MAX_PATH 4096
 #define ORYN_MAX_ITEMS 512
 
@@ -71,6 +71,9 @@ int OrynCommandRun(const char* executable_path, const char* project_file);
 int OrynCommandClean(const char* executable_path, const char* project_file);
 int OrynCommandBootInfo(const char* executable_path, const char* project_file, int argument_count, char** arguments);
 int OrynCommandMatrix(const char* executable_path, const char* project_file);
+int OrynCommandMatrixSerial(const char* executable_path, const char* project_file);
+int OrynCommandMatrixScreen(const char* executable_path, const char* project_file);
+int OrynCommandMatrixAll(const char* executable_path, const char* project_file);
 
 int OrynLoadProject(const char* executable_path, const char* project_file, OrynProject* project);
 void OrynResolveBootInfoSelection(OrynProject* project);

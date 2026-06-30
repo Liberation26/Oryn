@@ -92,6 +92,31 @@ static int IsInteractiveDisplayMode(const char* display_mode)
     return !TextEqualsIgnoreCaseCommand(display_mode, "none");
 }
 
+static unsigned int ResolveQemuHeadlessTimeoutSeconds(void)
+{
+    const char* env = getenv("ORYN_QEMU_HEADLESS_TIMEOUT_SECONDS");
+    char* end = 0;
+    unsigned long value;
+
+    if (env == 0 || env[0] == 0)
+    {
+        return 15U;
+    }
+
+    value = strtoul(env, &end, 10);
+    if (end == env || *end != 0 || value < 5UL)
+    {
+        return 15U;
+    }
+
+    if (value > 600UL)
+    {
+        value = 600UL;
+    }
+
+    return (unsigned int)value;
+}
+
 static const char* ResolveQemuCpuModel(const char* configured_cpu)
 {
     if (configured_cpu == 0 || configured_cpu[0] == 0)
@@ -301,9 +326,12 @@ static void WriteBootReport(
     int keyboard_page = TextContains(debug_text, "[KERNEL] PASS: Keyboard PgUp/PgDn scroll one page while held.");
     int keyboard_stops_on_release = TextContains(debug_text, "[KERNEL] PASS: Keyboard scrolling stops when key is released.");
     int interactive_interrupts = TextContains(debug_text, "[KERNEL] PASS: Interactive halt loop leaves interrupts enabled for keyboard scrolling.");
-    int qemu_preboot_failure = (!command_ok) && !loader_started && DebugTextIsEmpty(debug_text);
     const char* report_display_mode = ResolveQemuDisplayMode(project);
     int interactive_display = IsInteractiveDisplayMode(report_display_mode);
+    unsigned int headless_timeout_seconds = ResolveQemuHeadlessTimeoutSeconds();
+    int qemu_timeout = (!interactive_display) && (exit_code == 124 || exit_code == 137);
+    int qemu_no_output_timeout = qemu_timeout && !loader_started && DebugTextIsEmpty(debug_text);
+    int qemu_preboot_failure = (!qemu_no_output_timeout) && (!command_ok) && !loader_started && DebugTextIsEmpty(debug_text);
     int interactive_hold = TextContains(debug_text, "[KERNEL] PASS: Interactive QEMU display mode keeps VM open for scroll testing.");
     int qemu_completion_ok = command_ok && (interactive_display || exit_code == 0 || exit_code == 33);
 
@@ -378,7 +406,15 @@ static void WriteBootReport(
     fprintf(file, "Toolchain: %s\n", project->toolchain);
     fprintf(file, "VM: %s\n", project->run_vm);
     fprintf(file, "VM Display: %s\n", report_display_mode);
+    fprintf(file, "VM Output mode: %s\n", interactive_display ?
+        "graphical framebuffer screen window" :
+        "headless terminal serial/debug output");
     fprintf(file, "VM Interactive display hold: %s\n", interactive_display ? "yes" : "no");
+    fprintf(file, "VM Headless timeout: %s", interactive_display ? "not used\n" : "");
+    if (!interactive_display)
+    {
+        fprintf(file, "%u seconds\n", headless_timeout_seconds);
+    }
     fprintf(file, "VM Memory: %s\n", project->run_memory);
     fprintf(file, "VM CPU: %s\n", project->run_cpu);
     if (resolved_cpu != 0 && QemuCpuWasTranslated(project->run_cpu, resolved_cpu))
@@ -395,6 +431,28 @@ static void WriteBootReport(
 
     fprintf(file, "Checks:\n");
     fprintf(file, "  QEMU command accepted: %s\n", PassFail(command_ok));
+    fprintf(file, "  QEMU completed before headless timeout: %s\n", PassFail(!qemu_timeout));
+    if (qemu_no_output_timeout)
+    {
+        fprintf(file, "  Firmware, loader, and kernel checks: SKIPPED - no serial/debugcon output before timeout.\n");
+        fprintf(file, "\nFailure hint:\n");
+        fprintf(file, "  QEMU boot produced no serial or debugcon output within %u seconds.\n", headless_timeout_seconds);
+        fprintf(file, "  Profile: %s\n", project->name);
+        fprintf(file, "  Display: %s\n", report_display_mode);
+        fprintf(file, "  Output mode: headless terminal serial/debug output, not graphical framebuffer screen output.\n");
+        fprintf(file, "  The UEFI loader marker [BOOT] Stage 01 was not seen. Check OVMF, the staged FAT32 image, BOOTX64.EFI, and the QEMU command.\n\n");
+        fprintf(file, "Paths:\n");
+        fprintf(file, "  QEMU: %s\n", qemu_path);
+        fprintf(file, "  OVMF Windows: %s\n", ovmf_windows);
+        fprintf(file, "  OVMF QEMU: %s\n", ovmf_qemu);
+        fprintf(file, "  FAT32 disk image: %s\n", disk_windows);
+        fprintf(file, "  Debug log: %s\n", debug_log);
+        fprintf(file, "  Boot report: %s\n\n", report_path);
+        fprintf(file, "Command:\n%s\n\n", command);
+        fprintf(file, "Captured debug output:\n%s\n", DebugTextIsEmpty(debug_text) ? "[empty]" : debug_text);
+        fclose(file);
+        return;
+    }
     if (qemu_preboot_failure)
     {
         fprintf(file, "  Firmware, loader, and kernel checks: SKIPPED - QEMU exited before UEFI firmware started.\n");
@@ -566,6 +624,8 @@ static void WriteBootReport(
     fprintf(file, "\nFailure hint:\n  %s\n\n",
         boot_pass ?
             "No kernel-side failure detected by the boot-proof markers." :
+        qemu_timeout ?
+            "QEMU did not complete before the headless timeout. Check the last printed [BOOT]/[KERNEL] marker, Debug.log, and BootReport.txt." :
         !command_ok ?
             "QEMU did not accept the VM command line. Check CPU, memory, and acceleration settings." :
         !loader_started ?
@@ -1042,9 +1102,17 @@ int OrynRunQemu(const OrynProject* project)
     char smp_text[32];
     snprintf(smp_text, sizeof(smp_text), "%u", vm_smp_count);
     OrynLogKeyValue("Display", display_mode);
+    OrynLogKeyValue("Output mode", interactive_display ?
+        "graphical framebuffer screen window" :
+        "headless terminal serial/debug output");
     if (interactive_display)
     {
+        OrynLogInfo("Graphical screen mode: QEMU framebuffer output is in the QEMU window, not the terminal serial stream.");
         OrynLogInfo("Interactive display mode: QEMU will stay open for manual screen scrolling tests until you close the QEMU window.");
+    }
+    else
+    {
+        OrynLogInfo("Headless mode: terminal output is live serial/debug output, not the graphical framebuffer screen.");
     }
     OrynLogKeyValue("SMP CPUs", smp_text);
     OrynLogKeyValue("Memory", project->run_memory);
@@ -1070,6 +1138,12 @@ int OrynRunQemu(const OrynProject* project)
     OrynLogKeyValue("Serial", interactive_display ?
         "null sink for faster interactive screen refresh" :
         "live WSL terminal stdio chardev");
+    if (!interactive_display)
+    {
+        char timeout_text[64];
+        snprintf(timeout_text, sizeof(timeout_text), "%u seconds", ResolveQemuHeadlessTimeoutSeconds());
+        OrynLogKeyValue("Boot timeout", timeout_text);
+    }
     OrynLogKeyValue("Debug log", debug_log);
     OrynLogKeyValue("Debug log staged", stage_debug_windows);
     OrynLogKeyValue("Boot report", boot_report);
@@ -1109,8 +1183,8 @@ int OrynRunQemu(const OrynProject* project)
             "-device isa-debug-exit,iobase=0xf4,iosize=0x04 ");
     }
 
-    char command[ORYN_MAX_PATH * 8];
-    snprintf(command, sizeof(command),
+    char qemu_command[ORYN_MAX_PATH * 8];
+    snprintf(qemu_command, sizeof(qemu_command),
         "%s -machine %s -cpu %s -smp %u -m %s -drive %s -no-reboot -display %s "
         "-monitor none %s -debugcon %s -global isa-debugcon.iobase=0xe9 "
         "%s-drive %s",
@@ -1126,10 +1200,29 @@ int OrynRunQemu(const OrynProject* project)
         debug_exit_argument,
         drive_quoted);
 
+    char command[ORYN_MAX_PATH * 9];
+    if (interactive_display)
+    {
+        snprintf(command, sizeof(command), "%s", qemu_command);
+    }
+    else
+    {
+        snprintf(command, sizeof(command), "timeout --foreground %us %s",
+            ResolveQemuHeadlessTimeoutSeconds(), qemu_command);
+    }
+
     int exit_code = -1;
     if (!interactive_display)
     {
-        printf("\n======== LIVE SERIAL OUTPUT START: %s ========\n", project->name);
+        printf("\n======== LIVE TERMINAL SERIAL OUTPUT START: %s ========\n", project->name);
+        printf("[INFO] This is serial/debug output. It is not graphical framebuffer screen output.\n");
+        printf("[INFO] Waiting for UEFI loader marker: [BOOT] Stage 01\n");
+        fflush(stdout);
+    }
+    else
+    {
+        printf("\n======== GRAPHICAL FRAMEBUFFER SCREEN TEST: %s ========\n", project->name);
+        printf("[INFO] QEMU window output is the screen/framebuffer. Close the QEMU window to continue.\n");
         fflush(stdout);
     }
 
@@ -1137,7 +1230,7 @@ int OrynRunQemu(const OrynProject* project)
 
     if (!interactive_display)
     {
-        printf("\n======== LIVE SERIAL OUTPUT END: %s ========\n", project->name);
+        printf("\n======== LIVE TERMINAL SERIAL OUTPUT END: %s ========\n", project->name);
         fflush(stdout);
     }
 

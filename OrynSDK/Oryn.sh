@@ -945,7 +945,7 @@ case "$Command" in
         exec "$OrynBin" "$Command" "$@"
         ;;
 
-    build|image|run|matrix|clean)
+    build|image|run|matrix|matrix-serial|matrix-screen|matrix-all|clean)
         if [ "$#" -eq 0 ]; then
             if [ ! -f "$DefaultProject" ]; then
                 Fail "Default Kernel-5 project was not found: $DefaultProject"
@@ -1071,7 +1071,9 @@ case "$Command" in
         printf '  ./Oryn.sh build [project] Build project, defaulting to Kernel-5\n'
         printf '  ./Oryn.sh image [project] Build image, defaulting to Kernel-5\n'
         printf '  ./Oryn.sh run [project]   Run project, defaulting to Kernel-5\n'
-        printf '  ./Oryn.sh matrix [project] Build every PIC/APIC/APIC2/HPET kernel separately and test headless QEMU\n'
+        printf '  ./Oryn.sh matrix [project]        Build every profile and test headless serial QEMU\n'
+        printf '  ./Oryn.sh matrix-screen [project] Build every profile and test graphical framebuffer screen QEMU\n'
+        printf '  ./Oryn.sh matrix-all [project]    Run serial matrix, then graphical screen matrix\n'
         printf '  ./Oryn.sh OSName [project]   Ask kernel/OS name first, then Headless, then BootInfo\n'
         printf '  ./Oryn.sh VMSettings [project] Ask and save VM format, CPU, memory, PIC/APIC/APIC2/HPET settings\n'
         printf '  ./Oryn.sh Headless [project] Ask whether the VM is headless, save Display, then ask BootInfo\n'

@@ -11,7 +11,10 @@ static void PrintUsage(void)
     printf("  oryn build <Project.oryn>\n");
     printf("  oryn image <Project.oryn>\n");
     printf("  oryn run <Project.oryn>\n");
-    printf("  oryn matrix <Project.oryn>\n");
+    printf("  oryn matrix <Project.oryn>          Headless serial matrix\n");
+    printf("  oryn matrix-serial <Project.oryn>   Headless serial matrix\n");
+    printf("  oryn matrix-screen <Project.oryn>   Graphical framebuffer/screen matrix\n");
+    printf("  oryn matrix-all <Project.oryn>      Serial matrix then graphical screen matrix\n");
     printf("  oryn clean <Project.oryn>\n");
     printf("  oryn bootinfo <Project.oryn> [list|show [n]|select n|compare a b|run n|test-all]\n");
 }
@@ -57,9 +60,19 @@ int main(int argc, char** argv)
         return OrynCommandRun(argv[0], argv[2]);
     }
 
-    if (strcmp(argv[1], "matrix") == 0)
+    if (strcmp(argv[1], "matrix") == 0 || strcmp(argv[1], "matrix-serial") == 0)
     {
-        return OrynCommandMatrix(argv[0], argv[2]);
+        return OrynCommandMatrixSerial(argv[0], argv[2]);
+    }
+
+    if (strcmp(argv[1], "matrix-screen") == 0)
+    {
+        return OrynCommandMatrixScreen(argv[0], argv[2]);
+    }
+
+    if (strcmp(argv[1], "matrix-all") == 0)
+    {
+        return OrynCommandMatrixAll(argv[0], argv[2]);
     }
 
     if (strcmp(argv[1], "clean") == 0)
