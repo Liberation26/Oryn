@@ -11,6 +11,7 @@
 #include "KernelApic.h"
 #include "KernelHpet.h"
 #include "KernelPci.h"
+#include "KernelSmp.h"
 #include "KernelMemoryMap.h"
 #include "KernelPhysicalMemory.h"
 #include "KernelVirtualMemory.h"
@@ -105,6 +106,8 @@ void KernelStart(const OrynBootInfo* bootInfo)
     (void)OrynKernelInterruptsRunPicTimerProof();
     (void)OrynKernelApicInit(1);
     OrynKernelApicPrintProof();
+    (void)OrynKernelSmpInit(kernelBootInfo);
+    OrynKernelSmpPrintProof();
     (void)OrynKernelHpetInit(kernelBootInfo);
     OrynKernelHpetPrintProof();
     (void)OrynKernelInterruptsRunApicTimerProof();

@@ -670,3 +670,23 @@ Expected proof lines include:
   [KERNEL] PASS: PCI devices discovered.
   [KERNEL] PASS: PCI class-code decoding ready.
   [KERNEL] PASS: PCI Discovery complete.
+
+
+OrynWsl 0.5.35 multi-core processing
+------------------------------------
+Kernel-5 now boots QEMU with four virtual CPUs:
+
+  -smp 4
+
+The kernel discovers CPUs from ACPI MADT, records local APIC IDs, prepares the AP startup trampoline below 1MB, and starts application processors using Local APIC INIT/SIPI.
+
+Expected SMP proof markers include:
+
+  PASS: SMP ACPI MADT table discovered.
+  PASS: SMP multi-core CPU topology discovered.
+  PASS: SMP AP startup trampoline prepared below 1MB.
+  PASS: SMP Local APIC IPI path ready.
+  PASS: SMP INIT IPI sent to application processors.
+  PASS: SMP STARTUP IPI sent to application processors.
+  PASS: SMP application processors entered kernel AP loop.
+  PASS: Multi-Core processing initialized.

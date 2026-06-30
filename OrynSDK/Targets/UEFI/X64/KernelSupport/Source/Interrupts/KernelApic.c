@@ -7,6 +7,7 @@
 #define ORYN_MSR_X2APIC_ID 0x802U
 #define ORYN_MSR_X2APIC_VERSION 0x803U
 #define ORYN_MSR_X2APIC_EOI 0x80BU
+#define ORYN_MSR_X2APIC_ICR 0x830U
 #define ORYN_MSR_X2APIC_SVR 0x80FU
 #define ORYN_MSR_X2APIC_LVT_TIMER 0x832U
 #define ORYN_MSR_X2APIC_TIMER_INITIAL 0x838U
@@ -18,6 +19,8 @@
 #define ORYN_APIC_REG_ID 0x020U
 #define ORYN_APIC_REG_VERSION 0x030U
 #define ORYN_APIC_REG_EOI 0x0B0U
+#define ORYN_APIC_REG_ICR_LOW 0x300U
+#define ORYN_APIC_REG_ICR_HIGH 0x310U
 #define ORYN_APIC_REG_SVR 0x0F0U
 #define ORYN_APIC_REG_LVT_TIMER 0x320U
 #define ORYN_APIC_REG_TIMER_INITIAL 0x380U
@@ -26,6 +29,10 @@
 #define ORYN_APIC_SPURIOUS_VECTOR 0xFFU
 #define ORYN_APIC_SOFTWARE_ENABLE 0x100U
 #define ORYN_APIC_LVT_MASKED 0x10000U
+#define ORYN_APIC_ICR_DELIVERY_PENDING 0x1000U
+#define ORYN_APIC_ICR_DELIVERY_INIT 0x500U
+#define ORYN_APIC_ICR_DELIVERY_STARTUP 0x600U
+#define ORYN_APIC_ICR_LEVEL_ASSERT 0x4000U
 
 static OrynKernelApicState gApicState;
 
@@ -241,6 +248,70 @@ unsigned long long OrynKernelApicReadTimerCurrent(void)
     }
 
     return 0ULL;
+}
+
+
+static int ApicWaitIcrIdle(void)
+{
+    for (volatile unsigned int index = 0U; index < 1000000U; ++index)
+    {
+        if (gApicState.Apic2Enabled)
+        {
+            return 1;
+        }
+
+        if ((ApicRead(ORYN_APIC_REG_ICR_LOW) & ORYN_APIC_ICR_DELIVERY_PENDING) == 0U)
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static int SendIpiRaw(unsigned int targetApicId, unsigned int command)
+{
+    if (!gApicState.Initialized)
+    {
+        return 0;
+    }
+
+    if (gApicState.Apic2Enabled)
+    {
+        unsigned long long value = ((unsigned long long)targetApicId << 32) | command;
+        OrynMsrWrite(ORYN_MSR_X2APIC_ICR, value);
+        return 1;
+    }
+
+    if (gApicState.XApicEnabled)
+    {
+        if (!ApicWaitIcrIdle())
+        {
+            return 0;
+        }
+
+        ApicWrite(ORYN_APIC_REG_ICR_HIGH, targetApicId << 24);
+        ApicWrite(ORYN_APIC_REG_ICR_LOW, command);
+        return ApicWaitIcrIdle();
+    }
+
+    return 0;
+}
+
+int OrynKernelApicCanSendIpi(void)
+{
+    return (gApicState.Initialized && (gApicState.Apic2Enabled || gApicState.XApicEnabled)) ? 1 : 0;
+}
+
+int OrynKernelApicSendInitIpi(unsigned int targetApicId)
+{
+    return SendIpiRaw(targetApicId, ORYN_APIC_ICR_DELIVERY_INIT | ORYN_APIC_ICR_LEVEL_ASSERT);
+}
+
+int OrynKernelApicSendStartupIpi(unsigned int targetApicId, unsigned int startupVector)
+{
+    return SendIpiRaw(targetApicId,
+        ORYN_APIC_ICR_DELIVERY_STARTUP | (startupVector & 0xFFU));
 }
 
 void OrynKernelApicPrintProof(void)

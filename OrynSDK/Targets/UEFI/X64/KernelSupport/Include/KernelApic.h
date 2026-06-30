@@ -29,6 +29,9 @@ void OrynKernelApicSendEoi(void);
 int OrynKernelApicStartOneShotTimer(unsigned int vector, unsigned int initialCount, unsigned int divideMode);
 void OrynKernelApicMaskTimer(void);
 unsigned long long OrynKernelApicReadTimerCurrent(void);
+int OrynKernelApicCanSendIpi(void);
+int OrynKernelApicSendInitIpi(unsigned int targetApicId);
+int OrynKernelApicSendStartupIpi(unsigned int targetApicId, unsigned int startupVector);
 void OrynKernelApicPrintProof(void);
 
 #endif

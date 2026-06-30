@@ -131,7 +131,7 @@ static KernelIoLineStyle LineStyleForText(const char* text)
     if (StartsWith(text, "[KERNEL] Virtual memory") || StartsWith(text, "[KERNEL] GDT") ||
         StartsWith(text, "[KERNEL] IDT") || StartsWith(text, "[KERNEL] CPU") ||
         StartsWith(text, "[KERNEL] PIC") || StartsWith(text, "[KERNEL] APIC") ||
-        StartsWith(text, "[KERNEL] HPET") || StartsWith(text, "[STEP]"))
+        StartsWith(text, "[KERNEL] HPET") || StartsWith(text, "[KERNEL] SMP") || StartsWith(text, "[STEP]"))
     {
         style.AnsiColour = OUTPUT_COLOR_STEP;
         style.ConsoleColour = KCONSOLE_COLOUR_STEP;
