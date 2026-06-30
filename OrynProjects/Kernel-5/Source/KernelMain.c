@@ -2,6 +2,7 @@
 #include "KernelBootInfo.h"
 #include "KernelConsole.h"
 #include "KernelIo.h"
+#include "KernelLifecycle.h"
 #include "KernelCpu.h"
 #include "KernelGdt.h"
 #include "KernelIdt.h"
@@ -301,11 +302,13 @@ static void RunMemoryProofs(const OrynBootInfo* kernelBootInfo)
         {
             ReserveBootHandoffRanges(kernelBootInfo, &gPhysicalMemory);
             OrynPhysicalMemoryPrintSummary(&gPhysicalMemory);
+            (void)OrynKernelLifecycleTransition(OrynKernelLifecycleMemoryReady);
             OrynPhysicalMemoryRunSelfTest(&gPhysicalMemory);
             KernelIoWriteString("[KERNEL] Virtual memory: starting\n");
             if (OrynVirtualMemoryInit(kernelBootInfo, &gKernelMemoryMap, &gPhysicalMemory, &gVirtualMemory))
             {
                 OrynVirtualMemoryPrintProof(&gVirtualMemory);
+                (void)OrynKernelLifecycleTransition(OrynKernelLifecycleVirtualMemoryReady);
             }
             else
             {
@@ -330,9 +333,12 @@ static void RunMemoryProofs(const OrynBootInfo* kernelBootInfo)
 void KernelStart(const OrynBootInfo* bootInfo)
 {
     KernelDisableInterrupts();
-    const OrynBootInfo* kernelBootInfo = KernelBootInfoAdopt(bootInfo);
-
     KernelIoInit();
+    OrynKernelLifecycleInit();
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleEntered);
+    const OrynBootInfo* kernelBootInfo = KernelBootInfoAdopt(bootInfo);
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleBootInfoAdopted);
+
     KernelIoWriteString("[KERNEL] Oryn Kernel-5 entered.\n");
     KernelIoWriteString("[KERNEL] PASS: Kernel entered successfully.\n");
     KernelIoWriteString("[KERNEL] PASS: Serial/debug output path is working.\n");
@@ -341,11 +347,15 @@ void KernelStart(const OrynBootInfo* bootInfo)
     OrynKernelBootInfoStatus bootStatus = KernelBootInfoValidate(kernelBootInfo);
 
     RunDescriptorAndSysCallProofs();
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleDescriptorsReady);
     RunInterruptAndTimerProofs(kernelBootInfo);
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleInterruptsReady);
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleTimersReady);
     RunPciProof(kernelBootInfo);
     if (bootStatus.IsValid)
     {
         KConsoleInit(kernelBootInfo);
+        (void)OrynKernelLifecycleTransition(OrynKernelLifecycleConsoleReady);
         KConsole.ClearScreen();
         KernelIoWriteString("[KERNEL] Oryn Kernel-5 booted.\n");
         KernelIoWriteString("[KERNEL] Target: uefi-x64\n");
@@ -363,10 +373,21 @@ void KernelStart(const OrynBootInfo* bootInfo)
     else
     {
         KernelIoWriteString("[KERNEL] BootInfo invalid. Memory services are disabled.\n");
+        OrynKernelLifecycleMarkPanic("BootInfo validation failed");
+    }
+
+    if (OrynKernelLifecycleGetState() != OrynKernelLifecyclePanic)
+    {
+        (void)OrynKernelLifecycleTransition(OrynKernelLifecycleRunning);
     }
 
     KernelIoWriteString("[KERNEL] System halted by Kernel-5.\n");
 #if ORYN_VM_INTERACTIVE_DISPLAY
+    int kernelPanic = OrynKernelLifecycleGetState() == OrynKernelLifecyclePanic;
+    if (!kernelPanic)
+    {
+        (void)OrynKernelLifecycleTransition(OrynKernelLifecycleInteractiveHalt);
+    }
     OrynKernelKeyboardEnableInteractiveInterrupts();
     int keyboardInterruptsReady = OrynKernelInterruptsAreEnabled() ? 1 : 0;
     OrynKernelInterruptsDisable();
@@ -380,7 +401,22 @@ void KernelStart(const OrynBootInfo* bootInfo)
     {
         OrynKernelInterruptsEnable();
     }
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalting);
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalted);
+    OrynKernelLifecyclePrintProof();
 #else
+    int kernelPanic = OrynKernelLifecycleGetState() == OrynKernelLifecyclePanic;
+    if (!kernelPanic)
+    {
+        (void)OrynKernelLifecycleTransition(OrynKernelLifecycleDebugExitRequested);
+    }
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalting);
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalted);
+    OrynKernelLifecyclePrintProof();
+    if (kernelPanic)
+    {
+        KernelIoExitQemuFailure();
+    }
     KernelIoExitQemuSuccess();
 #endif
 
