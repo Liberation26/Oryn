@@ -17,10 +17,41 @@ OrynBin="$SdkRoot/Common/Bin/oryn"
 BuildScript="$SdkRoot/Common/Scripts/BuildOryn.sh"
 DefaultProject="$WorkspaceRoot/OrynProjects/Kernel-5/Project.oryn"
 
-Info() { printf '\033[36m[INFO]\033[0m %s\n' "$1"; }
-Ok() { printf '\033[32m[ OK ]\033[0m %s\n' "$1"; }
-Warn() { printf '\033[33m[WARN]\033[0m %s\n' "$1"; }
-Fail() { printf '\033[31m[FAIL]\033[0m %s\n' "$1" >&2; }
+ColorReset="\033[0m"
+ColorInfo="\033[36m"
+ColorOk="\033[32m"
+ColorWarn="\033[33m"
+ColorFail="\033[31m"
+UseColor=1
+[ -n "${NO_COLOR:-}" ] && UseColor=0
+[ "${ORYN_NO_COLOR:-0}" = "1" ] && UseColor=0
+
+PrintTag()
+{
+    Color="$1"
+    Tag="$2"
+    Message="$3"
+    Stream="${4:-1}"
+
+    if [ "$UseColor" -eq 1 ]; then
+        if [ "$Stream" = "2" ]; then
+            printf "%b%s%b %s\n" "$Color" "$Tag" "$ColorReset" "$Message" >&2
+        else
+            printf "%b%s%b %s\n" "$Color" "$Tag" "$ColorReset" "$Message"
+        fi
+    else
+        if [ "$Stream" = "2" ]; then
+            printf "%s %s\n" "$Tag" "$Message" >&2
+        else
+            printf "%s %s\n" "$Tag" "$Message"
+        fi
+    fi
+}
+
+Info() { PrintTag "$ColorInfo" "[INFO]" "$1"; }
+Ok() { PrintTag "$ColorOk" "[ OK ]" "$1"; }
+Warn() { PrintTag "$ColorWarn" "[WARN]" "$1"; }
+Fail() { PrintTag "$ColorFail" "[FAIL]" "$1" 2; }
 
 AskYesNoShell()
 {

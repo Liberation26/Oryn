@@ -1,5 +1,15 @@
 #include "BootX64Internal.h"
 
+#define SERIAL_COLOR_RESET "\033[0m"
+#define SERIAL_COLOR_BOOT "\033[36m"
+#define SERIAL_COLOR_PASS "\033[32m"
+#define SERIAL_COLOR_WARN "\033[33m"
+#define SERIAL_COLOR_FAIL "\033[31m"
+#define SERIAL_COLOR_STEP "\033[35m"
+
+static int gSerialLineColored = 0;
+static int gSerialAtLineStart = 1;
+
 int IsError(EFI_STATUS status)
 {
     return (status & EFI_ERROR_BIT) != 0;
@@ -28,6 +38,22 @@ void InitSerialDebug(void)
     Out8(SERIAL_COM1 + 4U, 0x0BU);
 }
 
+static int StartsWith(const char* text, const char* prefix)
+{
+    while (*prefix != 0)
+    {
+        if (*text != *prefix)
+        {
+            return 0;
+        }
+
+        ++text;
+        ++prefix;
+    }
+
+    return 1;
+}
+
 static void SerialWriteChar(char value)
 {
     UINT32 timeout = 1000000U;
@@ -42,23 +68,98 @@ static void SerialWriteChar(char value)
     }
 }
 
+static void SerialWriteRaw(const char* text)
+{
+    while (*text != 0)
+    {
+        SerialWriteChar(*text);
+        ++text;
+    }
+}
+
 static void DebugWriteChar(char value)
 {
     Out8(QEMU_DEBUG_PORT, (UINT8)value);
 }
 
+static const char* SerialColorForLine(const char* text)
+{
+    if (StartsWith(text, "[BOOT] PASS"))
+    {
+        return SERIAL_COLOR_PASS;
+    }
+
+    if (StartsWith(text, "[BOOT] FAIL") || StartsWith(text, "[FAIL]"))
+    {
+        return SERIAL_COLOR_FAIL;
+    }
+
+    if (StartsWith(text, "[BOOT] WARN") || StartsWith(text, "[WARN]"))
+    {
+        return SERIAL_COLOR_WARN;
+    }
+
+    if (StartsWith(text, "[BOOT] Stage"))
+    {
+        return SERIAL_COLOR_STEP;
+    }
+
+    if (StartsWith(text, "[BOOT]") || StartsWith(text, "[INFO]"))
+    {
+        return SERIAL_COLOR_BOOT;
+    }
+
+    return "";
+}
+
+static void SerialBeginColoredLine(const char* text)
+{
+    const char* color;
+
+    if (!gSerialAtLineStart)
+    {
+        return;
+    }
+
+    color = SerialColorForLine(text);
+    if (color[0] != 0)
+    {
+        SerialWriteRaw(color);
+        gSerialLineColored = 1;
+    }
+}
+
+static void SerialEndColoredLine(void)
+{
+    if (gSerialLineColored)
+    {
+        SerialWriteRaw(SERIAL_COLOR_RESET);
+        gSerialLineColored = 0;
+    }
+}
+
 void Print(const char* text)
 {
+    SerialBeginColoredLine(text);
+
     while (*text != 0)
     {
         if (*text == '\n')
         {
+            SerialEndColoredLine();
             DebugWriteChar('\r');
             SerialWriteChar('\r');
+            DebugWriteChar('\n');
+            SerialWriteChar('\n');
+            gSerialAtLineStart = 1;
+            ++text;
+            SerialBeginColoredLine(text);
+            continue;
         }
 
         DebugWriteChar(*text);
         SerialWriteChar(*text);
+        gSerialAtLineStart = 0;
         ++text;
     }
 }

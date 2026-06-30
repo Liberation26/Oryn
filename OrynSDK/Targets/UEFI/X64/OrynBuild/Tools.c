@@ -6,7 +6,7 @@
 
 int OrynRunCommand(const char* command)
 {
-    printf("[CMD ] %s\n", command);
+    OrynLogCommand(command);
     int code = system(command);
     if (code == -1)
     {
