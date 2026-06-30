@@ -2,8 +2,12 @@
 #include "KernelBootInfo.h"
 #include "KernelConsole.h"
 #include "KernelIo.h"
+#include "KernelCpu.h"
 #include "KernelGdt.h"
 #include "KernelIdt.h"
+#include "KernelPic.h"
+#include "KernelApic.h"
+#include "KernelHpet.h"
 #include "KernelMemoryMap.h"
 #include "KernelPhysicalMemory.h"
 #include "KernelVirtualMemory.h"
@@ -80,6 +84,14 @@ void KernelStart(const OrynBootInfo* bootInfo)
     OrynKernelGdtPrintProof();
     (void)OrynKernelIdtInit();
     OrynKernelIdtPrintProof();
+    OrynKernelCpuDetect();
+    OrynKernelCpuPrintFeatures();
+    (void)OrynKernelPicInitAndDisable();
+    OrynKernelPicPrintProof();
+    (void)OrynKernelApicInit(1);
+    OrynKernelApicPrintProof();
+    (void)OrynKernelHpetInit(kernelBootInfo);
+    OrynKernelHpetPrintProof();
     KernelIoWriteString("[KERNEL] PASS: Kernel entry received one plain OrynBootInfo pointer.\n");
     if (KernelBootInfoIsKernelOwned(kernelBootInfo))
     {

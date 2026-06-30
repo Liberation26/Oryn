@@ -524,3 +524,22 @@ Expected proof lines include:
 0.5.28 GDT runtime proof fix
 ----------------------------
 The kernel entry path now calls the SDK target GDT/TSS installer before the IDT installer. This ensures runtime logs contain the GDT and TSS proof markers required by BootReport. BootReport failure hints now report missing GDT markers even when the kernel reached QEMU debug-exit success.
+
+0.5.29 PIC, APIC2/x2APIC, and HPET proof
+---------------------------------------------
+Kernel-5 now calls target-owned UEFI x64 hardware support for the early interrupt/timer foundation:
+
+- KernelCpu detects CPUID local APIC, APIC2/x2APIC, TSC-deadline, invariant TSC, and vendor data.
+- KernelPic remaps the 8259 PIC to 0x20-0x2F and masks both PICs for APIC handoff.
+- KernelApic enables the local APIC, prefers APIC2/x2APIC MSR mode, and runs a masked APIC timer countdown probe.
+- KernelHpet walks ACPI from BootInfo RSDP, validates checksums, finds the HPET table, enables the main counter, and verifies the counter advances.
+- The run command exposes HPET and x2APIC through QEMU.
+
+Expected proof lines include:
+
+  [KERNEL] PASS: CPU APIC2/x2APIC feature present.
+  [KERNEL] PASS: PIC remapped to vectors 0x20-0x2F.
+  [KERNEL] PASS: PIC masked/disabled for APIC handoff.
+  [KERNEL] PASS: APIC2/x2APIC mode enabled.
+  [KERNEL] PASS: APIC timer counter moved in masked probe.
+  [KERNEL] PASS: HPET counter advanced in probe.

@@ -1,0 +1,29 @@
+#ifndef ORYN_KERNEL_APIC_H
+#define ORYN_KERNEL_APIC_H
+
+typedef struct OrynKernelApicState
+{
+    unsigned int Initialized;
+    unsigned int CpuHasApic;
+    unsigned int CpuHasApic2;
+    unsigned int XApicEnabled;
+    unsigned int Apic2Enabled;
+    unsigned int SoftwareEnabled;
+    unsigned int TimerProbeRan;
+    unsigned int TimerCountMoved;
+    unsigned int LocalApicId;
+    unsigned int Version;
+    unsigned int MaxLvt;
+    unsigned long long BaseMsrBefore;
+    unsigned long long BaseMsrAfter;
+    unsigned long long LocalApicPhysicalBase;
+    unsigned long long TimerCountBefore;
+    unsigned long long TimerCountAfter;
+} OrynKernelApicState;
+
+int OrynKernelApicInit(int preferApic2);
+const OrynKernelApicState* OrynKernelApicGetState(void);
+void OrynKernelApicSendEoi(void);
+void OrynKernelApicPrintProof(void);
+
+#endif

@@ -89,7 +89,9 @@ static const char* SerialColorForLine(const char* text)
     }
 
     if (StartsWith(text, "[KERNEL] Virtual memory") || StartsWith(text, "[KERNEL] GDT") ||
-        StartsWith(text, "[KERNEL] IDT") || StartsWith(text, "[STEP]"))
+        StartsWith(text, "[KERNEL] IDT") || StartsWith(text, "[KERNEL] CPU") ||
+        StartsWith(text, "[KERNEL] PIC") || StartsWith(text, "[KERNEL] APIC") ||
+        StartsWith(text, "[KERNEL] HPET") || StartsWith(text, "[STEP]"))
     {
         return SERIAL_COLOR_STEP;
     }

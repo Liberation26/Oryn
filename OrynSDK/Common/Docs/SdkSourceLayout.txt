@@ -29,6 +29,7 @@ Target-specific modules
 
   Targets/UEFI/X64/Boot/Include    UEFI x64 default BootInfo selection and boot-target policy headers.
   Targets/UEFI/X64/Kernel.ld       UEFI x64 kernel linker script.
+  Targets/UEFI/X64/KernelSupport   UEFI x64 kernel-side CPU, interrupt, timer, serial, and virtual-memory support.
   Targets/UEFI/X64/Loader/Include  UEFI x64 loader headers.
   Targets/UEFI/X64/Loader/Source   UEFI x64 loader source, including BootX64Entry.c.
   Targets/UEFI/X64/OrynBuild       UEFI x64 build/image/run/BootInfo questionnaire integration for the native oryn tool.
@@ -93,3 +94,22 @@ The SDK owns the ABI and transport:
 - KernelGdt.h and KernelGdt.c live under Targets/UEFI/X64/KernelSupport.
 - GDT/TSS setup is target-owned CPU support, not project-owned kernel code.
 - Kernel-5 only calls the SDK target support from KernelMain.
+
+0.5.29 PIC/APIC2/HPET ownership
+--------------------------------
+The early x64 interrupt/timer foundation is target-owned SDK code, not project-owned kernel code:
+
+  Targets/UEFI/X64/KernelSupport/Include/KernelPortIo.h
+  Targets/UEFI/X64/KernelSupport/Include/KernelCpu.h
+  Targets/UEFI/X64/KernelSupport/Include/KernelMsr.h
+  Targets/UEFI/X64/KernelSupport/Include/KernelPic.h
+  Targets/UEFI/X64/KernelSupport/Include/KernelApic.h
+  Targets/UEFI/X64/KernelSupport/Include/KernelHpet.h
+  Targets/UEFI/X64/KernelSupport/Source/IO/KernelPortIo.c
+  Targets/UEFI/X64/KernelSupport/Source/CPU/KernelCpu.c
+  Targets/UEFI/X64/KernelSupport/Source/CPU/KernelMsr.c
+  Targets/UEFI/X64/KernelSupport/Source/Interrupts/KernelPic.c
+  Targets/UEFI/X64/KernelSupport/Source/Interrupts/KernelApic.c
+  Targets/UEFI/X64/KernelSupport/Source/Timers/KernelHpet.c
+
+Kernel-5 only invokes this support from KernelMain. Common remains target-neutral.

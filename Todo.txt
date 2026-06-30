@@ -14,7 +14,7 @@ Boot and handoff:
 [ OK ] Higher-half or chosen virtual address kernel layout.
 [ OK ] Kernel command line and boot configuration block.
 [ OK ] We need IDT
-[TOBE] We need GDT
+[ OK ] We need GDT
 [TOBE] We need PIC,APIC, and HPET
 [TOBE] We need Interrupts
 [TOBE] We Need SysCalls

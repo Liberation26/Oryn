@@ -41,6 +41,20 @@ static void WriteBootReport(
     int idt_installed = TextContains(debug_text, "[KERNEL] PASS: IDT installed.");
     int idt_entries = TextContains(debug_text, "[KERNEL] IDT entries: 256");
     int cpu_exception = TextContains(debug_text, "[KERNEL] EXCEPTION:");
+    int cpu_local_apic = TextContains(debug_text, "[KERNEL] PASS: CPU local APIC feature present.");
+    int cpu_apic2 = TextContains(debug_text, "[KERNEL] PASS: CPU APIC2/x2APIC feature present.");
+    int pic_initialized = TextContains(debug_text, "[KERNEL] PASS: PIC initialized.");
+    int pic_remapped = TextContains(debug_text, "[KERNEL] PASS: PIC remapped to vectors 0x20-0x2F.");
+    int pic_masked = TextContains(debug_text, "[KERNEL] PASS: PIC masked/disabled for APIC handoff.");
+    int apic_available = TextContains(debug_text, "[KERNEL] PASS: APIC CPU feature available.");
+    int apic2_enabled = TextContains(debug_text, "[KERNEL] PASS: APIC2/x2APIC mode enabled.");
+    int local_apic_enabled = TextContains(debug_text, "[KERNEL] PASS: Local APIC software enable bit set.");
+    int apic_timer_probe = TextContains(debug_text, "[KERNEL] PASS: APIC timer counter moved in masked probe.");
+    int hpet_rsdp = TextContains(debug_text, "[KERNEL] PASS: HPET ACPI RSDP input present.");
+    int hpet_checksum = TextContains(debug_text, "[KERNEL] PASS: HPET ACPI checksum validation passed.");
+    int hpet_table = TextContains(debug_text, "[KERNEL] PASS: HPET ACPI table discovered.");
+    int hpet_enabled = TextContains(debug_text, "[KERNEL] PASS: HPET main counter enabled.");
+    int hpet_counter = TextContains(debug_text, "[KERNEL] PASS: HPET counter advanced in probe.");
     int virtual_memory_started = TextContains(debug_text, "[KERNEL] Virtual memory: starting");
     int virtual_memory_required_mapped = TextContains(debug_text, "[KERNEL] Virtual memory: required ranges mapped");
     int virtual_memory_switching_cr3 = TextContains(debug_text, "[KERNEL] Virtual memory: switching CR3 to kernel-owned PML4");
@@ -53,7 +67,10 @@ static void WriteBootReport(
         bootinfo_created && boot_config_prepared && bootinfo_memory_map && boot_services_exited && kernel_jump &&
         kernel_entered && serial_ok && bootinfo_received && kernel_boot_config && kernel_command_line &&
         gdt_installing && gdt_installed && gdt_entries && tss_loaded &&
-        idt_installing && idt_installed && idt_entries && !cpu_exception && debug_exit;
+        idt_installing && idt_installed && idt_entries && !cpu_exception &&
+        cpu_local_apic && cpu_apic2 && pic_initialized && pic_remapped && pic_masked &&
+        apic_available && apic2_enabled && local_apic_enabled && apic_timer_probe &&
+        hpet_rsdp && hpet_checksum && hpet_table && hpet_enabled && hpet_counter && debug_exit;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -96,6 +113,20 @@ static void WriteBootReport(
     fprintf(file, "  Kernel installed and verified IDT: %s\n", PassFail(idt_installed));
     fprintf(file, "  Kernel installed all 256 IDT entries: %s\n", PassFail(idt_entries));
     fprintf(file, "  Kernel had no trapped CPU exception: %s\n", PassFail(!cpu_exception));
+    fprintf(file, "  CPU local APIC feature present: %s\n", PassFail(cpu_local_apic));
+    fprintf(file, "  CPU APIC2/x2APIC feature present: %s\n", PassFail(cpu_apic2));
+    fprintf(file, "  PIC initialized: %s\n", PassFail(pic_initialized));
+    fprintf(file, "  PIC remapped to 0x20-0x2F: %s\n", PassFail(pic_remapped));
+    fprintf(file, "  PIC masked for APIC handoff: %s\n", PassFail(pic_masked));
+    fprintf(file, "  APIC CPU feature available: %s\n", PassFail(apic_available));
+    fprintf(file, "  APIC2/x2APIC mode enabled: %s\n", PassFail(apic2_enabled));
+    fprintf(file, "  Local APIC software enabled: %s\n", PassFail(local_apic_enabled));
+    fprintf(file, "  APIC timer masked probe counted down: %s\n", PassFail(apic_timer_probe));
+    fprintf(file, "  HPET RSDP input present: %s\n", PassFail(hpet_rsdp));
+    fprintf(file, "  HPET ACPI checksum validated: %s\n", PassFail(hpet_checksum));
+    fprintf(file, "  HPET table discovered: %s\n", PassFail(hpet_table));
+    fprintf(file, "  HPET main counter enabled: %s\n", PassFail(hpet_enabled));
+    fprintf(file, "  HPET counter advanced: %s\n", PassFail(hpet_counter));
     fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
     fprintf(file, "  Kernel virtual memory required ranges mapped: %s\n", PassFail(virtual_memory_required_mapped));
     fprintf(file, "  Kernel virtual memory CR3 switch requested: %s\n", PassFail(virtual_memory_switching_cr3));
@@ -133,6 +164,34 @@ static void WriteBootReport(
             "The kernel did not install all 256 IDT entries." :
         cpu_exception ?
             "The IDT trapped a CPU exception. Check the exception vector and register dump." :
+        !cpu_local_apic ?
+            "The CPU did not expose the local APIC feature." :
+        !cpu_apic2 ?
+            "QEMU did not expose APIC2/x2APIC. Check the -cpu qemu64,+x2apic option." :
+        !pic_initialized ?
+            "The kernel did not initialize the 8259 PIC path." :
+        !pic_remapped ?
+            "The kernel did not remap the PIC vectors to 0x20-0x2F." :
+        !pic_masked ?
+            "The kernel did not mask the PIC for APIC handoff." :
+        !apic_available ?
+            "The kernel did not reach APIC feature validation." :
+        !apic2_enabled ?
+            "The kernel did not enable APIC2/x2APIC mode." :
+        !local_apic_enabled ?
+            "The kernel did not set the local APIC software enable bit." :
+        !apic_timer_probe ?
+            "The APIC timer masked probe did not count down." :
+        !hpet_rsdp ?
+            "The kernel did not receive the ACPI RSDP needed for HPET discovery." :
+        !hpet_checksum ?
+            "The HPET ACPI table walk failed checksum validation." :
+        !hpet_table ?
+            "The HPET ACPI table was not discovered." :
+        !hpet_enabled ?
+            "The HPET main counter was not enabled." :
+        !hpet_counter ?
+            "The HPET counter did not advance during the probe." :
         !virtual_memory_started ?
             "The kernel stopped before virtual-memory initialization." :
         !virtual_memory_required_mapped ?
@@ -369,7 +428,7 @@ int OrynRunQemu(const OrynProject* project)
 
     char command[ORYN_MAX_PATH * 8];
     snprintf(command, sizeof(command),
-        "%s -machine q35 -m 512M -drive %s -no-reboot -display %s "
+        "%s -machine q35,hpet=on -cpu qemu64,+x2apic -m 512M -drive %s -no-reboot -display %s "
         "-monitor none -serial stdio -debugcon %s -global isa-debugcon.iobase=0xe9 "
         "-device isa-debug-exit,iobase=0xf4,iosize=0x04 -drive %s",
         qemu_quoted,
@@ -400,6 +459,11 @@ int OrynRunQemu(const OrynProject* project)
         TextContains(debug_text, "[KERNEL] GDT entries: 7") &&
         TextContains(debug_text, "[KERNEL] PASS: TSS loaded.") &&
         TextContains(debug_text, "[KERNEL] PASS: IDT installed.") &&
+        TextContains(debug_text, "[KERNEL] PASS: CPU APIC2/x2APIC feature present.") &&
+        TextContains(debug_text, "[KERNEL] PASS: PIC masked/disabled for APIC handoff.") &&
+        TextContains(debug_text, "[KERNEL] PASS: APIC2/x2APIC mode enabled.") &&
+        TextContains(debug_text, "[KERNEL] PASS: APIC timer counter moved in masked probe.") &&
+        TextContains(debug_text, "[KERNEL] PASS: HPET counter advanced in probe.") &&
         !TextContains(debug_text, "[KERNEL] EXCEPTION:") &&
         TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success") && command_ok;
 
