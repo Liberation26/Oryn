@@ -1,6 +1,7 @@
 #include "OrynBuild.h"
 #include <dirent.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -36,6 +37,80 @@ static int PathContains(const char* path, const char* needle)
 {
     return strstr(path, needle) != 0;
 }
+
+static int TextEqualsIgnoreCaseBuild(const char* left, const char* right)
+{
+    if (left == 0 || right == 0)
+    {
+        return 0;
+    }
+
+    while (*left != 0 && *right != 0)
+    {
+        char a = *left;
+        char b = *right;
+        if (a >= 'A' && a <= 'Z')
+        {
+            a = (char)(a - 'A' + 'a');
+        }
+        if (b >= 'A' && b <= 'Z')
+        {
+            b = (char)(b - 'A' + 'a');
+        }
+        if (a != b)
+        {
+            return 0;
+        }
+        ++left;
+        ++right;
+    }
+
+    return *left == 0 && *right == 0;
+}
+
+static int ProjectBoolEnabledBuild(const char* value, int default_value)
+{
+    if (value == 0 || value[0] == 0)
+    {
+        return default_value;
+    }
+
+    if (TextEqualsIgnoreCaseBuild(value, "on") ||
+        TextEqualsIgnoreCaseBuild(value, "yes") ||
+        TextEqualsIgnoreCaseBuild(value, "true") ||
+        TextEqualsIgnoreCaseBuild(value, "1") ||
+        TextEqualsIgnoreCaseBuild(value, "enabled"))
+    {
+        return 1;
+    }
+
+    if (TextEqualsIgnoreCaseBuild(value, "off") ||
+        TextEqualsIgnoreCaseBuild(value, "no") ||
+        TextEqualsIgnoreCaseBuild(value, "false") ||
+        TextEqualsIgnoreCaseBuild(value, "0") ||
+        TextEqualsIgnoreCaseBuild(value, "disabled"))
+    {
+        return 0;
+    }
+
+    return default_value;
+}
+
+static unsigned int ProjectCpuCountBuild(const OrynProject* project)
+{
+    char* end = 0;
+    unsigned long value = strtoul(project->run_smp, &end, 10);
+    if (end == project->run_smp || *end != 0 || value == 0UL)
+    {
+        return 1U;
+    }
+    if (value > 64UL)
+    {
+        value = 64UL;
+    }
+    return (unsigned int)value;
+}
+
 
 static int OrynHashFile(unsigned long long* hash, const char* path)
 {
@@ -120,6 +195,13 @@ static unsigned long long ComputeSourceBuildHash(const OrynProject* project, con
         (void)OrynHashFile(&hash, selection_header);
     }
 
+    hash = OrynHashText(hash, "\nvmsettings:\n");
+    hash = OrynHashText(hash, project->run_pic);
+    hash = OrynHashText(hash, project->run_apic);
+    hash = OrynHashText(hash, project->run_apic2);
+    hash = OrynHashText(hash, project->run_hpet);
+    hash = OrynHashText(hash, project->run_smp);
+
     return hash;
 }
 
@@ -203,11 +285,23 @@ static int CompileSourceFile(const OrynProject* project, const char* source_file
         selection_include_argument[0] = 0;
     }
 
+    unsigned int vm_cpu_count = ProjectCpuCountBuild(project);
+    int vm_pic = ProjectBoolEnabledBuild(project->run_pic, 1);
+    int vm_apic = ProjectBoolEnabledBuild(project->run_apic, 1);
+    int vm_apic2 = ProjectBoolEnabledBuild(project->run_apic2, 1);
+    int vm_hpet = ProjectBoolEnabledBuild(project->run_hpet, 1);
+
     char command[ORYN_MAX_PATH * 9];
     snprintf(command, sizeof(command),
         "clang --target=x86_64-none-elf -ffreestanding -fno-stack-protector "
         "-fno-stack-check -fno-builtin -fno-pic -fno-pie -mno-red-zone -m64 "
-        "-Wall -Wextra %s-I\"%s\" -I\"%s\" -I\"%s\" -I\"%s\" -I\"%s\" -I\"%s\" -c \"%s\" -o \"%s\"",
+        "-Wall -Wextra -DORYN_VM_PIC=%d -DORYN_VM_APIC=%d -DORYN_VM_APIC2=%d "
+        "-DORYN_VM_HPET=%d -DORYN_VM_SMP_CPUS=%u %s-I\"%s\" -I\"%s\" -I\"%s\" -I\"%s\" -I\"%s\" -I\"%s\" -c \"%s\" -o \"%s\"",
+        vm_pic,
+        vm_apic,
+        vm_apic2,
+        vm_hpet,
+        vm_cpu_count,
         selection_include_argument,
         project->sdk_kernel_common_include_dir,
         project->sdk_kernel_target_include_dir,

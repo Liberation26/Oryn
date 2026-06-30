@@ -1,4 +1,4 @@
-OrynWsl 0.4.0 Quick Start
+OrynWsl 0.5.38 Quick Start
 
 This package is a WSL-native Oryn SDK baseline.
 
@@ -185,6 +185,36 @@ After the questionnaire, Oryn asks whether to build, image, and run the selected
 The bootinfo command now reads existing Kernel/<number>/Include/OrynBootInfoSelection.h files
 before creating a new numbered folder. If the answers match an existing variant, Oryn updates
 Kernel/Selected.txt to that number and reports that the existing matching variant was selected.
+
+
+
+OrynWsl 0.5.38 VMSettings questionnaire
+--------------------------------------
+Use this command from the workspace root to set the VM profile that `run` will use:
+
+  ./Oryn.sh VMSettings
+
+The questionnaire saves values in the project `[Run]` section:
+
+  VM=QEMU
+  FormatVM=yes
+  DiskFormat=raw
+  StorageInterface=ide
+  Memory=512M
+  CPU=qemu64
+  SMP=4
+  PIC=on
+  APIC=on
+  APIC2=on
+  HPET=on
+  Display=none
+
+`FormatVM=yes` recreates the raw FAT32 VM disk image during `run`.
+`FormatVM=no` reuses the existing image if it already exists.
+
+The native run stage now uses these values instead of hardcoded defaults.
+For example, Memory changes QEMU `-m`, SMP changes QEMU `-smp`, HPET changes `-machine q35,hpet=on/off`, and APIC/APIC2 changes the QEMU CPU feature list.
+The same hardware choices are also passed into the kernel build as VMSettings macros, so BootReport expects proof markers only for the enabled PIC/APIC/APIC2/HPET/SMP profile.
 
 OrynWsl 0.4.0 run output
 -------------------------

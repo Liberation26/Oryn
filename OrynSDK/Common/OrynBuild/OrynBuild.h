@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#define ORYN_VERSION "0.5.37"
+#define ORYN_VERSION "0.5.38"
 #define ORYN_MAX_PATH 4096
 #define ORYN_MAX_ITEMS 512
 
@@ -39,7 +39,18 @@ typedef struct OrynProject
     char kernel_variants_root[ORYN_MAX_PATH];
     char selected_kernel_dir[ORYN_MAX_PATH];
     char selected_kernel_include_dir[ORYN_MAX_PATH];
+    char run_vm[64];
     char run_display[64];
+    char run_memory[64];
+    char run_cpu[128];
+    char run_smp[32];
+    char run_pic[32];
+    char run_apic[32];
+    char run_apic2[32];
+    char run_hpet[32];
+    char run_disk_format[32];
+    char run_storage_interface[32];
+    char run_format_vm[32];
     unsigned long long kernel_physical_base;
     unsigned long long kernel_virtual_base;
     int selected_kernel_number;

@@ -35,7 +35,18 @@ static void SetDefaultProjectValues(OrynProject* project)
     snprintf(project->architecture, sizeof(project->architecture), "x86_64");
     snprintf(project->entry, sizeof(project->entry), "KernelStart");
     project->kernel_command_line[0] = 0;
+    snprintf(project->run_vm, sizeof(project->run_vm), "QEMU");
     snprintf(project->run_display, sizeof(project->run_display), "none");
+    snprintf(project->run_memory, sizeof(project->run_memory), "512M");
+    snprintf(project->run_cpu, sizeof(project->run_cpu), "qemu64");
+    snprintf(project->run_smp, sizeof(project->run_smp), "4");
+    snprintf(project->run_pic, sizeof(project->run_pic), "on");
+    snprintf(project->run_apic, sizeof(project->run_apic), "on");
+    snprintf(project->run_apic2, sizeof(project->run_apic2), "on");
+    snprintf(project->run_hpet, sizeof(project->run_hpet), "on");
+    snprintf(project->run_disk_format, sizeof(project->run_disk_format), "raw");
+    snprintf(project->run_storage_interface, sizeof(project->run_storage_interface), "ide");
+    snprintf(project->run_format_vm, sizeof(project->run_format_vm), "yes");
     project->kernel_physical_base = 0x0000000004000000ULL;
     project->kernel_virtual_base = 0xFFFFFFFF80000000ULL;
 }
@@ -136,9 +147,53 @@ static void ApplyProjectKey(OrynProject* project, const char* key, const char* v
     {
         snprintf(project->kernel_command_line, sizeof(project->kernel_command_line), "%s", value);
     }
+    else if (strcmp(key, "VM") == 0)
+    {
+        snprintf(project->run_vm, sizeof(project->run_vm), "%s", value);
+    }
     else if (strcmp(key, "Display") == 0)
     {
         snprintf(project->run_display, sizeof(project->run_display), "%s", value);
+    }
+    else if (strcmp(key, "Memory") == 0 || strcmp(key, "RAM") == 0)
+    {
+        snprintf(project->run_memory, sizeof(project->run_memory), "%s", value);
+    }
+    else if (strcmp(key, "CPU") == 0 || strcmp(key, "Cpu") == 0)
+    {
+        snprintf(project->run_cpu, sizeof(project->run_cpu), "%s", value);
+    }
+    else if (strcmp(key, "SMP") == 0 || strcmp(key, "CPUs") == 0 || strcmp(key, "CPUCount") == 0)
+    {
+        snprintf(project->run_smp, sizeof(project->run_smp), "%s", value);
+    }
+    else if (strcmp(key, "PIC") == 0)
+    {
+        snprintf(project->run_pic, sizeof(project->run_pic), "%s", value);
+    }
+    else if (strcmp(key, "APIC") == 0)
+    {
+        snprintf(project->run_apic, sizeof(project->run_apic), "%s", value);
+    }
+    else if (strcmp(key, "APIC2") == 0 || strcmp(key, "x2APIC") == 0 || strcmp(key, "2xAPIC") == 0)
+    {
+        snprintf(project->run_apic2, sizeof(project->run_apic2), "%s", value);
+    }
+    else if (strcmp(key, "HPET") == 0)
+    {
+        snprintf(project->run_hpet, sizeof(project->run_hpet), "%s", value);
+    }
+    else if (strcmp(key, "DiskFormat") == 0 || strcmp(key, "ImageFormat") == 0)
+    {
+        snprintf(project->run_disk_format, sizeof(project->run_disk_format), "%s", value);
+    }
+    else if (strcmp(key, "StorageInterface") == 0 || strcmp(key, "DiskInterface") == 0)
+    {
+        snprintf(project->run_storage_interface, sizeof(project->run_storage_interface), "%s", value);
+    }
+    else if (strcmp(key, "FormatVM") == 0 || strcmp(key, "FormatImage") == 0 || strcmp(key, "FormatOnRun") == 0)
+    {
+        snprintf(project->run_format_vm, sizeof(project->run_format_vm), "%s", value);
     }
     else if (strcmp(key, "KernelPhysicalBase") == 0)
     {

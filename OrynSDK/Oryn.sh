@@ -149,6 +149,270 @@ WriteProjectRunDisplay()
 }
 
 
+
+ProjectRunValue()
+{
+    ProjectFile="$1"
+    Key="$2"
+    DefaultValue="${3:-}"
+    awk -v wanted="$Key" -v default_value="$DefaultValue" '
+        BEGIN { section=""; value=default_value }
+        /^[[:space:]]*\[/ {
+            section=$0
+            gsub(/^[[:space:]]*\[/, "", section)
+            gsub(/\][[:space:]]*$/, "", section)
+            gsub(/\r/, "", section)
+            next
+        }
+        section == "Run" {
+            line=$0
+            gsub(/\r/, "", line)
+            split(line, parts, "=")
+            key=parts[1]
+            gsub(/^[[:space:]]*/, "", key)
+            gsub(/[[:space:]]*$/, "", key)
+            if (key == wanted) {
+                sub(/^[^=]*=[[:space:]]*/, "", line)
+                value=line
+            }
+        }
+        END { print value }
+    ' "$ProjectFile"
+}
+
+WriteProjectRunSetting()
+{
+    ProjectFile="$1"
+    Key="$2"
+    Value="$3"
+    TempFile="$(mktemp)"
+
+    awk -v key="$Key" -v value="$Value" '
+        BEGIN { section=""; saw_run=0; wrote_key=0 }
+        /^[[:space:]]*\[/ {
+            if (section == "Run" && wrote_key == 0) {
+                print key "=" value
+                wrote_key=1
+            }
+            section=$0
+            gsub(/^[[:space:]]*\[/, "", section)
+            gsub(/\][[:space:]]*$/, "", section)
+            gsub(/\r/, "", section)
+            if (section == "Run") {
+                saw_run=1
+            }
+            print
+            next
+        }
+        section == "Run" {
+            line=$0
+            gsub(/\r/, "", line)
+            probe=line
+            split(probe, parts, "=")
+            current=parts[1]
+            gsub(/^[[:space:]]*/, "", current)
+            gsub(/[[:space:]]*$/, "", current)
+            if (current == key) {
+                if (wrote_key == 0) {
+                    print key "=" value
+                    wrote_key=1
+                }
+                next
+            }
+        }
+        { print }
+        END {
+            if (saw_run == 0) {
+                print ""
+                print "[Run]"
+                print key "=" value
+            } else if (section == "Run" && wrote_key == 0) {
+                print key "=" value
+            }
+        }
+    ' "$ProjectFile" > "$TempFile" || {
+        rm -f "$TempFile"
+        return 1
+    }
+
+    cat "$TempFile" > "$ProjectFile"
+    rm -f "$TempFile"
+    return 0
+}
+
+IsValidVmValueShell()
+{
+    Candidate="$1"
+    case "$Candidate" in
+        ''|*[!ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_+.,:=/-]*) return 1 ;;
+        *) return 0 ;;
+    esac
+}
+
+AskValueShell()
+{
+    Question="$1"
+    DefaultValue="$2"
+    Validator="$3"
+
+    while true; do
+        printf '%s [%s]: ' "$Question" "${DefaultValue:-<empty>}" >&2
+        IFS= read -r Answer || Answer=""
+        Answer="$(printf '%s' "$Answer" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+        [ -n "$Answer" ] || Answer="$DefaultValue"
+        [ "$Answer" = "<empty>" ] && Answer=""
+
+        case "$Validator" in
+            vm)
+                if IsValidVmValueShell "$Answer"; then
+                    printf '%s\n' "$Answer"
+                    return 0
+                fi
+                printf '[WARN] Use letters, numbers, underscore, dash, plus, comma, dot, colon, slash or equals only.\n' >&2
+                ;;
+            number)
+                case "$Answer" in
+                    ''|*[!0123456789]*) printf '[WARN] Use a whole number.\n' >&2 ;;
+                    *) printf '%s\n' "$Answer"; return 0 ;;
+                esac
+                ;;
+            *)
+                printf '%s\n' "$Answer"
+                return 0
+                ;;
+        esac
+    done
+}
+
+RunVMSettingsQuestionnaire()
+{
+    ProjectFile="$1"
+    shift || true
+
+    if [ ! -f "$ProjectFile" ]; then
+        Fail "Project was not found: $ProjectFile"
+        exit 1
+    fi
+
+    CurrentVM="$(ProjectRunValue "$ProjectFile" VM QEMU)"
+    CurrentFormatVM="$(ProjectRunValue "$ProjectFile" FormatVM yes)"
+    CurrentDisplay="$(ProjectRunValue "$ProjectFile" Display none)"
+    CurrentMemory="$(ProjectRunValue "$ProjectFile" Memory 512M)"
+    CurrentCPU="$(ProjectRunValue "$ProjectFile" CPU qemu64)"
+    CurrentSMP="$(ProjectRunValue "$ProjectFile" SMP 4)"
+    CurrentPIC="$(ProjectRunValue "$ProjectFile" PIC on)"
+    CurrentAPIC="$(ProjectRunValue "$ProjectFile" APIC on)"
+    CurrentAPIC2="$(ProjectRunValue "$ProjectFile" APIC2 on)"
+    CurrentHPET="$(ProjectRunValue "$ProjectFile" HPET on)"
+    CurrentDiskFormat="$(ProjectRunValue "$ProjectFile" DiskFormat raw)"
+    CurrentStorage="$(ProjectRunValue "$ProjectFile" StorageInterface ide)"
+
+    Info "VMSettings questionnaire."
+    Info "This saves the QEMU VM profile into the project [Run] section."
+
+    NewVM="$(AskValueShell 'VM provider' "$CurrentVM" vm)"
+    case "$NewVM" in
+        QEMU|qemu) NewVM="QEMU" ;;
+        *) Warn "Only QEMU is currently supported by Oryn WSL run; saving VM=QEMU."; NewVM="QEMU" ;;
+    esac
+
+    if AskYesNoShell "Format/recreate the FAT32 VM disk image when running?" "$(case "$CurrentFormatVM" in no|No|NO|off|Off|OFF|false|False|FALSE|0) echo 0 ;; *) echo 1 ;; esac)"; then
+        NewFormatVM="yes"
+    else
+        NewFormatVM="no"
+    fi
+
+    NewDiskFormat="$(AskValueShell 'VM disk image format' "$CurrentDiskFormat" vm)"
+    case "$NewDiskFormat" in
+        raw|RAW|Raw) NewDiskFormat="raw" ;;
+        *) Warn "The built-in image writer currently supports raw only; saving DiskFormat=raw."; NewDiskFormat="raw" ;;
+    esac
+
+    NewStorage="$(AskValueShell 'VM storage interface' "$CurrentStorage" vm)"
+    case "$NewStorage" in
+        ide|IDE|Ide) NewStorage="ide" ;;
+        *) Warn "The current UEFI FAT32 runner supports ide only; saving StorageInterface=ide."; NewStorage="ide" ;;
+    esac
+
+    if AskYesNoShell "Run this kernel VM headless, without a QEMU window?" "$(case "$CurrentDisplay" in ''|none|None|NONE|headless|Headless|HEADLESS|yes|Yes|YES|true|True|TRUE) echo 1 ;; *) echo 0 ;; esac)"; then
+        NewDisplay="none"
+    else
+        NewDisplay="sdl"
+    fi
+
+    NewMemory="$(AskValueShell 'VM memory, for example 512M, 1G, 2G' "$CurrentMemory" vm)"
+    NewCPU="$(AskValueShell 'QEMU CPU model base, for example qemu64, max, host' "$CurrentCPU" vm)"
+    NewSMP="$(AskValueShell 'VM CPU/core count' "$CurrentSMP" number)"
+    [ "$NewSMP" -lt 1 ] && NewSMP=1
+    if [ "$NewSMP" -gt 64 ]; then
+        Warn "Capping VM CPU/core count at 64."
+        NewSMP=64
+    fi
+
+    if AskYesNoShell "Expose and test the legacy PIC path?" "$(case "$CurrentPIC" in no|No|NO|off|Off|OFF|false|False|FALSE|0) echo 0 ;; *) echo 1 ;; esac)"; then
+        NewPIC="on"
+    else
+        NewPIC="off"
+    fi
+
+    if AskYesNoShell "Expose and test Local APIC?" "$(case "$CurrentAPIC" in no|No|NO|off|Off|OFF|false|False|FALSE|0) echo 0 ;; *) echo 1 ;; esac)"; then
+        NewAPIC="on"
+    else
+        NewAPIC="off"
+    fi
+
+    if [ "$NewAPIC" = "on" ]; then
+        if AskYesNoShell "Expose and prefer APIC2/x2APIC?" "$(case "$CurrentAPIC2" in no|No|NO|off|Off|OFF|false|False|FALSE|0) echo 0 ;; *) echo 1 ;; esac)"; then
+            NewAPIC2="on"
+        else
+            NewAPIC2="off"
+        fi
+    else
+        NewAPIC2="off"
+        Warn "APIC2/x2APIC requires APIC, so APIC2 was saved as off."
+    fi
+
+    if AskYesNoShell "Expose and test HPET?" "$(case "$CurrentHPET" in no|No|NO|off|Off|OFF|false|False|FALSE|0) echo 0 ;; *) echo 1 ;; esac)"; then
+        NewHPET="on"
+    else
+        NewHPET="off"
+    fi
+
+    if [ "$NewSMP" -gt 1 ] && [ "$NewAPIC" != "on" ]; then
+        Warn "Multi-core AP startup needs Local APIC. Saving SMP=1 because APIC is off."
+        NewSMP=1
+    fi
+
+    for Pair in \
+        "VM=$NewVM" \
+        "FormatVM=$NewFormatVM" \
+        "DiskFormat=$NewDiskFormat" \
+        "StorageInterface=$NewStorage" \
+        "Display=$NewDisplay" \
+        "Memory=$NewMemory" \
+        "CPU=$NewCPU" \
+        "SMP=$NewSMP" \
+        "PIC=$NewPIC" \
+        "APIC=$NewAPIC" \
+        "APIC2=$NewAPIC2" \
+        "HPET=$NewHPET"
+    do
+        Key="${Pair%%=*}"
+        Value="${Pair#*=}"
+        if ! WriteProjectRunSetting "$ProjectFile" "$Key" "$Value"; then
+            Fail "Could not save VMSettings key $Key to: $ProjectFile"
+            exit 1
+        fi
+    done
+
+    Ok "Saved VMSettings to project [Run]."
+    Info "VMSettings summary: VM=$NewVM FormatVM=$NewFormatVM DiskFormat=$NewDiskFormat StorageInterface=$NewStorage"
+    Info "VMSettings summary: Display=$NewDisplay Memory=$NewMemory CPU=$NewCPU SMP=$NewSMP"
+    Info "VMSettings summary: PIC=$NewPIC APIC=$NewAPIC APIC2=$NewAPIC2 HPET=$NewHPET"
+    Info "Use ./Oryn.sh run to build/image/run with these settings."
+}
+
+
 ProjectOSName()
 {
     ProjectFile="$1"
@@ -689,6 +953,26 @@ case "$Command" in
         esac
         ;;
 
+    VMSettings|vmsettings|VM|vm)
+        if [ "$#" -eq 0 ]; then
+            RunVMSettingsQuestionnaire "$DefaultProject"
+            exit 0
+        fi
+
+        case "$1" in
+            *.oryn)
+                ProjectFile="$1"
+                shift || true
+                RunVMSettingsQuestionnaire "$ProjectFile" "$@"
+                exit 0
+                ;;
+            *)
+                RunVMSettingsQuestionnaire "$DefaultProject" "$@"
+                exit 0
+                ;;
+        esac
+        ;;
+
     Headless|headless)
         if [ "$#" -eq 0 ]; then
             RunHeadlessQuestionnaire "$DefaultProject"
@@ -764,6 +1048,7 @@ case "$Command" in
         printf '  ./Oryn.sh image [project] Build image, defaulting to Kernel-5\n'
         printf '  ./Oryn.sh run [project]   Run project, defaulting to Kernel-5\n'
         printf '  ./Oryn.sh OSName [project]   Ask kernel/OS name first, then Headless, then BootInfo\n'
+        printf '  ./Oryn.sh VMSettings [project] Ask and save VM format, CPU, memory, PIC/APIC/APIC2/HPET settings\n'
         printf '  ./Oryn.sh Headless [project] Ask whether the VM is headless, save Display, then ask BootInfo\n'
         printf '  ./Oryn.sh clean [project] Clean project, defaulting to Kernel-5\n'
         printf '  ./Oryn.sh bootinfo [project] Ask which UEFI BootInfo items to pass, then build and run\n'

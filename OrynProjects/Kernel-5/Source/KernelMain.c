@@ -17,6 +17,26 @@
 #include "KernelVirtualMemory.h"
 #include "SysCall.h"
 
+#ifndef ORYN_VM_PIC
+#define ORYN_VM_PIC 1
+#endif
+
+#ifndef ORYN_VM_APIC
+#define ORYN_VM_APIC 1
+#endif
+
+#ifndef ORYN_VM_APIC2
+#define ORYN_VM_APIC2 1
+#endif
+
+#ifndef ORYN_VM_HPET
+#define ORYN_VM_HPET 1
+#endif
+
+#ifndef ORYN_VM_SMP_CPUS
+#define ORYN_VM_SMP_CPUS 1
+#endif
+
 static OrynKernelMemoryMap gKernelMemoryMap;
 static OrynKernelPhysicalMemory gPhysicalMemory;
 static OrynKernelVirtualMemory gVirtualMemory;
@@ -120,17 +140,47 @@ static void RunInterruptAndTimerProofs(const OrynBootInfo* kernelBootInfo)
 {
     OrynKernelCpuDetect();
     OrynKernelCpuPrintFeatures();
+
+#if ORYN_VM_PIC
     (void)OrynKernelPicInitAndDisable();
     OrynKernelPicPrintProof();
     (void)OrynKernelInterruptsRunPicTimerProof();
     OrynKernelInterruptsPrintPicRuntimeProof();
     OrynKernelPicPrintProof();
+#else
+    KernelIoWriteString("[KERNEL] INFO: PIC IRQ0 proof skipped by VMSettings.\n");
+#endif
+
+#if ORYN_VM_APIC
+#if ORYN_VM_APIC2
     (void)OrynKernelApicInit(1);
+#else
+    KernelIoWriteString("[KERNEL] INFO: APIC2/x2APIC disabled by VMSettings.\n");
+    (void)OrynKernelApicInit(0);
+#endif
     OrynKernelApicPrintProof();
+#else
+    KernelIoWriteString("[KERNEL] INFO: APIC proofs skipped by VMSettings.\n");
+#endif
+
+#if ORYN_VM_HPET
     (void)OrynKernelHpetInit(kernelBootInfo);
     OrynKernelHpetPrintProof();
+#else
+    (void)kernelBootInfo;
+    KernelIoWriteString("[KERNEL] INFO: HPET proof skipped by VMSettings.\n");
+#endif
+
+#if ORYN_VM_APIC
     (void)OrynKernelInterruptsRunApicTimerProof();
     OrynKernelInterruptsPrintRuntimeProof();
+#else
+    KernelIoWriteString("[KERNEL] PASS: VMSettings interrupt/timer profile applied.\n");
+#endif
+
+#if ORYN_VM_APIC && (!ORYN_VM_PIC || !ORYN_VM_HPET || !ORYN_VM_APIC2)
+    KernelIoWriteString("[KERNEL] PASS: VMSettings interrupt/timer profile applied.\n");
+#endif
 }
 
 static void RunPciProof(const OrynBootInfo* kernelBootInfo)
@@ -141,9 +191,14 @@ static void RunPciProof(const OrynBootInfo* kernelBootInfo)
 
 static void RunSmpProof(const OrynBootInfo* kernelBootInfo)
 {
+#if ORYN_VM_SMP_CPUS > 1 && ORYN_VM_APIC
     KernelIoWriteString("[KERNEL] SMP: starting after virtual memory proof.\n");
     (void)OrynKernelSmpInit(kernelBootInfo);
     OrynKernelSmpPrintProof();
+#else
+    (void)kernelBootInfo;
+    KernelIoWriteString("[KERNEL] INFO: SMP AP startup skipped by VMSettings.\n");
+#endif
 }
 
 static void RunMemoryProofs(const OrynBootInfo* kernelBootInfo)
@@ -198,7 +253,11 @@ void KernelStart(const OrynBootInfo* bootInfo)
     RunDescriptorAndSysCallProofs();
     RunInterruptAndTimerProofs(kernelBootInfo);
     RunPciProof(kernelBootInfo);
+#if ORYN_VM_SMP_CPUS > 1 && ORYN_VM_APIC
     (void)OrynKernelSmpDiscover(kernelBootInfo);
+#else
+    KernelIoWriteString("[KERNEL] INFO: SMP discovery skipped by VMSettings.\n");
+#endif
 
     if (bootStatus.IsValid)
     {

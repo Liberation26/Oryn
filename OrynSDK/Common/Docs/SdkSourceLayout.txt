@@ -195,3 +195,13 @@ KernelSmp discovers CPUs from the BootInfo RSDP/MADT path, prepares the low-memo
 KernelMain now prints early entry/BootInfo proof before descriptor, interrupt, PCI, memory, and SMP proofs.
 KernelInterrupts provides separate PIC and APIC runtime proof printing so PIC-upwards failures are visible at the correct stage.
 KernelSmp is still target-owned and now starts APs after the kernel-owned virtual memory PML4 is active.
+
+
+0.5.38 VMSettings ownership
+----------------------------
+The VM profile is project-owned data in `OrynProjects/<Name>/Project.oryn` under `[Run]`.
+`Oryn.sh VMSettings` is the shell questionnaire entry point. It saves VM formatting and hardware exposure values such as `FormatVM`, `DiskFormat`, `StorageInterface`, `Memory`, `CPU`, `SMP`, `PIC`, `APIC`, `APIC2`, and `HPET`.
+
+`Common/OrynBuild/Project.c` parses those keys into `OrynProject`.
+`Targets/UEFI/X64/OrynBuild/Commands.c` applies them to the QEMU command line and BootReport expectations.
+`Targets/UEFI/X64/OrynBuild/Build.c` turns the selected hardware profile into kernel compile-time VMSettings macros so Kernel-5 can skip or prove only the requested PIC/APIC/APIC2/HPET/SMP paths.
