@@ -35,6 +35,8 @@ static void SetDefaultProjectValues(OrynProject* project)
     snprintf(project->architecture, sizeof(project->architecture), "x86_64");
     snprintf(project->entry, sizeof(project->entry), "KernelStart");
     snprintf(project->run_display, sizeof(project->run_display), "none");
+    project->kernel_physical_base = 0x0000000004000000ULL;
+    project->kernel_virtual_base = 0xFFFFFFFF80000000ULL;
 }
 
 static int ResolveExecutablePath(const char* executable_path, char* output, size_t output_size)
@@ -85,6 +87,23 @@ static void ResolveSdkRoot(const char* executable_path, char* output, size_t out
     snprintf(output, output_size, "%s", maybe_common);
 }
 
+static int ParseUnsignedLongLong(const char* text, unsigned long long* value)
+{
+    char* end = 0;
+    if (text == 0 || text[0] == 0)
+    {
+        return 0;
+    }
+
+    unsigned long long parsed = strtoull(text, &end, 0);
+    if (end == text || *end != 0)
+    {
+        return 0;
+    }
+
+    *value = parsed;
+    return 1;
+}
 
 static void ApplyProjectKey(OrynProject* project, const char* key, const char* value)
 {
@@ -115,6 +134,22 @@ static void ApplyProjectKey(OrynProject* project, const char* key, const char* v
     else if (strcmp(key, "Display") == 0)
     {
         snprintf(project->run_display, sizeof(project->run_display), "%s", value);
+    }
+    else if (strcmp(key, "KernelPhysicalBase") == 0)
+    {
+        unsigned long long parsed = 0ULL;
+        if (ParseUnsignedLongLong(value, &parsed))
+        {
+            project->kernel_physical_base = parsed;
+        }
+    }
+    else if (strcmp(key, "KernelVirtualBase") == 0)
+    {
+        unsigned long long parsed = 0ULL;
+        if (ParseUnsignedLongLong(value, &parsed))
+        {
+            project->kernel_virtual_base = parsed;
+        }
     }
 }
 

@@ -114,8 +114,7 @@ static void CaptureFirmwareData(OrynBootInfo* bootInfo)
 
 static void FillBaseBootInfo(
     OrynBootInfo* bootInfo,
-    UINT64 kernelBase,
-    UINT64 kernelSize,
+    const OrynKernelElfLayout* kernelLayout,
     void* fontBuffer,
     UINTN fontSize)
 {
@@ -124,13 +123,17 @@ static void FillBaseBootInfo(
     bootInfo->Version = ORYN_BOOTINFO_VERSION;
     bootInfo->Size = sizeof(*bootInfo);
 #if ORYN_BOOTINFO_WANT_KERNEL_RANGE
-    bootInfo->KernelPhysicalBase = kernelBase;
-    bootInfo->KernelSize = kernelSize;
+    bootInfo->KernelPhysicalBase = kernelLayout->PhysicalBase;
+    bootInfo->KernelSize = kernelLayout->PhysicalSize;
     bootInfo->Flags |= ORYN_BOOTINFO_FLAG_KERNEL_RANGE;
 #else
-    (void)kernelBase;
-    (void)kernelSize;
+    (void)kernelLayout;
 #endif
+    bootInfo->KernelVirtualBase = kernelLayout->VirtualBase;
+    bootInfo->KernelVirtualSize = kernelLayout->VirtualSize;
+    bootInfo->KernelEntryPhysical = kernelLayout->EntryPhysical;
+    bootInfo->KernelEntryVirtual = kernelLayout->EntryVirtual;
+    bootInfo->Flags |= ORYN_BOOTINFO_FLAG_KERNEL_VIRTUAL_LAYOUT;
     if (fontBuffer != ORYN_NULL && fontSize != 0)
     {
         bootInfo->FontBase = (UINT64)(UINTN)fontBuffer;
@@ -192,8 +195,7 @@ static void PrintBootInfoSelection(void)
 
 static EFI_STATUS AllocateBootInfo(
     OrynBootInfo** outBootInfo,
-    UINT64 kernelBase,
-    UINT64 kernelSize,
+    const OrynKernelElfLayout* kernelLayout,
     void* fontBuffer,
     UINTN fontSize)
 {
@@ -205,7 +207,7 @@ static EFI_STATUS AllocateBootInfo(
         return status;
     }
 
-    FillBaseBootInfo(bootInfo, kernelBase, kernelSize, fontBuffer, fontSize);
+    FillBaseBootInfo(bootInfo, kernelLayout, fontBuffer, fontSize);
 #if ORYN_BOOTINFO_WANT_FIRMWARE_DATA
     CaptureFirmwareData(bootInfo);
 #else
@@ -284,17 +286,22 @@ EFI_STATUS OrynUefiLoaderMain(EFI_HANDLE imageHandle, EFI_SYSTEM_TABLE* systemTa
     UINTN fontSize = 0;
     (void)ReadOptionalFontFile(imageHandle, &fontBuffer, &fontSize);
 
-    UINT64 kernelEntry = 0;
-    UINT64 kernelBase = 0;
-    UINT64 kernelLoadedSize = 0;
-    status = LoadElfSegments(kernelBuffer, kernelSize, &kernelEntry, &kernelBase, &kernelLoadedSize);
+    OrynKernelElfLayout kernelLayout;
+    SetMemory(&kernelLayout, 0, sizeof(kernelLayout));
+    status = LoadElfSegments(kernelBuffer, kernelSize, &kernelLayout);
     if (IsError(status))
     {
         return status;
     }
 
     OrynBootInfo* bootInfo = ORYN_NULL;
-    status = AllocateBootInfo(&bootInfo, kernelBase, kernelLoadedSize, fontBuffer, fontSize);
+    status = AllocateBootInfo(&bootInfo, &kernelLayout, fontBuffer, fontSize);
+    if (IsError(status))
+    {
+        return status;
+    }
+
+    status = PrepareKernelVirtualAddressSpace(&kernelLayout);
     if (IsError(status))
     {
         return status;
@@ -307,5 +314,6 @@ EFI_STATUS OrynUefiLoaderMain(EFI_HANDLE imageHandle, EFI_SYSTEM_TABLE* systemTa
         return status;
     }
 
-    JumpToKernel(kernelEntry, bootInfo);
+    ActivateKernelVirtualAddressSpace();
+    JumpToKernel(kernelLayout.EntryVirtual, bootInfo);
 }

@@ -360,7 +360,12 @@ int OrynBuildKernel(const OrynProject* project)
 
     char command[ORYN_MAX_PATH * 8];
     snprintf(command, sizeof(command),
-        "ld.lld -nostdlib -static -z max-page-size=0x1000 -T \"%s\" -o \"%s\"",
+        "ld.lld -nostdlib -static -z max-page-size=0x1000 "
+        "--defsym=ORYN_KERNEL_PHYSICAL_BASE=0x%llX "
+        "--defsym=ORYN_KERNEL_VIRTUAL_BASE=0x%llX "
+        "-T \"%s\" -o \"%s\"",
+        project->kernel_physical_base,
+        project->kernel_virtual_base,
         linker_script,
         kernel_elf);
 
@@ -376,6 +381,17 @@ int OrynBuildKernel(const OrynProject* project)
         OrynLogFail("Kernel link failed.");
         return 0;
     }
+
+    char layout_message[256];
+    snprintf(layout_message, sizeof(layout_message),
+        "Kernel physical load base: 0x%llX",
+        project->kernel_physical_base);
+    OrynLogOk(layout_message);
+
+    snprintf(layout_message, sizeof(layout_message),
+        "Kernel chosen virtual base: 0x%llX",
+        project->kernel_virtual_base);
+    OrynLogOk(layout_message);
 
     char link_message[ORYN_MAX_PATH + 64];
     snprintf(link_message, sizeof(link_message), "Linked Build/%s", kernel_file_name);

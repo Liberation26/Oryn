@@ -116,11 +116,7 @@ static int MapPage(
         return 0;
     }
 
-    if ((pt[ptIndex] & ORYN_PAGE_PRESENT) == 0ULL)
-    {
-        virtualMemory->IdentityMappedPages += 1ULL;
-    }
-
+    (void)virtualMemory;
     pt[ptIndex] = (physicalAddress & ORYN_PAGE_ADDRESS_MASK) | ORYN_PAGE_FLAGS;
     return 1;
 }
@@ -146,6 +142,44 @@ static int MapRange(
         {
             return 0;
         }
+        virtualMemory->IdentityMappedPages += 1ULL;
+    }
+
+    return 1;
+}
+
+
+static int MapVirtualRangeToPhysical(
+    OrynPageTableEntry* pml4,
+    unsigned long long virtualStart,
+    unsigned long long physicalStart,
+    unsigned long long bytes,
+    OrynKernelPhysicalMemory* physicalMemory,
+    OrynKernelVirtualMemory* virtualMemory)
+{
+    unsigned long long firstVirtual = AlignDown(virtualStart);
+    unsigned long long firstPhysical = AlignDown(physicalStart);
+    unsigned long long offset = virtualStart - firstVirtual;
+    unsigned long long endVirtual = AlignUp(virtualStart + bytes);
+
+    if (bytes == 0ULL || endVirtual <= firstVirtual)
+    {
+        return 1;
+    }
+
+    firstPhysical += offset;
+    firstPhysical = AlignDown(firstPhysical);
+
+    for (unsigned long long virtualAddress = firstVirtual;
+         virtualAddress < endVirtual;
+         virtualAddress += ORYN_VIRTUAL_PAGE_SIZE)
+    {
+        unsigned long long physicalAddress = firstPhysical + (virtualAddress - firstVirtual);
+        if (!MapPage(pml4, virtualAddress, physicalAddress, physicalMemory, virtualMemory))
+        {
+            return 0;
+        }
+        virtualMemory->KernelVirtualMappedPages += 1ULL;
     }
 
     return 1;
@@ -222,6 +256,32 @@ static int MapKernelRange(
     virtualMemory->KernelMapStart = AlignDown(bootInfo->KernelPhysicalBase);
     virtualMemory->KernelMapEnd = AlignUp(bootInfo->KernelPhysicalBase + bootInfo->KernelSize);
     return MapRange(pml4, bootInfo->KernelPhysicalBase, bootInfo->KernelSize, physicalMemory, virtualMemory);
+}
+
+static int MapKernelVirtualRange(
+    OrynPageTableEntry* pml4,
+    const OrynBootInfo* bootInfo,
+    OrynKernelPhysicalMemory* physicalMemory,
+    OrynKernelVirtualMemory* virtualMemory)
+{
+    if (!KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_KERNEL_VIRTUAL_LAYOUT))
+    {
+        virtualMemory->MapFailure = 1U;
+        return 0;
+    }
+
+    virtualMemory->KernelVirtualMapStart = AlignDown(bootInfo->KernelVirtualBase);
+    virtualMemory->KernelVirtualMapEnd = AlignUp(bootInfo->KernelVirtualBase + bootInfo->KernelVirtualSize);
+    virtualMemory->KernelEntryPhysical = bootInfo->KernelEntryPhysical;
+    virtualMemory->KernelEntryVirtual = bootInfo->KernelEntryVirtual;
+
+    return MapVirtualRangeToPhysical(
+        pml4,
+        bootInfo->KernelVirtualBase,
+        bootInfo->KernelPhysicalBase,
+        bootInfo->KernelVirtualSize,
+        physicalMemory,
+        virtualMemory);
 }
 
 static int MapBootInfoRange(
@@ -372,6 +432,7 @@ int OrynVirtualMemoryInit(
         !MapMemoryMapEntries(pml4, memoryMap, physicalMemory, virtualMemory) ||
         !MapVgaTextRange(pml4, physicalMemory, virtualMemory) ||
         !MapKernelRange(pml4, bootInfo, physicalMemory, virtualMemory) ||
+        !MapKernelVirtualRange(pml4, bootInfo, physicalMemory, virtualMemory) ||
         !MapBootInfoRange(pml4, bootInfo, physicalMemory, virtualMemory) ||
         !MapBootMemoryMapRange(pml4, bootInfo, physicalMemory, virtualMemory) ||
         !MapFontRange(pml4, bootInfo, physicalMemory, virtualMemory) ||

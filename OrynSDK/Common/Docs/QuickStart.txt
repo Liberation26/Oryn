@@ -114,9 +114,9 @@ The FAT32 partition contains:
   /SYSTEM/KERNEL-4/KERNEL.ELF
 
 The kernel remains a pure x86_64 ELF executable.
-BOOTX64.EFI opens the OS-named kernel ELF from the FAT32 partition, validates it as an ELF64 x86_64 executable, copies the ELF load segments, prepares the user-selected OrynBootInfo v5 fields, exits UEFI boot services, places the BootInfo pointer in RDI, and jumps to the ELF entry address. Use ./Oryn.sh OSName to ask the kernel/OS name first; that name is saved in Project.oryn and reused to name Build/<OSName>.elf and the staged kernel image.
+BOOTX64.EFI opens the OS-named kernel ELF from the FAT32 partition, validates it as an ELF64 x86_64 executable, copies the ELF load segments, prepares the user-selected OrynBootInfo v6 fields, exits UEFI boot services, places the BootInfo pointer in RDI, and jumps to the ELF entry address. Use ./Oryn.sh OSName to ask the kernel/OS name first; that name is saved in Project.oryn and reused to name Build/<OSName>.elf and the staged kernel image.
 
-OrynBootInfo v5 handoff
+OrynBootInfo v6 handoff
 -----------------------
 Kernel-5 now receives a pointer to OrynBootInfo:
 
@@ -296,7 +296,7 @@ After test-all finishes, Oryn restores the originally selected variant in:
 
 0.2.0 Kernel BootInfo validation and memory-map parsing
 -------------------------------------------------------
-OrynWsl 0.2.0 adds kernel-side validation for the OrynBootInfo v5 handoff.
+OrynWsl 0.2.0 adds kernel-side validation for the OrynBootInfo v6 handoff.
 The kernel now checks signature, version, size, unknown flag bits, selected-field rules,
 and the basic safety of each supplied pointer/count pair before using BootInfo data.
 
@@ -472,3 +472,13 @@ Expected proof lines include:
 
   [BOOT] PASS: BootInfo checksum sealed before kernel handoff.
   [KERNEL] PASS: BootInfo checksum OK: loader handoff data verified.
+
+
+Kernel layout configuration
+---------------------------
+Project.oryn may contain a [KernelLayout] block:
+
+  KernelPhysicalBase=0x4000000
+  KernelVirtualBase=0xFFFFFFFF80000000
+
+OrynBuild passes these values to Kernel.ld. The ELF PT_LOAD segment is copied to the physical base while the ELF entry and symbol addresses use the chosen virtual base. The UEFI x64 loader prepares a temporary identity plus higher-half/chosen virtual map before jumping to the kernel virtual entry.

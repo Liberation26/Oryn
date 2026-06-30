@@ -30,6 +30,18 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
         virtualMemory->KernelMapStart,
         virtualMemory->KernelMapEnd);
 
+    WriteRange("[KERNEL] Higher-half/chosen kernel virtual range: ",
+        virtualMemory->KernelVirtualMapStart,
+        virtualMemory->KernelVirtualMapEnd);
+
+    KernelIoWriteString("[KERNEL] Kernel physical entry: ");
+    KernelIoWriteHex64(virtualMemory->KernelEntryPhysical);
+    KernelIoWriteString("\n");
+
+    KernelIoWriteString("[KERNEL] Kernel virtual entry: ");
+    KernelIoWriteHex64(virtualMemory->KernelEntryVirtual);
+    KernelIoWriteString("\n");
+
     WriteRange("[KERNEL] Identity mapped BootInfo: ",
         virtualMemory->BootInfoMapStart,
         virtualMemory->BootInfoMapEnd);
@@ -97,6 +109,10 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
 
     KernelIoWriteString("[KERNEL] Identity mapped pages: ");
     KernelIoWriteDec64(virtualMemory->IdentityMappedPages);
+    KernelIoWriteString("\n");
+
+    KernelIoWriteString("[KERNEL] Kernel virtual mapped pages: ");
+    KernelIoWriteDec64(virtualMemory->KernelVirtualMappedPages);
     KernelIoWriteString("\n");
 
     if (virtualMemory->Active)

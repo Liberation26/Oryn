@@ -2,15 +2,15 @@
 #define ORYN_BOOT_INFO_H
 
 #define ORYN_BOOTINFO_SIGNATURE 0x544F4F424E59524FULL
-#define ORYN_BOOTINFO_VERSION 5U
+#define ORYN_BOOTINFO_VERSION 6U
 #define ORYN_BOOTINFO_ABI_STABLE 1U
 #define ORYN_BOOTINFO_ABI_MAJOR 1U
-#define ORYN_BOOTINFO_ABI_MINOR 1U
+#define ORYN_BOOTINFO_ABI_MINOR 2U
 #define ORYN_BOOTINFO_ABI_CURRENT_VERSION ORYN_BOOTINFO_VERSION
-#define ORYN_BOOTINFO_ABI_MIN_COMPATIBLE_VERSION 5U
-#define ORYN_BOOTINFO_ABI_CURRENT_SIZE 1672U
-#define ORYN_BOOTINFO_ABI_MIN_COMPATIBLE_SIZE 1672U
-#define ORYN_BOOTINFO_ABI_NAME "OrynBootInfo-v5-stable-checksummed"
+#define ORYN_BOOTINFO_ABI_MIN_COMPATIBLE_VERSION 6U
+#define ORYN_BOOTINFO_ABI_CURRENT_SIZE 1704U
+#define ORYN_BOOTINFO_ABI_MIN_COMPATIBLE_SIZE 1704U
+#define ORYN_BOOTINFO_ABI_NAME "OrynBootInfo-v6-higher-half-layout"
 #define ORYN_BOOTINFO_ABI_PLAIN_C 1U
 #define ORYN_BOOTINFO_X64_ENTRY_REGISTER_RDI 1U
 #define ORYN_BOOTINFO_HANDOFF_CHECKSUM_ALGORITHM_CRC32 1U
@@ -31,6 +31,7 @@
 #define ORYN_BOOTINFO_FLAG_CONFIGURATION_TABLES 0x0000000000000040ULL
 #define ORYN_BOOTINFO_FLAG_NVRAM_SNAPSHOT 0x0000000000000080ULL
 #define ORYN_BOOTINFO_FLAG_RUNTIME_SERVICES 0x0000000000000100ULL
+#define ORYN_BOOTINFO_FLAG_KERNEL_VIRTUAL_LAYOUT 0x0000000000000200ULL
 
 #define ORYN_BOOTINFO_KNOWN_FLAGS \
     (ORYN_BOOTINFO_FLAG_MEMORY_MAP | \
@@ -41,7 +42,8 @@
      ORYN_BOOTINFO_FLAG_FIRMWARE_DATA | \
      ORYN_BOOTINFO_FLAG_CONFIGURATION_TABLES | \
      ORYN_BOOTINFO_FLAG_NVRAM_SNAPSHOT | \
-     ORYN_BOOTINFO_FLAG_RUNTIME_SERVICES)
+     ORYN_BOOTINFO_FLAG_RUNTIME_SERVICES | \
+     ORYN_BOOTINFO_FLAG_KERNEL_VIRTUAL_LAYOUT)
 
 #define ORYN_BOOTINFO_MAX_CONFIGURATION_TABLES 32U
 #define ORYN_BOOTINFO_MAX_BOOT_ORDER_ENTRIES 32U
@@ -197,6 +199,10 @@ typedef struct OrynBootInfo
     OrynBootConfigurationTableEntry ConfigurationTables[ORYN_BOOTINFO_MAX_CONFIGURATION_TABLES];
     unsigned long long KernelPhysicalBase;
     unsigned long long KernelSize;
+    unsigned long long KernelVirtualBase;
+    unsigned long long KernelVirtualSize;
+    unsigned long long KernelEntryPhysical;
+    unsigned long long KernelEntryVirtual;
     unsigned long long FontBase;
     unsigned long long FontSize;
     OrynBootFirmwareData FirmwareData;
@@ -417,11 +423,15 @@ ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_framebuffer_offset_stable, ORYN_BOOTINF
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_rsdp_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, Rsdp) == 112U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_configuration_tables_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, ConfigurationTables) == 168U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_kernel_range_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, KernelPhysicalBase) == 1192U);
-ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_firmware_data_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, FirmwareData) == 1224U);
-ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_nvram_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, Nvram) == 1352U);
-ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_runtime_services_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, RuntimeServices) == 1480U);
-ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_font_name_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, FontName) == 1576U);
-ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_boot_loader_name_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, BootLoaderName) == 1608U);
-ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_kernel_name_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, KernelName) == 1640U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_kernel_virtual_base_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, KernelVirtualBase) == 1208U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_kernel_virtual_size_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, KernelVirtualSize) == 1216U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_kernel_entry_physical_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, KernelEntryPhysical) == 1224U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_kernel_entry_virtual_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, KernelEntryVirtual) == 1232U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_firmware_data_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, FirmwareData) == 1256U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_nvram_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, Nvram) == 1384U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_runtime_services_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, RuntimeServices) == 1512U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_font_name_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, FontName) == 1608U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_boot_loader_name_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, BootLoaderName) == 1640U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_kernel_name_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, KernelName) == 1672U);
 
 #endif

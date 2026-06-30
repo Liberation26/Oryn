@@ -51,6 +51,16 @@ typedef struct Elf64_Phdr
     UINT64 p_align;
 } Elf64_Phdr;
 
+typedef struct OrynKernelElfLayout
+{
+    UINT64 PhysicalBase;
+    UINT64 PhysicalSize;
+    UINT64 VirtualBase;
+    UINT64 VirtualSize;
+    UINT64 EntryPhysical;
+    UINT64 EntryVirtual;
+} OrynKernelElfLayout;
+
 extern EFI_SYSTEM_TABLE* gSystemTable;
 extern EFI_BOOT_SERVICES* gBootServices;
 extern EFI_GUID gLoadedImageProtocolGuid;
@@ -65,7 +75,9 @@ void CopyMemory(void* target, const void* source, UINTN size);
 EFI_STATUS OpenKernelFile(EFI_HANDLE imageHandle, EFI_FILE_PROTOCOL** outFile);
 EFI_STATUS ReadKernelFile(EFI_FILE_PROTOCOL* file, void** outBuffer, UINTN* outSize);
 EFI_STATUS ReadOptionalFontFile(EFI_HANDLE imageHandle, void** outBuffer, UINTN* outSize);
-EFI_STATUS LoadElfSegments(const void* kernelBuffer, UINTN kernelSize, UINT64* outEntry, UINT64* outKernelBase, UINT64* outKernelSize);
+EFI_STATUS LoadElfSegments(const void* kernelBuffer, UINTN kernelSize, OrynKernelElfLayout* outLayout);
+EFI_STATUS PrepareKernelVirtualAddressSpace(const OrynKernelElfLayout* layout);
+void ActivateKernelVirtualAddressSpace(void);
 void OrynCapturePlatformTables(OrynBootInfo* bootInfo, int wantPlatformTables, int wantRsdp);
 void OrynCaptureNvramSnapshot(OrynBootInfo* bootInfo);
 void OrynCaptureRuntimeServices(OrynBootInfo* bootInfo);

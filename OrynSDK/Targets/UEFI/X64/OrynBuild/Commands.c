@@ -214,7 +214,9 @@ static void WriteBootReport(
 {
     int loader_started = TextContains(debug_text, "[BOOT] Stage 01");
     int kernel_loaded = TextContains(debug_text, "[BOOT] Kernel loaded physical base");
-    int entry_printed = TextContains(debug_text, "[BOOT] Kernel entry address");
+    int entry_printed = TextContains(debug_text, "[BOOT] Kernel virtual entry address");
+    int virtual_map_prepared = TextContains(debug_text, "[BOOT] PASS: Temporary higher-half/chosen virtual map prepared");
+    int virtual_map_active = TextContains(debug_text, "[BOOT] PASS: Temporary higher-half/chosen virtual map activated");
     int boot_services_exited = TextContains(debug_text, "[BOOT] Stage 07: ExitBootServices succeeded");
     int bootinfo_created = TextContains(debug_text, "[BOOT] BootInfo allocated at");
     int memory_map_requested = !TextContains(debug_text, "[BOOT] BootInfo selection memory map: disabled");
@@ -225,8 +227,9 @@ static void WriteBootReport(
     int bootinfo_received = TextContains(debug_text, "[KERNEL] PASS: BootInfo received");
     int debug_exit = TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success");
     int boot_pass = command_ok && (exit_code == 0 || exit_code == 33) && loader_started &&
-        kernel_loaded && entry_printed && bootinfo_created && bootinfo_memory_map &&
-        boot_services_exited && kernel_jump && kernel_entered && serial_ok && bootinfo_received && debug_exit;
+        kernel_loaded && entry_printed && virtual_map_prepared && virtual_map_active &&
+        bootinfo_created && bootinfo_memory_map && boot_services_exited && kernel_jump &&
+        kernel_entered && serial_ok && bootinfo_received && debug_exit;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -247,7 +250,9 @@ static void WriteBootReport(
     fprintf(file, "  QEMU command accepted: %s\n", PassFail(command_ok));
     fprintf(file, "  Loader started: %s\n", PassFail(loader_started));
     fprintf(file, "  Kernel loaded physical address printed: %s\n", PassFail(kernel_loaded));
-    fprintf(file, "  Kernel entry address printed: %s\n", PassFail(entry_printed));
+    fprintf(file, "  Kernel virtual entry address printed: %s\n", PassFail(entry_printed));
+    fprintf(file, "  Loader prepared temporary higher-half/chosen map: %s\n", PassFail(virtual_map_prepared));
+    fprintf(file, "  Loader activated temporary higher-half/chosen map: %s\n", PassFail(virtual_map_active));
     fprintf(file, "  BootInfo allocated: %s\n", PassFail(bootinfo_created));
     fprintf(file, "  BootInfo memory map requested: %s\n", PassFail(memory_map_requested));
     fprintf(file, "  BootInfo memory map captured or intentionally omitted: %s\n", PassFail(bootinfo_memory_map));

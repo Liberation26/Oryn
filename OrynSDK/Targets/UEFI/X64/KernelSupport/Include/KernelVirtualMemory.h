@@ -27,6 +27,10 @@ typedef struct OrynKernelVirtualMemory
     unsigned long long NewPml4;
     unsigned long long KernelMapStart;
     unsigned long long KernelMapEnd;
+    unsigned long long KernelVirtualMapStart;
+    unsigned long long KernelVirtualMapEnd;
+    unsigned long long KernelEntryPhysical;
+    unsigned long long KernelEntryVirtual;
     unsigned long long BootInfoMapStart;
     unsigned long long BootInfoMapEnd;
     unsigned long long MemoryMapMapStart;
@@ -40,6 +44,7 @@ typedef struct OrynKernelVirtualMemory
     unsigned long long FontMapStart;
     unsigned long long FontMapEnd;
     unsigned long long IdentityMappedPages;
+    unsigned long long KernelVirtualMappedPages;
 } OrynKernelVirtualMemory;
 
 unsigned long long OrynVirtualMemoryReadCr3(void);

@@ -198,6 +198,10 @@ void KernelBootInfoPrintSummary(const OrynBootInfo* bootInfo)
     {
         WriteBootInfoField("[KERNEL] Kernel physical base: ", bootInfo->KernelPhysicalBase);
         WriteBootInfoField("[KERNEL] Kernel size: ", bootInfo->KernelSize);
+        WriteBootInfoField("[KERNEL] Kernel virtual base: ", bootInfo->KernelVirtualBase);
+        WriteBootInfoField("[KERNEL] Kernel virtual size: ", bootInfo->KernelVirtualSize);
+        WriteBootInfoField("[KERNEL] Kernel physical entry: ", bootInfo->KernelEntryPhysical);
+        WriteBootInfoField("[KERNEL] Kernel virtual entry: ", bootInfo->KernelEntryVirtual);
     }
     else
     {

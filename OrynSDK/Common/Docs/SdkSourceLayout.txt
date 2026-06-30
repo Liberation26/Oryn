@@ -61,7 +61,12 @@ Rules
 0.5.18 handoff checksum ABI
 ----------------------------
 
-  OrynBootInfo ABI v5 keeps the checksum contract in Common/Handoff/Include/OrynBootInfo.h.
+  OrynBootInfo ABI v6 keeps the checksum contract in Common/Handoff/Include/OrynBootInfo.h.
   Loader-side sealing happens in Targets/UEFI/X64/Loader/Source/BootX64Handoff.c.
   Kernel-side verification happens in Common/Kernel/Source/BootInfo/KernelBootInfoValidate.c.
   Project KernelMain validates BootInfo before initializing framebuffer/font console state.
+
+
+Higher-half/chosen kernel layout
+--------------------------------
+The UEFI x64 target owns Kernel.ld and loader-side paging setup. Common BootInfo carries the plain physical and virtual kernel layout fields, while target code decides how to map and enter the kernel.

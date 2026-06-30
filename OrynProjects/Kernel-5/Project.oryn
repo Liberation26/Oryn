@@ -5,6 +5,10 @@ Toolchain=clang
 Architecture=x86_64
 Entry=KernelStart
 
+[KernelLayout]
+KernelPhysicalBase=0x4000000
+KernelVirtualBase=0xFFFFFFFF80000000
+
 [Source]
 Source/**/*.c
 

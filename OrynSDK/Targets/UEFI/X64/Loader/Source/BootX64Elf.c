@@ -41,12 +41,19 @@ static int ValidateElf(const Elf64_Ehdr* elf, UINTN fileSize)
     return 1;
 }
 
-static EFI_STATUS FindElfLoadRange(const void* kernelBuffer, UINTN kernelSize, UINT64* outStart, UINT64* outEnd)
+static EFI_STATUS FindElfLayout(
+    const void* kernelBuffer,
+    UINTN kernelSize,
+    OrynKernelElfLayout* layout,
+    UINT64* outRequestedPhysicalStart)
 {
     const Elf64_Ehdr* elf = (const Elf64_Ehdr*)kernelBuffer;
     const UINT8* bytes = (const UINT8*)kernelBuffer;
-    UINT64 loadStart = 0xFFFFFFFFFFFFFFFFULL;
-    UINT64 loadEnd = 0;
+    UINT64 physicalStart = 0xFFFFFFFFFFFFFFFFULL;
+    UINT64 physicalEnd = 0;
+    UINT64 virtualStart = 0xFFFFFFFFFFFFFFFFULL;
+    UINT64 virtualEnd = 0;
+    UINT64 entryPhysical = 0;
     int loadCount = 0;
 
     for (UINT16 index = 0; index < elf->e_phnum; ++index)
@@ -63,40 +70,68 @@ static EFI_STATUS FindElfLoadRange(const void* kernelBuffer, UINTN kernelSize, U
             return EFI_LOAD_ERROR;
         }
 
-        UINT64 segmentStart = AlignDown(header->p_paddr);
-        UINT64 segmentEnd = AlignUp(header->p_paddr + header->p_memsz);
-        if (segmentStart < loadStart)
+        UINT64 segmentPhysicalStart = AlignDown(header->p_paddr);
+        UINT64 segmentPhysicalEnd = AlignUp(header->p_paddr + header->p_memsz);
+        UINT64 segmentVirtualStart = AlignDown(header->p_vaddr);
+        UINT64 segmentVirtualEnd = AlignUp(header->p_vaddr + header->p_memsz);
+
+        if (segmentPhysicalStart < physicalStart)
         {
-            loadStart = segmentStart;
+            physicalStart = segmentPhysicalStart;
         }
-        if (segmentEnd > loadEnd)
+        if (segmentPhysicalEnd > physicalEnd)
         {
-            loadEnd = segmentEnd;
+            physicalEnd = segmentPhysicalEnd;
         }
+        if (segmentVirtualStart < virtualStart)
+        {
+            virtualStart = segmentVirtualStart;
+        }
+        if (segmentVirtualEnd > virtualEnd)
+        {
+            virtualEnd = segmentVirtualEnd;
+        }
+
+        if (elf->e_entry >= header->p_vaddr && elf->e_entry < header->p_vaddr + header->p_memsz)
+        {
+            entryPhysical = header->p_paddr + (elf->e_entry - header->p_vaddr);
+        }
+
         ++loadCount;
     }
 
-    if (loadCount == 0 || loadStart >= loadEnd || elf->e_entry < loadStart || elf->e_entry >= loadEnd)
+    if (loadCount == 0 || physicalStart >= physicalEnd || virtualStart >= virtualEnd || entryPhysical == 0ULL)
     {
-        Print("[BOOT] FAIL: Kernel ELF load range is invalid.\n");
+        Print("[BOOT] FAIL: Kernel ELF load layout is invalid.\n");
         return EFI_LOAD_ERROR;
     }
 
-    *outStart = loadStart;
-    *outEnd = loadEnd;
+    if (physicalEnd - physicalStart != virtualEnd - virtualStart)
+    {
+        Print("[BOOT] FAIL: Kernel ELF physical and virtual layout sizes differ.\n");
+        return EFI_LOAD_ERROR;
+    }
+
+    layout->PhysicalBase = physicalStart;
+    layout->PhysicalSize = physicalEnd - physicalStart;
+    layout->VirtualBase = virtualStart;
+    layout->VirtualSize = virtualEnd - virtualStart;
+    layout->EntryPhysical = entryPhysical;
+    layout->EntryVirtual = elf->e_entry;
+    *outRequestedPhysicalStart = physicalStart;
     return EFI_SUCCESS;
 }
 
-static EFI_STATUS AllocateKernelRange(UINT64 requestedStart, UINT64 requestedEnd, UINT64* outActualStart)
+static EFI_STATUS AllocateKernelRange(UINT64 requestedStart, UINT64 requestedSize, UINT64* outActualStart)
 {
-    UINTN pages = (UINTN)((requestedEnd - requestedStart) / PAGE_SIZE);
+    UINTN pages = (UINTN)(requestedSize / PAGE_SIZE);
     EFI_PHYSICAL_ADDRESS loadAddress = requestedStart;
 
-    Print("[BOOT] Kernel requested load base: ");
+    Print("[BOOT] Kernel requested physical load base: ");
     PrintHex64(requestedStart);
     Print("\n");
-    Print("[BOOT] Kernel load size: ");
-    PrintHex64(requestedEnd - requestedStart);
+    Print("[BOOT] Kernel physical load size: ");
+    PrintHex64(requestedSize);
     Print(" bytes.\n");
 
     EFI_STATUS status = gBootServices->AllocatePages(AllocateAddress, EfiLoaderData, pages, &loadAddress);
@@ -130,11 +165,17 @@ static EFI_STATUS AllocateKernelRange(UINT64 requestedStart, UINT64 requestedEnd
     return EFI_SUCCESS;
 }
 
-static EFI_STATUS CopyElfSegments(const void* kernelBuffer, UINTN kernelSize, UINT64 requestedStart, UINT64 actualStart, UINT64 loadSize, UINT64* outEntry, UINT64* outKernelBase, UINT64* outKernelSize)
+static EFI_STATUS CopyElfSegments(
+    const void* kernelBuffer,
+    UINTN kernelSize,
+    UINT64 requestedPhysicalStart,
+    UINT64 actualPhysicalStart,
+    OrynKernelElfLayout* layout)
 {
     const Elf64_Ehdr* elf = (const Elf64_Ehdr*)kernelBuffer;
     const UINT8* bytes = (const UINT8*)kernelBuffer;
 
+    (void)kernelSize;
     for (UINT16 index = 0; index < elf->e_phnum; ++index)
     {
         const Elf64_Phdr* header = (const Elf64_Phdr*)(bytes + elf->e_phoff + ((UINT64)index * elf->e_phentsize));
@@ -143,21 +184,27 @@ static EFI_STATUS CopyElfSegments(const void* kernelBuffer, UINTN kernelSize, UI
             continue;
         }
 
-        UINT64 destination = actualStart + (header->p_paddr - requestedStart);
+        UINT64 destination = actualPhysicalStart + (header->p_paddr - requestedPhysicalStart);
         SetMemory((void*)(UINTN)destination, 0, (UINTN)header->p_memsz);
         CopyMemory((void*)(UINTN)destination, bytes + header->p_offset, (UINTN)header->p_filesz);
     }
 
-    *outEntry = actualStart + (elf->e_entry - requestedStart);
-    *outKernelBase = actualStart;
-    *outKernelSize = loadSize;
-    Print("[BOOT] Kernel entry address: ");
-    PrintHex64(*outEntry);
+    layout->EntryPhysical = actualPhysicalStart + (layout->EntryPhysical - requestedPhysicalStart);
+    layout->PhysicalBase = actualPhysicalStart;
+
+    Print("[BOOT] Kernel physical entry address: ");
+    PrintHex64(layout->EntryPhysical);
+    Print("\n");
+    Print("[BOOT] Kernel virtual entry address: ");
+    PrintHex64(layout->EntryVirtual);
+    Print("\n");
+    Print("[BOOT] Kernel chosen virtual base: ");
+    PrintHex64(layout->VirtualBase);
     Print("\n");
     return EFI_SUCCESS;
 }
 
-EFI_STATUS LoadElfSegments(const void* kernelBuffer, UINTN kernelSize, UINT64* outEntry, UINT64* outKernelBase, UINT64* outKernelSize)
+EFI_STATUS LoadElfSegments(const void* kernelBuffer, UINTN kernelSize, OrynKernelElfLayout* outLayout)
 {
     const Elf64_Ehdr* elf = (const Elf64_Ehdr*)kernelBuffer;
     if (!ValidateElf(elf, kernelSize))
@@ -167,22 +214,33 @@ EFI_STATUS LoadElfSegments(const void* kernelBuffer, UINTN kernelSize, UINT64* o
     }
 
     Print("[BOOT] Stage 04: Validated x86_64 ELF kernel.\n");
-    UINT64 requestedStart = 0;
-    UINT64 requestedEnd = 0;
-    EFI_STATUS status = FindElfLoadRange(kernelBuffer, kernelSize, &requestedStart, &requestedEnd);
+    OrynKernelElfLayout layout;
+    UINT64 requestedPhysicalStart = 0;
+    EFI_STATUS status = FindElfLayout(kernelBuffer, kernelSize, &layout, &requestedPhysicalStart);
     if (IsError(status))
     {
         return status;
     }
 
-    UINT64 actualStart = 0;
-    status = AllocateKernelRange(requestedStart, requestedEnd, &actualStart);
+    UINT64 actualPhysicalStart = 0;
+    status = AllocateKernelRange(requestedPhysicalStart, layout.PhysicalSize, &actualPhysicalStart);
     if (IsError(status))
     {
         return status;
     }
 
     Print("[BOOT] Stage 05: Copying ELF load segments.\n");
-    return CopyElfSegments(kernelBuffer, kernelSize, requestedStart, actualStart, requestedEnd - requestedStart,
-        outEntry, outKernelBase, outKernelSize);
+    status = CopyElfSegments(kernelBuffer, kernelSize, requestedPhysicalStart, actualPhysicalStart, &layout);
+    if (IsError(status))
+    {
+        return status;
+    }
+
+    outLayout->PhysicalBase = layout.PhysicalBase;
+    outLayout->PhysicalSize = layout.PhysicalSize;
+    outLayout->VirtualBase = layout.VirtualBase;
+    outLayout->VirtualSize = layout.VirtualSize;
+    outLayout->EntryPhysical = layout.EntryPhysical;
+    outLayout->EntryVirtual = layout.EntryVirtual;
+    return EFI_SUCCESS;
 }

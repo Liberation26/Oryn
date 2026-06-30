@@ -74,6 +74,40 @@ static void ValidateKernelRange(const OrynBootInfo* bootInfo, OrynKernelBootInfo
     }
 }
 
+static void ValidateKernelVirtualLayout(const OrynBootInfo* bootInfo, OrynKernelBootInfoStatus* status)
+{
+    if (!KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_KERNEL_VIRTUAL_LAYOUT))
+    {
+        WriteValidationFail("Kernel virtual layout flag is missing.", status);
+        return;
+    }
+
+    if (bootInfo->KernelVirtualBase == 0ULL)
+    {
+        WriteValidationFail("Kernel virtual base is zero.", status);
+    }
+
+    if (bootInfo->KernelVirtualSize == 0ULL)
+    {
+        WriteValidationFail("Kernel virtual size is zero.", status);
+    }
+
+    if (bootInfo->KernelEntryPhysical == 0ULL)
+    {
+        WriteValidationFail("Kernel physical entry is zero.", status);
+    }
+
+    if (bootInfo->KernelEntryVirtual == 0ULL)
+    {
+        WriteValidationFail("Kernel virtual entry is zero.", status);
+    }
+
+    if (bootInfo->KernelVirtualSize != bootInfo->KernelSize)
+    {
+        WriteValidationFail("Kernel physical and virtual layout sizes differ.", status);
+    }
+}
+
 static void ValidateMemoryMap(const OrynBootInfo* bootInfo, OrynKernelBootInfoStatus* status)
 {
     if (!KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_MEMORY_MAP))
@@ -374,6 +408,7 @@ OrynKernelBootInfoStatus KernelBootInfoValidate(const OrynBootInfo* bootInfo)
     CheckExpectedFlag(bootInfo, ORYN_BOOTINFO_FLAG_RUNTIME_SERVICES, ORYN_BOOTINFO_WANT_RUNTIME_SERVICES, "RuntimeServices", &status);
 
     ValidateKernelRange(bootInfo, &status);
+    ValidateKernelVirtualLayout(bootInfo, &status);
     ValidateMemoryMap(bootInfo, &status);
     ValidateFramebuffer(bootInfo, &status);
     ValidateRsdp(bootInfo, &status);
