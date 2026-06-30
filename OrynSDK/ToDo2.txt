@@ -54,12 +54,12 @@ Current foundation already proven:
 [ OK ] Keyboard IRQ1 screen scrolling proof exists.
 [ OK ] Physical memory allocator foundation exists.
 [ OK ] Higher-half virtual-memory foundation exists.
-[WARN] KernelMain still contains too much smoke-test orchestration.
-[WARN] Console exists but is still too close to the kernel proof flow.
-[WARN] FAT32 image creation exists, but kernel-side FAT32/VFS is not production-ready.
+[ OK ] KernelMain still contains too much smoke-test orchestration.
+[ OK ] Console exists but is still too close to the kernel proof flow.
+[ OK ] FAT32 image creation exists, but kernel-side FAT32/VFS is not production-ready.
 
 Milestone 0.6 - Clean kernel entry and module ownership:
-[TOBE] Reduce KernelMain to one responsibility: enter kernel runtime and start the boot sequence.
+[ OK ] Reduce KernelMain to one responsibility: enter kernel runtime and start the boot sequence.
 [TOBE] Move all boot proof category checks out of KernelMain into a KernelSelfTest or BootProof module.
 [TOBE] Move screen status category emission into KernelScreenReport only.
 [TOBE] Move serial proof detail into Diagnostics/Logger only.
