@@ -1,5 +1,6 @@
 #include "KernelCpu.h"
 #include "KernelIo.h"
+#include "KernelModuleManifest.h"
 #include "KernelScreenReport.h"
 
 #ifndef ORYN_VM_APIC
@@ -71,6 +72,7 @@ void OrynKernelCpuDetect(void)
     }
 
     gCpuFeatures.Detected = 1U;
+    OrynKernelModuleManifestReady(OrynKernelModuleCpu);
 }
 
 const OrynKernelCpuFeatures* OrynKernelCpuGetFeatures(void)

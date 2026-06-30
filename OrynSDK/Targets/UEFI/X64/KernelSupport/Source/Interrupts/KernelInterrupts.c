@@ -1,6 +1,7 @@
 #include "KernelInterrupts.h"
 #include "KernelApic.h"
 #include "KernelIo.h"
+#include "KernelModuleManifest.h"
 #include "KernelPanic.h"
 #include "KernelPic.h"
 #include "KernelPortIo.h"
@@ -114,12 +115,18 @@ const OrynKernelInterruptState* OrynKernelInterruptsGetState(void)
 
 int OrynKernelInterruptsInit(void)
 {
+    if (!OrynKernelModuleManifestBegin(OrynKernelModuleInterrupts))
+    {
+        return 0;
+    }
+
     ClearBytes(&gInterruptState, sizeof(gInterruptState));
     ClearBytes(gHandlers, sizeof(gHandlers));
     ClearBytes(gVectorCounters, sizeof(gVectorCounters));
     gInterruptState.Initialized = 1U;
     gInterruptState.HandlerSlots = ORYN_INTERRUPT_VECTOR_COUNT;
     gInterruptState.InterruptsEnabled = OrynKernelInterruptsAreEnabled();
+    OrynKernelModuleManifestReady(OrynKernelModuleInterrupts);
     return 1;
 }
 

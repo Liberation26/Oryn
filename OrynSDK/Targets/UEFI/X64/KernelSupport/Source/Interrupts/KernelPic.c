@@ -1,5 +1,6 @@
 #include "KernelPic.h"
 #include "KernelIo.h"
+#include "KernelModuleManifest.h"
 #include "KernelPortIo.h"
 #include "KernelScreenReport.h"
 
@@ -77,6 +78,11 @@ void OrynKernelPicSetIrqMask(unsigned int irq, int masked)
 
 int OrynKernelPicInitAndDisable(void)
 {
+    if (!OrynKernelModuleManifestBegin(OrynKernelModulePic))
+    {
+        return 0;
+    }
+
     gPicState.OriginalMasterMask = OrynPortIn8(ORYN_PIC1_DATA);
     gPicState.OriginalSlaveMask = OrynPortIn8(ORYN_PIC2_DATA);
     gPicState.MasterOffset = ORYN_PIC_MASTER_VECTOR_OFFSET;
@@ -102,6 +108,14 @@ int OrynKernelPicInitAndDisable(void)
     OrynKernelPicMaskAll();
     gPicState.Remapped = 1U;
     gPicState.Initialized = 1U;
+    if (gPicState.Disabled)
+    {
+        OrynKernelModuleManifestReady(OrynKernelModulePic);
+    }
+    else
+    {
+        OrynKernelModuleManifestFailed(OrynKernelModulePic);
+    }
     return gPicState.Disabled ? 1 : 0;
 }
 

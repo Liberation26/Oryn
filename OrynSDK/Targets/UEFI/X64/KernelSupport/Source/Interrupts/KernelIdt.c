@@ -1,6 +1,7 @@
 #include "KernelIdt.h"
 #include "KernelGdt.h"
 #include "KernelIo.h"
+#include "KernelModuleManifest.h"
 #include "KernelInterrupts.h"
 #include "KernelScreenReport.h"
 
@@ -189,6 +190,11 @@ int OrynKernelIdtInit(void)
     unsigned short selector;
     unsigned char exceptionIst;
 
+    if (!OrynKernelModuleManifestBegin(OrynKernelModuleIdt))
+    {
+        return 0;
+    }
+
     KernelIoWriteString("[KERNEL] IDT: installing\n");
     ClearBytes(gIdt, sizeof(gIdt));
     ClearBytes(&gIdtState, sizeof(gIdtState));
@@ -215,6 +221,14 @@ int OrynKernelIdtInit(void)
     gIdtState.LoadedBase = loaded.Base;
     gIdtState.LoadedLimit = loaded.Limit;
     gIdtState.Verified = (loaded.Base == pointer.Base && loaded.Limit == pointer.Limit) ? 1U : 0U;
+    if (gIdtState.Verified)
+    {
+        OrynKernelModuleManifestReady(OrynKernelModuleIdt);
+    }
+    else
+    {
+        OrynKernelModuleManifestFailed(OrynKernelModuleIdt);
+    }
     return gIdtState.Verified ? 1 : 0;
 }
 

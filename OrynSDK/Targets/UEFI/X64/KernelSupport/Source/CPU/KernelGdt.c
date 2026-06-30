@@ -1,5 +1,6 @@
 #include "KernelGdt.h"
 #include "KernelIo.h"
+#include "KernelModuleManifest.h"
 #include "KernelScreenReport.h"
 
 #define ORYN_GDT_ASSERT(name, condition) typedef char name[(condition) ? 1 : -1]
@@ -158,6 +159,11 @@ int OrynKernelGdtInit(void)
     OrynGdtPointer loaded;
     unsigned long long istTop;
 
+    if (!OrynKernelModuleManifestBegin(OrynKernelModuleGdt))
+    {
+        return 0;
+    }
+
     KernelIoWriteString("[KERNEL] GDT: installing\n");
     ClearBytes(gGdt, sizeof(gGdt));
     ClearBytes(&gTss, sizeof(gTss));
@@ -205,6 +211,14 @@ int OrynKernelGdtInit(void)
          loaded.Limit == pointer.Limit &&
          gGdtState.CodeSelector == ORYN_GDT_KERNEL_CODE_SELECTOR &&
          gGdtState.TssLoaded != 0U) ? 1U : 0U;
+    if (gGdtState.Verified)
+    {
+        OrynKernelModuleManifestReady(OrynKernelModuleGdt);
+    }
+    else
+    {
+        OrynKernelModuleManifestFailed(OrynKernelModuleGdt);
+    }
     return gGdtState.Verified ? 1 : 0;
 }
 

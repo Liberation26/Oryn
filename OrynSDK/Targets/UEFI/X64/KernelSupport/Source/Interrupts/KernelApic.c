@@ -2,6 +2,7 @@
 #include "KernelCpu.h"
 #include "KernelIo.h"
 #include "KernelMsr.h"
+#include "KernelModuleManifest.h"
 #include "KernelScreenReport.h"
 
 #define ORYN_MSR_APIC_BASE 0x1BU
@@ -138,12 +139,18 @@ static void EnableXApic(void)
 int OrynKernelApicInit(int preferApic2)
 {
     const OrynKernelCpuFeatures* cpu;
+    if (!OrynKernelModuleManifestBegin(OrynKernelModuleApic))
+    {
+        ClearState();
+        return 0;
+    }
     ClearState();
     cpu = OrynKernelCpuGetFeatures();
     gApicState.CpuHasApic = cpu->HasLocalApic;
     gApicState.CpuHasApic2 = cpu->HasX2Apic;
     if (gApicState.CpuHasApic == 0U)
     {
+        OrynKernelModuleManifestFailed(OrynKernelModuleApic);
         return 0;
     }
 
@@ -169,6 +176,14 @@ int OrynKernelApicInit(int preferApic2)
     }
 
     gApicState.Initialized = gApicState.SoftwareEnabled;
+    if (gApicState.Initialized)
+    {
+        OrynKernelModuleManifestReady(OrynKernelModuleApic);
+    }
+    else
+    {
+        OrynKernelModuleManifestFailed(OrynKernelModuleApic);
+    }
     return gApicState.Initialized ? 1 : 0;
 }
 

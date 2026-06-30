@@ -1,5 +1,6 @@
 #include "KernelDiagnostics.h"
 #include "KernelDiagnosticsProofsInternal.h"
+#include "KernelModuleManifest.h"
 #include "KernelScreenReport.h"
 
 static void OrynKernelDiagnosticsPrintBootInfoOwnership(const OrynBootInfo* kernelBootInfo)
@@ -42,6 +43,7 @@ void OrynKernelDiagnosticsRunBootInfoFailureProof(void)
 void OrynKernelDiagnosticsRunBootProofs(const OrynBootInfo* kernelBootInfo)
 {
     OrynKernelDiagnosticsPrintEntryProofs(kernelBootInfo);
+    OrynKernelModuleManifestPrintProof();
     OrynKernelBootInfoStatus bootStatus = KernelBootInfoValidate(kernelBootInfo);
 
     OrynKernelDiagnosticsRunDescriptorProofs();
