@@ -52,6 +52,11 @@ void OrynKernelDiagnosticsRunDescriptorProofs(void);
 void OrynKernelDiagnosticsRunInterruptTimerProofs(const OrynBootInfo* kernelBootInfo);
 void OrynKernelDiagnosticsRunPciProof(const OrynBootInfo* kernelBootInfo);
 void OrynKernelDiagnosticsRunConsoleProofs(const OrynBootInfo* kernelBootInfo);
+int OrynKernelDiagnosticsConsoleRunScrollProbe(void);
+int OrynKernelDiagnosticsConsoleRunDoubleBufferProbe(void);
+int OrynKernelDiagnosticsConsoleRunLineBufferedProbe(void);
+int OrynKernelDiagnosticsConsoleRunFastRefreshProbe(void);
+int OrynKernelDiagnosticsRunKeyboardScrollProof(void);
 void OrynKernelDiagnosticsRunMemoryProofs(const OrynBootInfo* kernelBootInfo);
 void OrynKernelDiagnosticsRunBootInfoFailureProof(void);
 

@@ -81,7 +81,6 @@ void KConsoleUseVgaTextFallback(void)
     gConsole.LinePresentCount = 0U;
     gConsole.FastScrollPresentCount = 0U;
     gConsole.FullPresentCount = 0U;
-    gConsole.StateOnlyScrollProofCount = 0U;
     gConsole.AtomicPresentCount = 0U;
     gConsole.PresentSuppressed = 0U;
     gConsole.DirtyLineActive = 0U;

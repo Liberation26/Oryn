@@ -199,7 +199,7 @@ void KConsoleStorePrintable(char value)
     gConsole.CurrentColumn += 1U;
 }
 
-void KConsoleWriteProofDecimal(unsigned int value)
+void KConsoleWriteUnsignedDec(unsigned int value)
 {
     char buffer[16];
     unsigned int index = 0U;
@@ -222,7 +222,7 @@ void KConsoleWriteProofDecimal(unsigned int value)
     }
 }
 
-void KConsoleWriteProofText(const char* text)
+void KConsoleWriteString(const char* text)
 {
     while (*text != 0)
     {

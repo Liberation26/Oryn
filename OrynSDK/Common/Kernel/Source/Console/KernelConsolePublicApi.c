@@ -1,171 +1,39 @@
 #include "KernelConsoleInternal.h"
+
 unsigned int KConsolePresentCount(void)
 {
     return gConsole.PresentCount;
 }
 
-unsigned int KConsoleBeginSilentProof(void)
+unsigned int KConsoleBeginDeferredPresent(void)
 {
-    unsigned int savedSuppress = gConsole.PresentSuppressed;
+    unsigned int savedState = gConsole.PresentSuppressed;
     gConsole.PresentSuppressed = 1U;
-    return savedSuppress;
+    return savedState;
 }
 
-void KConsoleEndSilentProof(unsigned int savedSuppress)
+void KConsoleEndDeferredPresent(unsigned int saved_state)
 {
-    gConsole.PresentSuppressed = savedSuppress;
+    gConsole.PresentSuppressed = saved_state;
 }
 
-int KConsoleRunDoubleBufferProof(void)
+void KConsoleGetMetrics(KConsoleMetrics* metrics)
 {
-    unsigned int savedSuppress;
-    unsigned int beforeFull;
-
-    if (!gConsole.Available || !gConsole.DoubleBuffered || KConsoleBackBufferBytes() == 0ULL)
+    if (metrics == 0)
     {
-        return 0;
+        return;
     }
 
-    savedSuppress = KConsoleBeginSilentProof();
-    beforeFull = gConsole.FullPresentCount;
-    KConsoleRenderVisible();
-    KConsoleEndSilentProof(savedSuppress);
-    return gConsole.FullPresentCount > beforeFull;
-}
-
-int KConsoleRunLineBufferedFlipProof(void)
-{
-    unsigned int savedSuppress;
-    unsigned int beforeLine;
-    unsigned int afterCharacters;
-    unsigned int afterLine;
-    unsigned int originalColour = gConsole.ForegroundColour;
-    unsigned char originalVga = gConsole.VgaAttribute;
-    int ok;
-
-    if (!gConsole.Available || !gConsole.DoubleBuffered || KConsoleBackBufferBytes() == 0ULL)
-    {
-        return 0;
-    }
-
-    savedSuppress = KConsoleBeginSilentProof();
-    KConsoleScrollToBottom();
-    KConsoleWriteChar('\n');
-    beforeLine = gConsole.LinePresentCount;
-
-    KConsoleSetForegroundColour(KCONSOLE_COLOUR_STEP);
-    KConsoleWriteChar('L');
-    KConsoleWriteChar('B');
-    afterCharacters = gConsole.LinePresentCount;
-    KConsoleWriteChar('\n');
-    afterLine = gConsole.LinePresentCount;
-
-    gConsole.ForegroundColour = originalColour;
-    gConsole.VgaAttribute = originalVga;
-    ok = afterCharacters == beforeLine && afterLine > afterCharacters;
-    KConsoleClearScreen();
-    KConsoleEndSilentProof(savedSuppress);
-    return ok;
-}
-
-int KConsoleRunFastRefreshProof(void)
-{
-    unsigned int savedSuppress;
-    unsigned int beforeFast;
-    unsigned int beforeLine;
-    unsigned int afterCharacters;
-    unsigned int lines;
-    unsigned int originalColour = gConsole.ForegroundColour;
-    unsigned char originalVga = gConsole.VgaAttribute;
-    int ok;
-
-    if (!gConsole.Available || !gConsole.DoubleBuffered || KConsoleBackBufferBytes() == 0ULL)
-    {
-        return 0;
-    }
-
-    savedSuppress = KConsoleBeginSilentProof();
-    beforeFast = gConsole.FastScrollPresentCount;
-    KConsoleScrollToBottom();
-    beforeLine = gConsole.LinePresentCount;
-
-    KConsoleSetForegroundColour(KCONSOLE_COLOUR_STEP);
-    KConsoleWriteProofText("[FAST] dirty line proof");
-    afterCharacters = gConsole.LinePresentCount;
-    KConsoleWriteChar('\n');
-
-    lines = gConsole.VisibleRows + 2U;
-    if (lines > 80U)
-    {
-        lines = 80U;
-    }
-
-    for (unsigned int index = 0U; index < lines; ++index)
-    {
-        KConsoleWriteProofText("[FAST] scroll proof line");
-        KConsoleWriteChar('\n');
-    }
-
-    gConsole.ForegroundColour = originalColour;
-    gConsole.VgaAttribute = originalVga;
-    ok = afterCharacters == beforeLine && gConsole.FastScrollPresentCount > beforeFast;
-    KConsoleClearScreen();
-    KConsoleEndSilentProof(savedSuppress);
-    return ok;
-}
-
-int KConsoleRunScrollProof(void)
-{
-    unsigned int savedSuppress;
-    unsigned int originalColour;
-    unsigned char originalVga;
-    unsigned int proofLines;
-    int ok;
-
-    if (!gConsole.Available || gConsole.VisibleRows == 0U || gConsole.VisibleColumns == 0U)
-    {
-        return 0;
-    }
-
-    savedSuppress = KConsoleBeginSilentProof();
-    originalColour = gConsole.ForegroundColour;
-    originalVga = gConsole.VgaAttribute;
-    proofLines = gConsole.VisibleRows + 4U;
-
-    if (proofLines > 80U)
-    {
-        proofLines = 80U;
-    }
-
-    KConsoleSetForegroundColour(KCONSOLE_COLOUR_STEP);
-    for (unsigned int index = 0U; index < proofLines; ++index)
-    {
-        KConsoleWriteProofText("[SCROLL] proof line ");
-        KConsoleWriteProofDecimal(index + 1U);
-        KConsoleWriteChar('\n');
-    }
-
-    if (gConsole.TotalLines > gConsole.VisibleRows)
-    {
-        ok = KConsoleScrollUpLines(1U) &&
-            KConsoleScrollDownLines(1U) &&
-            KConsolePageUp() &&
-            KConsolePageDown();
-        gConsole.StateOnlyScrollProofCount += ok ? 1U : 0U;
-    }
-    else
-    {
-        ok = 0;
-    }
-
-    KConsoleScrollToBottom();
-    ok = ok && gConsole.ViewFollowsTail && gConsole.ViewTopLine == KConsoleMaximumViewTop();
-
-    gConsole.ForegroundColour = originalColour;
-    gConsole.VgaAttribute = originalVga;
-    KConsoleClearScreen();
-    KConsoleEndSilentProof(savedSuppress);
-    return ok;
+    metrics->PresentCount = gConsole.PresentCount;
+    metrics->LinePresentCount = gConsole.LinePresentCount;
+    metrics->FastScrollPresentCount = gConsole.FastScrollPresentCount;
+    metrics->FullPresentCount = gConsole.FullPresentCount;
+    metrics->AtomicPresentCount = gConsole.AtomicPresentCount;
+    metrics->TotalLines = gConsole.TotalLines;
+    metrics->ViewTopLine = gConsole.ViewTopLine;
+    metrics->ViewFollowsTail = (unsigned int)(gConsole.ViewFollowsTail ? 1 : 0);
+    metrics->CurrentLine = gConsole.CurrentLine;
+    metrics->CurrentColumn = gConsole.CurrentColumn;
 }
 
 unsigned char KConsoleVgaAttributeForColour(unsigned int colour)
@@ -223,6 +91,8 @@ const KConsoleApi KConsole =
 {
     KConsoleClearScreen,
     KConsoleWriteChar,
+    KConsoleWriteString,
+    KConsoleWriteUnsignedDec,
     KConsoleSetForegroundColour,
     KConsoleResetForegroundColour,
     KConsoleIsAvailable,
@@ -237,5 +107,8 @@ const KConsoleApi KConsole =
     KConsoleScrollbackRows,
     KConsoleIsDoubleBuffered,
     KConsoleBackBufferBytes,
-    KConsolePresentCount
+    KConsolePresentCount,
+    KConsoleGetMetrics,
+    KConsoleBeginDeferredPresent,
+    KConsoleEndDeferredPresent
 };
