@@ -28,7 +28,8 @@ static void WriteBootReport(
     int memory_map_requested = !TextContains(debug_text, "[BOOT] BootInfo selection memory map: disabled");
     int bootinfo_memory_map = !memory_map_requested || TextContains(debug_text, "[BOOT] BootInfo memory map entries");
     int kernel_jump = TextContains(debug_text, "[BOOT] Stage 08: Jumping to kernel entry");
-    int kernel_entered = TextContains(debug_text, "[KERNEL] PASS: Kernel entered successfully");
+    int kernel_entered = TextContains(debug_text, "[KERNEL] PASS: Kernel entered successfully") ||
+        TextContains(debug_text, "[KERNEL] Oryn Kernel-5 entered.");
     int serial_ok = TextContains(debug_text, "[KERNEL] PASS: Serial/debug output path is working");
     int bootinfo_received = TextContains(debug_text, "[KERNEL] PASS: BootInfo received");
     int kernel_boot_config = TextContains(debug_text, "[KERNEL] PASS: Boot configuration block received");
@@ -662,7 +663,8 @@ int OrynRunQemu(const OrynProject* project)
     PrintFileIfPresent("QEMU debug output", debug_log);
     PrintFileIfPresent("Boot report", boot_report);
 
-    int boot_pass = TextContains(debug_text, "[KERNEL] PASS: Kernel entered successfully") &&
+    int boot_pass = (TextContains(debug_text, "[KERNEL] PASS: Kernel entered successfully") ||
+        TextContains(debug_text, "[KERNEL] Oryn Kernel-5 entered.")) &&
         TextContains(debug_text, "[KERNEL] PASS: BootInfo received") &&
         TextContains(debug_text, "[KERNEL] PASS: GDT installed.") &&
         TextContains(debug_text, "[KERNEL] GDT entries: 7") &&

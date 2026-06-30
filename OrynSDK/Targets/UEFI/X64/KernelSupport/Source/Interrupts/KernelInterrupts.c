@@ -9,6 +9,7 @@
 #define ORYN_PIT_COMMAND 0x43U
 #define ORYN_PIT_MODE0_LOHI 0x30U
 #define ORYN_PIT_PROOF_DIVISOR 1193U
+#define ORYN_INTERRUPT_PROOF_WAIT_LIMIT 10000000U
 
 typedef struct OrynInterruptHandlerSlot
 {
@@ -276,7 +277,7 @@ int OrynKernelInterruptsRunPicTimerProof(void)
     OrynKernelPicSetIrqMask(0U, 0);
     OrynKernelInterruptsEnable();
 
-    for (waited = 0U; waited < 50000000U; ++waited)
+    for (waited = 0U; waited < ORYN_INTERRUPT_PROOF_WAIT_LIMIT; ++waited)
     {
         after = OrynKernelInterruptsGetVectorCount(ORYN_INTERRUPT_IRQ_BASE);
         if (after > before)
@@ -325,7 +326,7 @@ int OrynKernelInterruptsRunApicTimerProof(void)
     }
 
     OrynKernelInterruptsEnable();
-    for (waited = 0U; waited < 50000000U; ++waited)
+    for (waited = 0U; waited < ORYN_INTERRUPT_PROOF_WAIT_LIMIT; ++waited)
     {
         after = OrynKernelInterruptsGetVectorCount(ORYN_INTERRUPT_APIC_TIMER_VECTOR);
         if (after > before)
@@ -360,7 +361,7 @@ void OrynKernelInterruptsPrintProof(void)
         "[KERNEL] PASS: CPU interrupts are currently disabled for controlled boot.\n");
 }
 
-void OrynKernelInterruptsPrintRuntimeProof(void)
+void OrynKernelInterruptsPrintPicRuntimeProof(void)
 {
     KernelIoWriteString(gInterruptState.PicTimerProofPassed ?
         "[KERNEL] PASS: PIC IRQ0 interrupt fired through IDT dispatch.\n" :
@@ -371,6 +372,10 @@ void OrynKernelInterruptsPrintRuntimeProof(void)
     KernelIoWriteString(gInterruptState.PicEoiCount != 0ULL ?
         "[KERNEL] PASS: PIC EOI path executed.\n" :
         "[KERNEL] FAIL: PIC EOI path did not execute.\n");
+}
+
+void OrynKernelInterruptsPrintApicRuntimeProof(void)
+{
     KernelIoWriteString(gInterruptState.ApicTimerProofPassed ?
         "[KERNEL] PASS: APIC timer interrupt fired through IDT dispatch.\n" :
         "[KERNEL] FAIL: APIC timer interrupt did not fire through IDT dispatch.\n");
@@ -380,6 +385,11 @@ void OrynKernelInterruptsPrintRuntimeProof(void)
     KernelIoWriteString(gInterruptState.ApicEoiCount != 0ULL ?
         "[KERNEL] PASS: APIC EOI path executed.\n" :
         "[KERNEL] FAIL: APIC EOI path did not execute.\n");
+}
+
+void OrynKernelInterruptsPrintRuntimeProof(void)
+{
+    OrynKernelInterruptsPrintApicRuntimeProof();
     KernelIoWriteString(
         gInterruptState.PicTimerProofPassed && gInterruptState.ApicTimerProofPassed ?
         "[KERNEL] PASS: Interrupts work from PIC upward through APIC/APIC2.\n" :

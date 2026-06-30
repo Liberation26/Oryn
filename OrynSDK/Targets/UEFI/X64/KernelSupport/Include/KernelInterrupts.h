@@ -54,6 +54,8 @@ void OrynKernelInterruptsDispatch(OrynIdtInterruptFrame* frame);
 int OrynKernelInterruptsRunPicTimerProof(void);
 int OrynKernelInterruptsRunApicTimerProof(void);
 void OrynKernelInterruptsPrintProof(void);
+void OrynKernelInterruptsPrintPicRuntimeProof(void);
+void OrynKernelInterruptsPrintApicRuntimeProof(void);
 void OrynKernelInterruptsPrintRuntimeProof(void);
 
 #endif

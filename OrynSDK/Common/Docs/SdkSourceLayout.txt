@@ -180,7 +180,7 @@ PCI discovery is target-owned UEFI x64 kernel support because the current implem
 KernelPci validates the BootInfo RSDP, discovers ACPI MCFG/PCIe ECAM metadata, then scans PCI config space and exposes a recorded device list to Kernel-5 diagnostics. Common remains target-neutral; later common driver registries can consume this target-produced device inventory.
 
 
-0.5.35 SMP ownership
+0.5.36 SMP ownership
 --------------------
 SMP/multi-core processing is target-owned UEFI x64 kernel support because it depends on x86_64 local APIC IDs, ACPI MADT CPU entries, and the real-mode AP startup trampoline:
 
@@ -189,3 +189,9 @@ SMP/multi-core processing is target-owned UEFI x64 kernel support because it dep
   Targets/UEFI/X64/KernelSupport/Source/SMP/KernelSmpTrampoline.c
 
 KernelSmp discovers CPUs from the BootInfo RSDP/MADT path, prepares the low-memory AP trampoline, starts APs with local APIC INIT/SIPI, and reports AP startup to Kernel-5 diagnostics. The QEMU run stage now includes -smp 4 and BootReport checks the SMP proof markers.
+
+0.5.36 boot-proof ordering
+--------------------------
+KernelMain now prints early entry/BootInfo proof before descriptor, interrupt, PCI, memory, and SMP proofs.
+KernelInterrupts provides separate PIC and APIC runtime proof printing so PIC-upwards failures are visible at the correct stage.
+KernelSmp is still target-owned and now starts APs after the kernel-owned virtual memory PML4 is active.

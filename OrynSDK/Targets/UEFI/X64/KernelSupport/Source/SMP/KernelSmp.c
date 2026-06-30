@@ -11,7 +11,7 @@
 #define ORYN_MADT_ENTRY_LOCAL_APIC 0U
 #define ORYN_MADT_LAPIC_ENABLED 0x1U
 #define ORYN_MADT_LAPIC_ONLINE_CAPABLE 0x2U
-#define ORYN_SMP_AP_WAIT_LIMIT 50000000U
+#define ORYN_SMP_AP_WAIT_LIMIT 5000000U
 
 extern unsigned char OrynSmpTrampolineStart[];
 extern unsigned char OrynSmpTrampolineEnd[];
@@ -72,8 +72,6 @@ typedef struct OrynAcpiMadtLocalApic
 
 static volatile OrynKernelSmpState gSmpState;
 static unsigned char gSmpStacks[ORYN_SMP_MAX_CPUS][ORYN_SMP_STACK_SIZE] __attribute__((aligned(16)));
-
-;
 
 static void ClearState(void)
 {
@@ -337,8 +335,9 @@ static void PatchTrampolineForCpu(unsigned int cpuIndex)
 
 static void WaitAfterIpi(void)
 {
-    for (volatile unsigned int delay = 0U; delay < 200000U; ++delay)
+    for (volatile unsigned int delay = 0U; delay < 50000U; ++delay)
     {
+        __asm__ volatile ("pause");
     }
 }
 
@@ -419,6 +418,7 @@ void OrynKernelSmpApEntry(unsigned int localApicId)
 
 int OrynKernelSmpInit(const OrynBootInfo* bootInfo)
 {
+    KernelIoWriteString("[KERNEL] SMP: multi-core processing discovery starting.\n");
     ClearState();
     gSmpState.Initialized = 1U;
     gSmpState.BootstrapApicId = OrynKernelApicGetState()->LocalApicId;
@@ -451,7 +451,6 @@ const OrynKernelSmpState* OrynKernelSmpGetState(void)
 
 void OrynKernelSmpPrintProof(void)
 {
-    KernelIoWriteString("[KERNEL] SMP: multi-core processing discovery starting.\n");
     KernelIoWriteString(gSmpState.RsdpPresent ?
         "[KERNEL] PASS: SMP ACPI RSDP input present.\n" :
         "[KERNEL] WARN: SMP ACPI RSDP input missing.\n");

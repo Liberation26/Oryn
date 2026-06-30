@@ -75,45 +75,12 @@ static void ReserveBootHandoffRanges(
             bootInfo->Framebuffer.Base,
             bootInfo->Framebuffer.Size);
     }
+
+    ReserveRangeIfPresent(physicalMemory, ORYN_SMP_TRAMPOLINE_BASE, 4096ULL);
 }
 
-void KernelStart(const OrynBootInfo* bootInfo)
+static void PrintBootInfoOwnership(const OrynBootInfo* kernelBootInfo)
 {
-    KernelDisableInterrupts();
-    const OrynBootInfo* kernelBootInfo = KernelBootInfoAdopt(bootInfo);
-
-    KernelIoInit();
-    KernelIoWriteString("[KERNEL] Oryn Kernel-5 entered.\n");
-    KernelIoWriteString("[KERNEL] PASS: Serial/debug output path is working.\n");
-    (void)OrynKernelGdtInit();
-    OrynKernelGdtPrintProof();
-    (void)OrynKernelIdtInit();
-    (void)OrynKernelInterruptsInit();
-    OrynSysCallInit();
-    (void)OrynKernelSysCallInterruptsInit();
-    OrynKernelIdtPrintProof();
-    OrynKernelInterruptsPrintProof();
-    OrynSysCallPrintProof();
-    OrynKernelSysCallInterruptsPrintProof();
-    (void)OrynSysCallRunInternalProof();
-    (void)OrynKernelSysCallInterruptsRunProof();
-    OrynSysCallPrintRuntimeProof();
-    OrynKernelSysCallInterruptsPrintRuntimeProof();
-    OrynKernelCpuDetect();
-    OrynKernelCpuPrintFeatures();
-    (void)OrynKernelPicInitAndDisable();
-    OrynKernelPicPrintProof();
-    (void)OrynKernelInterruptsRunPicTimerProof();
-    (void)OrynKernelApicInit(1);
-    OrynKernelApicPrintProof();
-    (void)OrynKernelSmpInit(kernelBootInfo);
-    OrynKernelSmpPrintProof();
-    (void)OrynKernelHpetInit(kernelBootInfo);
-    OrynKernelHpetPrintProof();
-    (void)OrynKernelInterruptsRunApicTimerProof();
-    OrynKernelInterruptsPrintRuntimeProof();
-    OrynKernelPciInit(kernelBootInfo);
-    OrynKernelPciPrintProof();
     KernelIoWriteString("[KERNEL] PASS: Kernel entry received one plain OrynBootInfo pointer.\n");
     if (KernelBootInfoIsKernelOwned(kernelBootInfo))
     {
@@ -129,9 +96,109 @@ void KernelStart(const OrynBootInfo* bootInfo)
     {
         KernelIoWriteString("[KERNEL] FAIL: Kernel could not adopt OrynBootInfo.\n");
     }
+}
 
+static void RunDescriptorAndSysCallProofs(void)
+{
+    (void)OrynKernelGdtInit();
+    OrynKernelGdtPrintProof();
+    (void)OrynKernelIdtInit();
+    (void)OrynKernelInterruptsInit();
+    OrynSysCallInit();
+    (void)OrynKernelSysCallInterruptsInit();
+    OrynKernelIdtPrintProof();
+    OrynKernelInterruptsPrintProof();
+    OrynSysCallPrintProof();
+    OrynKernelSysCallInterruptsPrintProof();
+    (void)OrynSysCallRunInternalProof();
+    (void)OrynKernelSysCallInterruptsRunProof();
+    OrynSysCallPrintRuntimeProof();
+    OrynKernelSysCallInterruptsPrintRuntimeProof();
+}
+
+static void RunInterruptAndTimerProofs(const OrynBootInfo* kernelBootInfo)
+{
+    OrynKernelCpuDetect();
+    OrynKernelCpuPrintFeatures();
+    (void)OrynKernelPicInitAndDisable();
+    OrynKernelPicPrintProof();
+    (void)OrynKernelInterruptsRunPicTimerProof();
+    OrynKernelInterruptsPrintPicRuntimeProof();
+    OrynKernelPicPrintProof();
+    (void)OrynKernelApicInit(1);
+    OrynKernelApicPrintProof();
+    (void)OrynKernelHpetInit(kernelBootInfo);
+    OrynKernelHpetPrintProof();
+    (void)OrynKernelInterruptsRunApicTimerProof();
+    OrynKernelInterruptsPrintRuntimeProof();
+}
+
+static void RunPciProof(const OrynBootInfo* kernelBootInfo)
+{
+    OrynKernelPciInit(kernelBootInfo);
+    OrynKernelPciPrintProof();
+}
+
+static void RunSmpProof(const OrynBootInfo* kernelBootInfo)
+{
+    KernelIoWriteString("[KERNEL] SMP: starting after virtual memory proof.\n");
+    (void)OrynKernelSmpInit(kernelBootInfo);
+    OrynKernelSmpPrintProof();
+}
+
+static void RunMemoryProofs(const OrynBootInfo* kernelBootInfo)
+{
+    if (OrynMemoryMapBuildFromBootInfo(kernelBootInfo, &gKernelMemoryMap))
+    {
+        OrynMemoryMapPrintSummary(&gKernelMemoryMap);
+        if (OrynPhysicalMemoryInit(&gKernelMemoryMap, &gPhysicalMemory))
+        {
+            ReserveBootHandoffRanges(kernelBootInfo, &gPhysicalMemory);
+            OrynPhysicalMemoryPrintSummary(&gPhysicalMemory);
+            OrynPhysicalMemoryRunSelfTest(&gPhysicalMemory);
+            KernelIoWriteString("[KERNEL] Virtual memory: starting\n");
+            if (OrynVirtualMemoryInit(kernelBootInfo, &gKernelMemoryMap, &gPhysicalMemory, &gVirtualMemory))
+            {
+                OrynVirtualMemoryPrintProof(&gVirtualMemory);
+                RunSmpProof(kernelBootInfo);
+            }
+            else
+            {
+                OrynVirtualMemoryPrintProof(&gVirtualMemory);
+                KernelIoWriteString("[KERNEL] Virtual memory: failed\n");
+                KernelIoWriteString("[KERNEL] WARN: SMP AP startup skipped because virtual memory did not activate.\n");
+            }
+            OrynPhysicalMemoryPrintFinalState(&gPhysicalMemory);
+        }
+        else
+        {
+            KernelIoWriteString("[KERNEL] Physical memory allocator: unavailable\n");
+        }
+    }
+    else
+    {
+        KernelIoWriteString("[KERNEL] Memory map parser: unavailable.\n");
+        KernelIoWriteString("[KERNEL] Physical memory allocator: unavailable\n");
+    }
+}
+
+void KernelStart(const OrynBootInfo* bootInfo)
+{
+    KernelDisableInterrupts();
+    const OrynBootInfo* kernelBootInfo = KernelBootInfoAdopt(bootInfo);
+
+    KernelIoInit();
+    KernelIoWriteString("[KERNEL] Oryn Kernel-5 entered.\n");
+    KernelIoWriteString("[KERNEL] PASS: Kernel entered successfully.\n");
+    KernelIoWriteString("[KERNEL] PASS: Serial/debug output path is working.\n");
+    PrintBootInfoOwnership(kernelBootInfo);
     KernelBootInfoPrintSelection();
     OrynKernelBootInfoStatus bootStatus = KernelBootInfoValidate(kernelBootInfo);
+
+    RunDescriptorAndSysCallProofs();
+    RunInterruptAndTimerProofs(kernelBootInfo);
+    RunPciProof(kernelBootInfo);
+
     if (bootStatus.IsValid)
     {
         KConsoleInit(kernelBootInfo);
@@ -139,39 +206,12 @@ void KernelStart(const OrynBootInfo* bootInfo)
         KernelIoWriteString("[KERNEL] Oryn Kernel-5 booted.\n");
         KernelIoWriteString("[KERNEL] Target: uefi-x64\n");
         KernelIoWriteString("[KERNEL] Toolchain: clang + lld\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel entered successfully.\n");
-        KernelIoWriteString(KConsole.IsTtfActive() ? "[KERNEL] TTF renderer: active\n" : "[KERNEL] TTF renderer: fallback bitmap glyphs\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel console initialized.\n");
+        KernelIoWriteString(KConsole.IsTtfActive() ?
+            "[KERNEL] TTF renderer: active\n" :
+            "[KERNEL] TTF renderer: fallback bitmap glyphs\n");
         KernelBootInfoPrintSummary(kernelBootInfo);
-        if (OrynMemoryMapBuildFromBootInfo(kernelBootInfo, &gKernelMemoryMap))
-        {
-            OrynMemoryMapPrintSummary(&gKernelMemoryMap);
-            if (OrynPhysicalMemoryInit(&gKernelMemoryMap, &gPhysicalMemory))
-            {
-                ReserveBootHandoffRanges(kernelBootInfo, &gPhysicalMemory);
-                OrynPhysicalMemoryPrintSummary(&gPhysicalMemory);
-                OrynPhysicalMemoryRunSelfTest(&gPhysicalMemory);
-                KernelIoWriteString("[KERNEL] Virtual memory: starting\n");
-                if (OrynVirtualMemoryInit(kernelBootInfo, &gKernelMemoryMap, &gPhysicalMemory, &gVirtualMemory))
-                {
-                    OrynVirtualMemoryPrintProof(&gVirtualMemory);
-                }
-                else
-                {
-                    OrynVirtualMemoryPrintProof(&gVirtualMemory);
-                    KernelIoWriteString("[KERNEL] Virtual memory: failed\n");
-                }
-                OrynPhysicalMemoryPrintFinalState(&gPhysicalMemory);
-            }
-            else
-            {
-                KernelIoWriteString("[KERNEL] Physical memory allocator: unavailable\n");
-            }
-        }
-        else
-        {
-            KernelIoWriteString("[KERNEL] Memory map parser: unavailable.\n");
-            KernelIoWriteString("[KERNEL] Physical memory allocator: unavailable\n");
-        }
+        RunMemoryProofs(kernelBootInfo);
     }
     else
     {
