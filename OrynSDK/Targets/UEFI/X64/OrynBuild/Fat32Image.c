@@ -225,34 +225,6 @@ static void WriteDotEntries(uint8_t* directory, uint32_t self_cluster, uint32_t 
     WriteDirEntry(directory, 1, "..", "", 0x10U, parent_cluster, 0);
 }
 
-static void MakeFatDirectoryName(char* output, size_t output_size, const char* input)
-{
-    size_t used = 0;
-    for (const char* current = input; *current != 0 && used + 1 < output_size && used < 8U; ++current)
-    {
-        char ch = *current;
-        if (ch >= 'a' && ch <= 'z')
-        {
-            ch = (char)(ch - 'a' + 'A');
-        }
-
-        if ((ch >= 'A' && ch <= 'Z') ||
-            (ch >= '0' && ch <= '9') ||
-            ch == '-' || ch == '_')
-        {
-            output[used++] = ch;
-        }
-    }
-
-    if (used == 0)
-    {
-        snprintf(output, output_size, "KERNEL");
-        return;
-    }
-
-    output[used] = 0;
-}
-
 static int ReadWholeFile(const char* path, uint8_t** out_data, uint32_t* out_size)
 {
     FILE* file = fopen(path, "rb");
@@ -359,7 +331,7 @@ int OrynCreateFat32EspImage(
     }
 
     char kernel_directory_base[16];
-    MakeFatDirectoryName(kernel_directory_base, sizeof(kernel_directory_base), kernel_directory_name);
+    OrynMakeFatDirectoryName(kernel_directory_base, sizeof(kernel_directory_base), kernel_directory_name);
 
     OrynFat32Writer writer;
     memset(&writer, 0, sizeof(writer));

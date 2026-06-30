@@ -1,4 +1,5 @@
 #include "BootX64Internal.h"
+#include "OrynBootTarget.h"
 
 static EFI_STATUS OpenEspRoot(EFI_HANDLE imageHandle, EFI_FILE_PROTOCOL** outRoot)
 {
@@ -51,11 +52,15 @@ EFI_STATUS OpenKernelFile(EFI_HANDLE imageHandle, EFI_FILE_PROTOCOL** outFile)
         return status;
     }
 
-    Print("[BOOT] Stage 02: Opening \\System\\Kernel-5\\Kernel.elf.\n");
-    status = root->Open(root, outFile, L"\\System\\Kernel-5\\Kernel.elf", EFI_FILE_MODE_READ, 0);
+    Print("[BOOT] Stage 02: Opening kernel image: ");
+    Print(ORYN_BOOT_TARGET_KERNEL_PATH_TEXT);
+    Print(".\n");
+    status = root->Open(root, outFile, ORYN_BOOT_TARGET_KERNEL_PATH, EFI_FILE_MODE_READ, 0);
     if (IsError(status))
     {
-        Print("[BOOT] FAIL: Could not open \\System\\Kernel-5\\Kernel.elf.\n");
+        Print("[BOOT] FAIL: Could not open kernel image: ");
+        Print(ORYN_BOOT_TARGET_KERNEL_PATH_TEXT);
+        Print(".\n");
         return status;
     }
 

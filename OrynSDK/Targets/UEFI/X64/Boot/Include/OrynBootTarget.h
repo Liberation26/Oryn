@@ -1,0 +1,10 @@
+#ifndef ORYN_BOOT_TARGET_H
+#define ORYN_BOOT_TARGET_H
+
+#define ORYN_BOOT_TARGET_KERNEL_NAME "Kernel"
+#define ORYN_BOOT_TARGET_KERNEL_DIRECTORY "KERNEL"
+#define ORYN_BOOT_TARGET_KERNEL_FILE "Kernel.elf"
+#define ORYN_BOOT_TARGET_KERNEL_PATH_TEXT "\\System\\KERNEL\\Kernel.elf"
+#define ORYN_BOOT_TARGET_KERNEL_PATH L"\\System\\KERNEL\\Kernel.elf"
+
+#endif

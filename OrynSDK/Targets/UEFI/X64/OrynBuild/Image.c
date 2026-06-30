@@ -75,7 +75,52 @@ static int SourceListContainsBaseName(const OrynStringList* sources, const char*
     return 0;
 }
 
-static int CompileBootLoaderSource(const OrynProject* project, const char* source_file, char* object_file, size_t object_file_size)
+static int WriteBootTargetHeader(const OrynProject* project, char* include_dir, size_t include_dir_size)
+{
+    char generated_root[ORYN_MAX_PATH];
+    char header_path[ORYN_MAX_PATH];
+    char kernel_directory[16];
+
+    OrynJoinPath(generated_root, sizeof(generated_root), project->build_dir, "Generated/UEFI/X64/Boot");
+    OrynJoinPath(include_dir, include_dir_size, generated_root, "Include");
+    if (!OrynMakeDirectoryRecursive(include_dir))
+    {
+        OrynLogFail("Could not create generated UEFI boot include directory.");
+        return 0;
+    }
+
+    OrynMakeFatDirectoryName(kernel_directory, sizeof(kernel_directory), project->name);
+    OrynJoinPath(header_path, sizeof(header_path), include_dir, "OrynBootTarget.h");
+
+    FILE* file = fopen(header_path, "wb");
+    if (file == 0)
+    {
+        OrynLogFail("Could not write generated OrynBootTarget.h.");
+        return 0;
+    }
+
+    fprintf(file, "#ifndef ORYN_BOOT_TARGET_H\n");
+    fprintf(file, "#define ORYN_BOOT_TARGET_H\n\n");
+    fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_NAME \"%s\"\n", project->name);
+    fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_DIRECTORY \"%s\"\n", kernel_directory);
+    fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_FILE \"Kernel.elf\"\n");
+    fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_PATH_TEXT \"\\\\System\\\\%s\\\\Kernel.elf\"\n", kernel_directory);
+    fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_PATH L\"\\\\System\\\\%s\\\\Kernel.elf\"\n\n", kernel_directory);
+    fprintf(file, "#endif\n");
+    fclose(file);
+
+    char message[ORYN_MAX_PATH + 128];
+    snprintf(message, sizeof(message), "Generated loader boot target: \\System\\%s\\Kernel.elf", kernel_directory);
+    OrynLogOk(message);
+    return 1;
+}
+
+static int CompileBootLoaderSource(
+    const OrynProject* project,
+    const char* source_file,
+    const char* generated_boot_include,
+    char* object_file,
+    size_t object_file_size)
 {
     char loader_include[ORYN_MAX_PATH];
     char handoff_include[ORYN_MAX_PATH];
@@ -103,11 +148,12 @@ static int CompileBootLoaderSource(const OrynProject* project, const char* sourc
         selection_include_argument[0] = 0;
     }
 
-    char command[ORYN_MAX_PATH * 6];
+    char command[ORYN_MAX_PATH * 7];
     snprintf(command, sizeof(command),
         "clang --target=x86_64-pc-windows-msvc -ffreestanding -fshort-wchar "
         "-mno-red-zone -fno-stack-protector -fno-builtin -Wno-unused-parameter "
-        "%s-I\"%s\" -I\"%s\" -I\"%s\" -c \"%s\" -o \"%s\"",
+        "-I\"%s\" %s-I\"%s\" -I\"%s\" -I\"%s\" -c \"%s\" -o \"%s\"",
+        generated_boot_include,
         selection_include_argument,
         loader_include,
         handoff_include,
@@ -132,6 +178,12 @@ static int BuildBootLoader(const OrynProject* project)
     OrynJoinPath(loader_objects_dir, sizeof(loader_objects_dir), project->build_dir, "LoaderObjects");
     OrynMakeDirectoryRecursive(loader_objects_dir);
 
+    char generated_boot_include[ORYN_MAX_PATH];
+    if (!WriteBootTargetHeader(project, generated_boot_include, sizeof(generated_boot_include)))
+    {
+        return 0;
+    }
+
     char loader_source_dir[ORYN_MAX_PATH];
     OrynJoinPath(loader_source_dir, sizeof(loader_source_dir), project->sdk_root, "Targets/UEFI/X64/Loader/Source");
 
@@ -154,7 +206,8 @@ static int BuildBootLoader(const OrynProject* project)
     objects.count = 0;
     for (int index = 0; index < sources.count; ++index)
     {
-        if (!CompileBootLoaderSource(project, sources.items[index], objects.items[objects.count], ORYN_MAX_PATH))
+        if (!CompileBootLoaderSource(project, sources.items[index], generated_boot_include,
+                objects.items[objects.count], ORYN_MAX_PATH))
         {
             OrynLogFail("UEFI loader compile failed.");
             return 0;
@@ -196,6 +249,7 @@ static int BuildBootLoader(const OrynProject* project)
     }
 
     OrynLogOk("UEFI loader entry point exists and produced EFI/BOOT/BOOTX64.EFI");
+    OrynLogOk("UEFI loader is separate from the kernel ELF image; no kernel objects are linked into BOOTX64.EFI.");
     OrynLogOk("Built EFI/BOOT/BOOTX64.EFI");
     return 1;
 }
@@ -220,8 +274,11 @@ int OrynBuildImage(const OrynProject* project)
     char system_dir[ORYN_MAX_PATH];
     OrynJoinPath(system_dir, sizeof(system_dir), project->esp_dir, "System");
 
+    char kernel_directory_name[16];
+    OrynMakeFatDirectoryName(kernel_directory_name, sizeof(kernel_directory_name), project->name);
+
     char kernel_dir[ORYN_MAX_PATH];
-    OrynJoinPath(kernel_dir, sizeof(kernel_dir), system_dir, project->name);
+    OrynJoinPath(kernel_dir, sizeof(kernel_dir), system_dir, kernel_directory_name);
     OrynMakeDirectoryRecursive(kernel_dir);
 
     char kernel_target[ORYN_MAX_PATH];
@@ -264,13 +321,13 @@ int OrynBuildImage(const OrynProject* project)
     OrynJoinPath(disk_image, sizeof(disk_image), project->output_dir, image_name);
     remove(disk_image);
 
-    if (!OrynCreateFat32EspImage(boot_efi, kernel_source, has_font ? font_source : 0, disk_image, project->name))
+    if (!OrynCreateFat32EspImage(boot_efi, kernel_source, has_font ? font_source : 0, disk_image, kernel_directory_name))
     {
         OrynLogFail("Could not create FAT32 partition disk image.");
         return 0;
     }
 
-    snprintf(message, sizeof(message), "Copied pure ELF kernel to staged ESP: System/%s/Kernel.elf", project->name);
+    snprintf(message, sizeof(message), "Copied pure ELF kernel to staged ESP: System/%s/Kernel.elf", kernel_directory_name);
     OrynLogOk(message);
 
     snprintf(message, sizeof(message), "Created Output/%s with an MBR FAT32 EFI System Partition.", image_name);

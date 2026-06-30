@@ -92,6 +92,40 @@ void OrynReplaceExtension(char* output, size_t output_size, const char* path, co
     strncat(output, extension, output_size - strlen(output) - 1);
 }
 
+
+void OrynMakeFatDirectoryName(char* output, size_t output_size, const char* input)
+{
+    size_t used = 0;
+    if (output_size == 0)
+    {
+        return;
+    }
+
+    for (const char* current = input; *current != 0 && used + 1 < output_size && used < 8U; ++current)
+    {
+        char ch = *current;
+        if (ch >= 'a' && ch <= 'z')
+        {
+            ch = (char)(ch - 'a' + 'A');
+        }
+
+        if ((ch >= 'A' && ch <= 'Z') ||
+            (ch >= '0' && ch <= '9') ||
+            ch == '-' || ch == '_')
+        {
+            output[used++] = ch;
+        }
+    }
+
+    if (used == 0)
+    {
+        snprintf(output, output_size, "KERNEL");
+        return;
+    }
+
+    output[used] = 0;
+}
+
 void OrynNormalizePath(char* path)
 {
     for (char* current = path; *current != 0; ++current)

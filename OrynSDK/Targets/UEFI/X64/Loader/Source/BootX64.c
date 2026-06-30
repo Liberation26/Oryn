@@ -1,5 +1,6 @@
 #include "BootX64Internal.h"
 #include "OrynBootInfoSelection.h"
+#include "OrynBootTarget.h"
 
 #ifndef ORYN_BOOTINFO_WANT_PLATFORM_TABLES
 #define ORYN_BOOTINFO_WANT_PLATFORM_TABLES ORYN_BOOTINFO_WANT_FIRMWARE_DATA
@@ -139,7 +140,7 @@ static void FillBaseBootInfo(
     }
 
     CopyAscii(bootInfo->BootLoaderName, sizeof(bootInfo->BootLoaderName), "Oryn BOOTX64.EFI");
-    CopyAscii(bootInfo->KernelName, sizeof(bootInfo->KernelName), "Kernel-5");
+    CopyAscii(bootInfo->KernelName, sizeof(bootInfo->KernelName), ORYN_BOOT_TARGET_KERNEL_NAME);
 }
 
 static void PrintBootInfoSelection(void)

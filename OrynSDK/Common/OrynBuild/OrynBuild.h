@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#define ORYN_VERSION "0.5.18"
+#define ORYN_VERSION "0.5.19"
 #define ORYN_MAX_PATH 4096
 #define ORYN_MAX_ITEMS 512
 
@@ -80,6 +80,7 @@ void OrynGetDirectoryName(char* output, size_t output_size, const char* path);
 void OrynGetBaseName(char* output, size_t output_size, const char* path);
 void OrynReplaceExtension(char* output, size_t output_size, const char* path, const char* extension);
 void OrynNormalizePath(char* path);
+void OrynMakeFatDirectoryName(char* output, size_t output_size, const char* input);
 
 int OrynRunCommand(const char* command);
 int OrynRunCommandCapture(const char* command, char* output, size_t output_size);
