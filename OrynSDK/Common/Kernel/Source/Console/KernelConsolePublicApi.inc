@@ -3,25 +3,39 @@ unsigned int KConsolePresentCount(void)
     return gConsole.PresentCount;
 }
 
+static unsigned int KConsoleBeginSilentProof(void)
+{
+    unsigned int savedSuppress = gConsole.PresentSuppressed;
+    gConsole.PresentSuppressed = 1U;
+    return savedSuppress;
+}
+
+static void KConsoleEndSilentProof(unsigned int savedSuppress)
+{
+    gConsole.PresentSuppressed = savedSuppress;
+}
+
 int KConsoleRunDoubleBufferProof(void)
 {
-    unsigned int before;
-    unsigned int beforeAtomic;
+    unsigned int savedSuppress;
+    unsigned int beforeFull;
 
     if (!gConsole.Available || !gConsole.DoubleBuffered || KConsoleBackBufferBytes() == 0ULL)
     {
         return 0;
     }
 
-    before = gConsole.PresentCount;
-    beforeAtomic = gConsole.AtomicPresentCount;
+    savedSuppress = KConsoleBeginSilentProof();
+    beforeFull = gConsole.FullPresentCount;
     KConsoleRenderVisible();
-    return gConsole.PresentCount > before && gConsole.AtomicPresentCount > beforeAtomic;
+    KConsoleEndSilentProof(savedSuppress);
+    return gConsole.FullPresentCount > beforeFull;
 }
 
 int KConsoleRunLineBufferedFlipProof(void)
 {
-    unsigned int before;
+    unsigned int savedSuppress;
+    unsigned int beforeLine;
     unsigned int afterCharacters;
     unsigned int afterLine;
     unsigned int originalColour = gConsole.ForegroundColour;
@@ -33,28 +47,31 @@ int KConsoleRunLineBufferedFlipProof(void)
         return 0;
     }
 
+    savedSuppress = KConsoleBeginSilentProof();
     KConsoleScrollToBottom();
     KConsoleWriteChar('\n');
-    before = gConsole.PresentCount;
+    beforeLine = gConsole.LinePresentCount;
 
     KConsoleSetForegroundColour(KCONSOLE_COLOUR_STEP);
     KConsoleWriteChar('L');
     KConsoleWriteChar('B');
-    afterCharacters = gConsole.PresentCount;
+    afterCharacters = gConsole.LinePresentCount;
     KConsoleWriteChar('\n');
-    afterLine = gConsole.PresentCount;
+    afterLine = gConsole.LinePresentCount;
 
     gConsole.ForegroundColour = originalColour;
     gConsole.VgaAttribute = originalVga;
-    ok = afterCharacters == before && afterLine > afterCharacters;
+    ok = afterCharacters == beforeLine && afterLine > afterCharacters;
     KConsoleClearScreen();
+    KConsoleEndSilentProof(savedSuppress);
     return ok;
 }
 
 int KConsoleRunFastRefreshProof(void)
 {
+    unsigned int savedSuppress;
     unsigned int beforeFast;
-    unsigned int beforePresent;
+    unsigned int beforeLine;
     unsigned int afterCharacters;
     unsigned int lines;
     unsigned int originalColour = gConsole.ForegroundColour;
@@ -66,13 +83,14 @@ int KConsoleRunFastRefreshProof(void)
         return 0;
     }
 
+    savedSuppress = KConsoleBeginSilentProof();
     beforeFast = gConsole.FastScrollPresentCount;
     KConsoleScrollToBottom();
-    beforePresent = gConsole.PresentCount;
+    beforeLine = gConsole.LinePresentCount;
 
     KConsoleSetForegroundColour(KCONSOLE_COLOUR_STEP);
     KConsoleWriteProofText("[FAST] dirty line proof");
-    afterCharacters = gConsole.PresentCount;
+    afterCharacters = gConsole.LinePresentCount;
     KConsoleWriteChar('\n');
 
     lines = gConsole.VisibleRows + 2U;
@@ -89,22 +107,29 @@ int KConsoleRunFastRefreshProof(void)
 
     gConsole.ForegroundColour = originalColour;
     gConsole.VgaAttribute = originalVga;
-    ok = afterCharacters == beforePresent && gConsole.FastScrollPresentCount > beforeFast;
+    ok = afterCharacters == beforeLine && gConsole.FastScrollPresentCount > beforeFast;
     KConsoleClearScreen();
+    KConsoleEndSilentProof(savedSuppress);
     return ok;
 }
 
 int KConsoleRunScrollProof(void)
 {
+    unsigned int savedSuppress;
+    unsigned int originalColour;
+    unsigned char originalVga;
+    unsigned int proofLines;
+    int ok;
+
     if (!gConsole.Available || gConsole.VisibleRows == 0U || gConsole.VisibleColumns == 0U)
     {
         return 0;
     }
 
-    unsigned int originalColour = gConsole.ForegroundColour;
-    unsigned char originalVga = gConsole.VgaAttribute;
-    unsigned int proofLines = gConsole.VisibleRows + 4U;
-    int ok;
+    savedSuppress = KConsoleBeginSilentProof();
+    originalColour = gConsole.ForegroundColour;
+    originalVga = gConsole.VgaAttribute;
+    proofLines = gConsole.VisibleRows + 4U;
 
     if (proofLines > 80U)
     {
@@ -121,15 +146,10 @@ int KConsoleRunScrollProof(void)
 
     if (gConsole.TotalLines > gConsole.VisibleRows)
     {
-        unsigned int savedSuppress = gConsole.PresentSuppressed;
-        gConsole.PresentSuppressed = 1U;
-
         ok = KConsoleScrollUpLines(1U) &&
             KConsoleScrollDownLines(1U) &&
             KConsolePageUp() &&
             KConsolePageDown();
-
-        gConsole.PresentSuppressed = savedSuppress;
         gConsole.StateOnlyScrollProofCount += ok ? 1U : 0U;
     }
     else
@@ -143,6 +163,7 @@ int KConsoleRunScrollProof(void)
     gConsole.ForegroundColour = originalColour;
     gConsole.VgaAttribute = originalVga;
     KConsoleClearScreen();
+    KConsoleEndSilentProof(savedSuppress);
     return ok;
 }
 

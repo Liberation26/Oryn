@@ -1,6 +1,18 @@
 #include "KernelCpu.h"
 #include "KernelIo.h"
 
+#ifndef ORYN_VM_APIC
+#define ORYN_VM_APIC 1
+#endif
+
+#ifndef ORYN_VM_APIC2
+#define ORYN_VM_APIC2 1
+#endif
+
+#ifndef ORYN_VM_SMP_CPUS
+#define ORYN_VM_SMP_CPUS 1
+#endif
+
 static OrynKernelCpuFeatures gCpuFeatures;
 
 static void Cpuid(
@@ -70,6 +82,51 @@ const OrynKernelCpuFeatures* OrynKernelCpuGetFeatures(void)
     return &gCpuFeatures;
 }
 
+static void PrintCpuLocalApicStatus(const OrynKernelCpuFeatures* features)
+{
+    int required = (ORYN_VM_APIC || ORYN_VM_APIC2 || ORYN_VM_SMP_CPUS > 1) ? 1 : 0;
+    if (features->HasLocalApic)
+    {
+        KernelIoWriteString("[KERNEL] PASS: CPU local APIC feature present.\n");
+    }
+    else if (required)
+    {
+        KernelIoWriteString("[KERNEL] FAIL: CPU local APIC feature required but not reported.\n");
+    }
+    else
+    {
+        KernelIoWriteString("[KERNEL] PASS: CPU local APIC feature not required by this profile.\n");
+    }
+}
+
+static void PrintCpuApic2Status(const OrynKernelCpuFeatures* features)
+{
+    if (features->HasX2Apic)
+    {
+        KernelIoWriteString("[KERNEL] PASS: CPU APIC2/x2APIC feature present.\n");
+    }
+    else if (ORYN_VM_APIC2)
+    {
+        KernelIoWriteString("[KERNEL] FAIL: CPU APIC2/x2APIC feature required but not reported.\n");
+    }
+    else
+    {
+        KernelIoWriteString("[KERNEL] PASS: CPU APIC2/x2APIC feature not required by this profile.\n");
+    }
+}
+
+static void PrintCpuTimerStatus(const OrynKernelCpuFeatures* features)
+{
+    if (features->HasTscDeadline)
+    {
+        KernelIoWriteString("[KERNEL] PASS: CPU TSC deadline timer feature present.\n");
+    }
+    else
+    {
+        KernelIoWriteString("[KERNEL] PASS: CPU TSC deadline timer feature optional for this profile.\n");
+    }
+}
+
 void OrynKernelCpuPrintFeatures(void)
 {
     const OrynKernelCpuFeatures* features = OrynKernelCpuGetFeatures();
@@ -79,13 +136,7 @@ void OrynKernelCpuPrintFeatures(void)
     KernelIoWriteString("[KERNEL] CPU max basic CPUID leaf: ");
     KernelIoWriteHex64(features->MaxBasicLeaf);
     KernelIoWriteString("\n");
-    KernelIoWriteString(features->HasLocalApic ?
-        "[KERNEL] PASS: CPU local APIC feature present.\n" :
-        "[KERNEL] WARN: CPU local APIC feature not reported.\n");
-    KernelIoWriteString(features->HasX2Apic ?
-        "[KERNEL] PASS: CPU APIC2/x2APIC feature present.\n" :
-        "[KERNEL] WARN: CPU APIC2/x2APIC feature not reported.\n");
-    KernelIoWriteString(features->HasTscDeadline ?
-        "[KERNEL] PASS: CPU TSC deadline timer feature present.\n" :
-        "[KERNEL] WARN: CPU TSC deadline timer feature not reported.\n");
+    PrintCpuLocalApicStatus(features);
+    PrintCpuApic2Status(features);
+    PrintCpuTimerStatus(features);
 }

@@ -104,6 +104,7 @@ static int CategoryForLine(const char* line)
     if (Contains(line, "BootInfo") || Contains(line, "handoff")) return 1;
     if (Contains(line, "Kernel entered") || Contains(line, "Kernel entry") ||
         Contains(line, "Serial/debug")) return 0;
+    if (Contains(line, "CPU interrupt") || Contains(line, "CPU Interrupt")) return 7;
     if (Contains(line, "CPU")) return 4;
     if (Contains(line, "GDT")) return 5;
     if (Contains(line, "IDT")) return 6;
