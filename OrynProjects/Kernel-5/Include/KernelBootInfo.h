@@ -73,6 +73,9 @@ typedef struct OrynKernelBootInfoStatus
     int WarningCount;
 } OrynKernelBootInfoStatus;
 
+const OrynBootInfo* KernelBootInfoAdopt(const OrynBootInfo* bootInfo);
+int KernelBootInfoIsKernelOwned(const OrynBootInfo* bootInfo);
+unsigned long long KernelBootInfoSourceAddress(void);
 OrynKernelBootInfoStatus KernelBootInfoValidate(const OrynBootInfo* bootInfo);
 void KernelBootInfoPrintSelection(void);
 void KernelBootInfoPrintSummary(const OrynBootInfo* bootInfo);

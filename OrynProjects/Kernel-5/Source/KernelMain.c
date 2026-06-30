@@ -12,8 +12,10 @@ static OrynKernelVirtualMemory gVirtualMemory;
 
 void KernelStart(const OrynBootInfo* bootInfo)
 {
+    const OrynBootInfo* kernelBootInfo = KernelBootInfoAdopt(bootInfo);
+
     KernelIoInit();
-    KConsoleInit(bootInfo);
+    KConsoleInit(kernelBootInfo);
     KConsole.ClearScreen();
     KernelIoWriteString("[KERNEL] Oryn Kernel-5 booted.\n");
     KernelIoWriteString("[KERNEL] Target: uefi-x64\n");
@@ -21,13 +23,28 @@ void KernelStart(const OrynBootInfo* bootInfo)
     KernelIoWriteString("[KERNEL] PASS: Kernel entered successfully.\n");
     KernelIoWriteString("[KERNEL] PASS: Serial/debug output path is working.\n");
     KernelIoWriteString(KConsole.IsTtfActive() ? "[KERNEL] TTF renderer: active\n" : "[KERNEL] TTF renderer: fallback bitmap glyphs\n");
+    KernelIoWriteString("[KERNEL] PASS: Kernel entry received one plain OrynBootInfo pointer.\n");
+    if (KernelBootInfoIsKernelOwned(kernelBootInfo))
+    {
+        KernelIoWriteString("[KERNEL] PASS: OrynBootInfo copied into kernel-owned storage.\n");
+        KernelIoWriteString("[KERNEL] Loader BootInfo pointer: ");
+        KernelIoWriteHex64(KernelBootInfoSourceAddress());
+        KernelIoWriteString("\n");
+        KernelIoWriteString("[KERNEL] Kernel BootInfo copy: ");
+        KernelIoWriteHex64((unsigned long long)kernelBootInfo);
+        KernelIoWriteString("\n");
+    }
+    else
+    {
+        KernelIoWriteString("[KERNEL] FAIL: Kernel could not adopt OrynBootInfo.\n");
+    }
 
     KernelBootInfoPrintSelection();
-    OrynKernelBootInfoStatus bootStatus = KernelBootInfoValidate(bootInfo);
+    OrynKernelBootInfoStatus bootStatus = KernelBootInfoValidate(kernelBootInfo);
     if (bootStatus.IsValid)
     {
-        KernelBootInfoPrintSummary(bootInfo);
-        if (OrynMemoryMapBuildFromBootInfo(bootInfo, &gKernelMemoryMap))
+        KernelBootInfoPrintSummary(kernelBootInfo);
+        if (OrynMemoryMapBuildFromBootInfo(kernelBootInfo, &gKernelMemoryMap))
         {
             OrynMemoryMapPrintSummary(&gKernelMemoryMap);
             if (OrynPhysicalMemoryInit(&gKernelMemoryMap, &gPhysicalMemory))
@@ -35,7 +52,7 @@ void KernelStart(const OrynBootInfo* bootInfo)
                 OrynPhysicalMemoryPrintSummary(&gPhysicalMemory);
                 OrynPhysicalMemoryRunSelfTest(&gPhysicalMemory);
                 KernelIoWriteString("[KERNEL] Virtual memory: starting\n");
-                if (OrynVirtualMemoryInit(bootInfo, &gKernelMemoryMap, &gPhysicalMemory, &gVirtualMemory))
+                if (OrynVirtualMemoryInit(kernelBootInfo, &gKernelMemoryMap, &gPhysicalMemory, &gVirtualMemory))
                 {
                     OrynVirtualMemoryPrintProof(&gVirtualMemory);
                 }

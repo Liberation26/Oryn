@@ -3,6 +3,10 @@
 
 #define ORYN_BOOTINFO_SIGNATURE 0x544F4F424E59524FULL
 #define ORYN_BOOTINFO_VERSION 3U
+#define ORYN_BOOTINFO_ABI_PLAIN_C 1U
+#define ORYN_BOOTINFO_X64_ENTRY_REGISTER_RDI 1U
+
+#define ORYN_BOOTINFO_STATIC_ASSERT(name, condition) typedef char name[(condition) ? 1 : -1]
 
 #define ORYN_BOOTINFO_FLAG_MEMORY_MAP 0x0000000000000001ULL
 #define ORYN_BOOTINFO_FLAG_FRAMEBUFFER 0x0000000000000002ULL
@@ -169,5 +173,12 @@ typedef struct OrynBootInfo
     char BootLoaderName[32];
     char KernelName[32];
 } OrynBootInfo;
+
+
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootGuid_must_be_plain_16_bytes, sizeof(OrynBootGuid) == 16U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootMemoryEntry_must_be_plain_40_bytes, sizeof(OrynBootMemoryEntry) == 40U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_signature_must_be_64_bit, sizeof(((OrynBootInfo*)0)->Signature) == 8U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_flags_must_be_64_bit, sizeof(((OrynBootInfo*)0)->Flags) == 8U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_pointer_fields_are_plain_addresses, sizeof(((OrynBootInfo*)0)->MemoryMap) == 8U);
 
 #endif
