@@ -19,11 +19,16 @@ typedef struct OrynKernelApicState
     unsigned long long LocalApicPhysicalBase;
     unsigned long long TimerCountBefore;
     unsigned long long TimerCountAfter;
+    unsigned int TimerInterruptVector;
+    unsigned int TimerInterruptArmed;
 } OrynKernelApicState;
 
 int OrynKernelApicInit(int preferApic2);
 const OrynKernelApicState* OrynKernelApicGetState(void);
 void OrynKernelApicSendEoi(void);
+int OrynKernelApicStartOneShotTimer(unsigned int vector, unsigned int initialCount, unsigned int divideMode);
+void OrynKernelApicMaskTimer(void);
+unsigned long long OrynKernelApicReadTimerCurrent(void);
 void OrynKernelApicPrintProof(void);
 
 #endif

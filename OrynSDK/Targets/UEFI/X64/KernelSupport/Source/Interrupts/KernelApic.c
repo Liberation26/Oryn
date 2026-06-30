@@ -178,6 +178,71 @@ void OrynKernelApicSendEoi(void)
     }
 }
 
+
+int OrynKernelApicStartOneShotTimer(unsigned int vector, unsigned int initialCount, unsigned int divideMode)
+{
+    if (!gApicState.Initialized || vector < 32U || vector > 255U || initialCount == 0U)
+    {
+        return 0;
+    }
+
+    gApicState.TimerInterruptVector = vector;
+    gApicState.TimerInterruptArmed = 1U;
+    if (gApicState.Apic2Enabled)
+    {
+        OrynMsrWrite(ORYN_MSR_X2APIC_TIMER_DIVIDE, (unsigned long long)divideMode);
+        OrynMsrWrite(ORYN_MSR_X2APIC_LVT_TIMER, (unsigned long long)(vector & 0xFFU));
+        OrynMsrWrite(ORYN_MSR_X2APIC_TIMER_INITIAL, (unsigned long long)initialCount);
+        return 1;
+    }
+
+    if (gApicState.XApicEnabled)
+    {
+        ApicWrite(ORYN_APIC_REG_TIMER_DIVIDE, divideMode);
+        ApicWrite(ORYN_APIC_REG_LVT_TIMER, vector & 0xFFU);
+        ApicWrite(ORYN_APIC_REG_TIMER_INITIAL, initialCount);
+        return 1;
+    }
+
+    gApicState.TimerInterruptArmed = 0U;
+    return 0;
+}
+
+void OrynKernelApicMaskTimer(void)
+{
+    if (gApicState.Apic2Enabled)
+    {
+        unsigned long long value = OrynMsrRead(ORYN_MSR_X2APIC_LVT_TIMER);
+        OrynMsrWrite(ORYN_MSR_X2APIC_LVT_TIMER, value | ORYN_APIC_LVT_MASKED);
+        OrynMsrWrite(ORYN_MSR_X2APIC_TIMER_INITIAL, 0ULL);
+        gApicState.TimerInterruptArmed = 0U;
+        return;
+    }
+
+    if (gApicState.XApicEnabled)
+    {
+        unsigned int value = ApicRead(ORYN_APIC_REG_LVT_TIMER);
+        ApicWrite(ORYN_APIC_REG_LVT_TIMER, value | ORYN_APIC_LVT_MASKED);
+        ApicWrite(ORYN_APIC_REG_TIMER_INITIAL, 0U);
+        gApicState.TimerInterruptArmed = 0U;
+    }
+}
+
+unsigned long long OrynKernelApicReadTimerCurrent(void)
+{
+    if (gApicState.Apic2Enabled)
+    {
+        return OrynMsrRead(ORYN_MSR_X2APIC_TIMER_CURRENT);
+    }
+
+    if (gApicState.XApicEnabled)
+    {
+        return (unsigned long long)ApicRead(ORYN_APIC_REG_TIMER_CURRENT);
+    }
+
+    return 0ULL;
+}
+
 void OrynKernelApicPrintProof(void)
 {
     KernelIoWriteString(gApicState.CpuHasApic ?

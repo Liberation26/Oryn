@@ -23,6 +23,57 @@ const OrynKernelPicState* OrynKernelPicGetState(void)
     return &gPicState;
 }
 
+static void UpdateMasksFromHardware(void)
+{
+    gPicState.CurrentMasterMask = OrynPortIn8(ORYN_PIC1_DATA);
+    gPicState.CurrentSlaveMask = OrynPortIn8(ORYN_PIC2_DATA);
+    gPicState.Disabled =
+        (gPicState.CurrentMasterMask == 0xFFU && gPicState.CurrentSlaveMask == 0xFFU) ? 1U : 0U;
+}
+
+void OrynKernelPicMaskAll(void)
+{
+    OrynPortOut8(ORYN_PIC1_DATA, 0xFFU);
+    OrynPortOut8(ORYN_PIC2_DATA, 0xFFU);
+    UpdateMasksFromHardware();
+}
+
+void OrynKernelPicSetIrqMask(unsigned int irq, int masked)
+{
+    unsigned short port;
+    unsigned char value;
+    unsigned int bit;
+
+    if (irq >= 16U)
+    {
+        return;
+    }
+
+    if (irq < 8U)
+    {
+        port = ORYN_PIC1_DATA;
+        bit = irq;
+    }
+    else
+    {
+        port = ORYN_PIC2_DATA;
+        bit = irq - 8U;
+    }
+
+    value = OrynPortIn8(port);
+    if (masked)
+    {
+        value = (unsigned char)(value | (1U << bit));
+    }
+    else
+    {
+        value = (unsigned char)(value & ~(1U << bit));
+    }
+
+    OrynPortOut8(port, value);
+    UpdateMasksFromHardware();
+}
+
 int OrynKernelPicInitAndDisable(void)
 {
     gPicState.OriginalMasterMask = OrynPortIn8(ORYN_PIC1_DATA);
@@ -47,12 +98,7 @@ int OrynKernelPicInitAndDisable(void)
     OrynPortOut8(ORYN_PIC2_DATA, ORYN_PIC_ICW4_8086);
     PicWait();
 
-    OrynPortOut8(ORYN_PIC1_DATA, 0xFFU);
-    OrynPortOut8(ORYN_PIC2_DATA, 0xFFU);
-    gPicState.CurrentMasterMask = OrynPortIn8(ORYN_PIC1_DATA);
-    gPicState.CurrentSlaveMask = OrynPortIn8(ORYN_PIC2_DATA);
-    gPicState.Disabled =
-        (gPicState.CurrentMasterMask == 0xFFU && gPicState.CurrentSlaveMask == 0xFFU) ? 1U : 0U;
+    OrynKernelPicMaskAll();
     gPicState.Remapped = 1U;
     gPicState.Initialized = 1U;
     return gPicState.Disabled ? 1 : 0;

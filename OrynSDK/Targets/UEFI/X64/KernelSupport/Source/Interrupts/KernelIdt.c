@@ -1,13 +1,12 @@
 #include "KernelIdt.h"
 #include "KernelGdt.h"
 #include "KernelIo.h"
+#include "KernelInterrupts.h"
 
 #define ORYN_IDT_PRESENT 0x80U
 #define ORYN_IDT_TYPE_INTERRUPT 0x0EU
 #define ORYN_IDT_DEFAULT_IST 0U
 #define ORYN_IDT_EXCEPTION_IST_MASK 0x07U
-#define ORYN_QEMU_EXIT_PORT 0xF4
-
 #define ORYN_IDT_ASSERT(name, condition) typedef char name[(condition) ? 1 : -1]
 
 typedef struct OrynIdtEntry
@@ -154,11 +153,6 @@ static void StoreIdt(OrynIdtPointer* pointer)
     __asm__ volatile ("sidt %0" : "=m"(*pointer));
 }
 
-static void Out32(unsigned short port, unsigned int value)
-{
-    __asm__ volatile ("outl %0, %1" : : "a"(value), "Nd"(port));
-}
-
 static void SetGate(
     unsigned int vector,
     void (*handler)(void),
@@ -173,35 +167,6 @@ static void SetGate(
     gIdt[vector].OffsetMiddle = (unsigned short)((address >> 16) & 0xFFFFULL);
     gIdt[vector].OffsetHigh = (unsigned int)((address >> 32) & 0xFFFFFFFFULL);
     gIdt[vector].Reserved = 0U;
-}
-
-static const char* ExceptionName(unsigned long long vector)
-{
-    static const char* names[ORYN_IDT_EXCEPTION_COUNT] =
-    {
-        "Divide Error", "Debug", "NMI", "Breakpoint",
-        "Overflow", "Bound Range", "Invalid Opcode", "Device Not Available",
-        "Double Fault", "Coprocessor Segment", "Invalid TSS", "Segment Not Present",
-        "Stack Segment", "General Protection", "Page Fault", "Reserved",
-        "x87 Floating Point", "Alignment Check", "Machine Check", "SIMD Floating Point",
-        "Virtualization", "Control Protection", "Reserved", "Reserved",
-        "Reserved", "Reserved", "Reserved", "Reserved",
-        "Hypervisor Injection", "VMM Communication", "Security", "Reserved"
-    };
-
-    if (vector < ORYN_IDT_EXCEPTION_COUNT)
-    {
-        return names[vector];
-    }
-
-    return "Interrupt";
-}
-
-static unsigned long long ReadCr2(void)
-{
-    unsigned long long value;
-    __asm__ volatile ("mov %%cr2, %0" : "=r"(value));
-    return value;
 }
 
 const OrynKernelIdtState* OrynKernelIdtGetState(void)
@@ -272,43 +237,6 @@ void OrynKernelIdtPrintProof(void)
 
 void OrynIdtDispatch(OrynIdtInterruptFrame* frame)
 {
-    if (frame == 0)
-    {
-        return;
-    }
-
-    if (frame->Vector < ORYN_IDT_EXCEPTION_COUNT)
-    {
-        KernelIoWriteString("[KERNEL] EXCEPTION: ");
-        KernelIoWriteString(ExceptionName(frame->Vector));
-        KernelIoWriteString(" vector ");
-        KernelIoWriteDec64(frame->Vector);
-        KernelIoWriteString("\n");
-        KernelIoWriteString("[KERNEL] Exception error code: ");
-        KernelIoWriteHex64(frame->ErrorCode);
-        KernelIoWriteString("\n");
-        KernelIoWriteString("[KERNEL] Exception RIP: ");
-        KernelIoWriteHex64(frame->Rip);
-        KernelIoWriteString("\n");
-        KernelIoWriteString("[KERNEL] Exception CS: ");
-        KernelIoWriteHex64(frame->Cs);
-        KernelIoWriteString("\n");
-        KernelIoWriteString("[KERNEL] Exception RFLAGS: ");
-        KernelIoWriteHex64(frame->Rflags);
-        KernelIoWriteString("\n");
-        if (frame->Vector == 14ULL)
-        {
-            KernelIoWriteString("[KERNEL] Page fault CR2: ");
-            KernelIoWriteHex64(ReadCr2());
-            KernelIoWriteString("\n");
-        }
-
-        KernelIoWriteString("[KERNEL] FAIL: CPU exception trapped by IDT.\n");
-        Out32(ORYN_QEMU_EXIT_PORT, 0x11U);
-        for (;;)
-        {
-            __asm__ volatile ("cli");
-            __asm__ volatile ("hlt");
-        }
-    }
+    OrynKernelInterruptsDispatch(frame);
 }
+

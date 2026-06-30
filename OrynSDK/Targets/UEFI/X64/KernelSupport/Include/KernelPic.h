@@ -19,6 +19,8 @@ typedef struct OrynKernelPicState
 
 int OrynKernelPicInitAndDisable(void);
 const OrynKernelPicState* OrynKernelPicGetState(void);
+void OrynKernelPicMaskAll(void);
+void OrynKernelPicSetIrqMask(unsigned int irq, int masked);
 void OrynKernelPicSendEoi(unsigned int irq);
 void OrynKernelPicPrintProof(void);
 

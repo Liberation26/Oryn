@@ -113,3 +113,13 @@ The early x64 interrupt/timer foundation is target-owned SDK code, not project-o
   Targets/UEFI/X64/KernelSupport/Source/Timers/KernelHpet.c
 
 Kernel-5 only invokes this support from KernelMain. Common remains target-neutral.
+
+
+0.5.30 Interrupt dispatcher ownership
+-------------------------------------
+The interrupt dispatcher is target-owned UEFI x64 kernel support, not common code and not project-owned code:
+
+  Targets/UEFI/X64/KernelSupport/Include/KernelInterrupts.h
+  Targets/UEFI/X64/KernelSupport/Source/Interrupts/KernelInterrupts.c
+
+The dispatcher is the bridge above the IDT stubs and below the controller-specific EOI paths. PIC IRQ0 is proven first, then the local APIC/APIC2 timer interrupt is proven.

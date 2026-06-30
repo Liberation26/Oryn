@@ -543,3 +543,22 @@ Expected proof lines include:
   [KERNEL] PASS: APIC2/x2APIC mode enabled.
   [KERNEL] PASS: APIC timer counter moved in masked probe.
   [KERNEL] PASS: HPET counter advanced in probe.
+
+
+0.5.30 Interrupts from PIC upward
+----------------------------------
+Kernel-5 now proves real interrupt delivery in controller order:
+
+- The IDT dispatch path initializes a 256-vector handler table and per-vector counters.
+- The PIC path remaps the 8259 to 0x20-0x2F, unmasks IRQ0, programs PIT channel 0 as a one-shot source, receives vector 0x20 through the IDT common stub, sends PIC EOI, and masks the PIC again.
+- The APIC path then enables local APIC/APIC2 and arms a one-shot local APIC timer interrupt through vector 0xEE.
+- The shared dispatcher counts both interrupts and prints PIC/APIC EOI proof markers.
+
+Expected proof lines include:
+
+  [KERNEL] PASS: Interrupt dispatcher initialized.
+  [KERNEL] PASS: PIC IRQ0 interrupt fired through IDT dispatch.
+  [KERNEL] PASS: PIC EOI path executed.
+  [KERNEL] PASS: APIC timer interrupt fired through IDT dispatch.
+  [KERNEL] PASS: APIC EOI path executed.
+  [KERNEL] PASS: Interrupts work from PIC upward through APIC/APIC2.

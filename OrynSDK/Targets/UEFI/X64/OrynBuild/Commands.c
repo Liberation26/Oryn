@@ -40,6 +40,9 @@ static void WriteBootReport(
     int idt_installing = TextContains(debug_text, "[KERNEL] IDT: installing");
     int idt_installed = TextContains(debug_text, "[KERNEL] PASS: IDT installed.");
     int idt_entries = TextContains(debug_text, "[KERNEL] IDT entries: 256");
+    int interrupt_dispatcher = TextContains(debug_text, "[KERNEL] PASS: Interrupt dispatcher initialized.");
+    int interrupt_handlers = TextContains(debug_text, "[KERNEL] PASS: Interrupt handler table ready for 256 vectors.");
+    int interrupt_controlled = TextContains(debug_text, "[KERNEL] PASS: CPU interrupts are currently disabled for controlled boot.");
     int cpu_exception = TextContains(debug_text, "[KERNEL] EXCEPTION:");
     int cpu_local_apic = TextContains(debug_text, "[KERNEL] PASS: CPU local APIC feature present.");
     int cpu_apic2 = TextContains(debug_text, "[KERNEL] PASS: CPU APIC2/x2APIC feature present.");
@@ -55,6 +58,13 @@ static void WriteBootReport(
     int hpet_table = TextContains(debug_text, "[KERNEL] PASS: HPET ACPI table discovered.");
     int hpet_enabled = TextContains(debug_text, "[KERNEL] PASS: HPET main counter enabled.");
     int hpet_counter = TextContains(debug_text, "[KERNEL] PASS: HPET counter advanced in probe.");
+    int pic_irq0 = TextContains(debug_text, "[KERNEL] PASS: PIC IRQ0 interrupt fired through IDT dispatch.");
+    int pic_irq0_count = TextContains(debug_text, "[KERNEL] PASS: PIC IRQ0 handler counter updated.");
+    int pic_eoi = TextContains(debug_text, "[KERNEL] PASS: PIC EOI path executed.");
+    int apic_timer_interrupt = TextContains(debug_text, "[KERNEL] PASS: APIC timer interrupt fired through IDT dispatch.");
+    int apic_irq_counters = TextContains(debug_text, "[KERNEL] PASS: APIC timer IRQ counter updated by interrupt dispatch.");
+    int apic_eoi = TextContains(debug_text, "[KERNEL] PASS: APIC EOI path executed.");
+    int interrupt_chain = TextContains(debug_text, "[KERNEL] PASS: Interrupts work from PIC upward through APIC/APIC2.");
     int virtual_memory_started = TextContains(debug_text, "[KERNEL] Virtual memory: starting");
     int virtual_memory_required_mapped = TextContains(debug_text, "[KERNEL] Virtual memory: required ranges mapped");
     int virtual_memory_switching_cr3 = TextContains(debug_text, "[KERNEL] Virtual memory: switching CR3 to kernel-owned PML4");
@@ -67,10 +77,13 @@ static void WriteBootReport(
         bootinfo_created && boot_config_prepared && bootinfo_memory_map && boot_services_exited && kernel_jump &&
         kernel_entered && serial_ok && bootinfo_received && kernel_boot_config && kernel_command_line &&
         gdt_installing && gdt_installed && gdt_entries && tss_loaded &&
-        idt_installing && idt_installed && idt_entries && !cpu_exception &&
+        idt_installing && idt_installed && idt_entries &&
+        interrupt_dispatcher && interrupt_handlers && interrupt_controlled && !cpu_exception &&
         cpu_local_apic && cpu_apic2 && pic_initialized && pic_remapped && pic_masked &&
-        apic_available && apic2_enabled && local_apic_enabled && apic_timer_probe &&
-        hpet_rsdp && hpet_checksum && hpet_table && hpet_enabled && hpet_counter && debug_exit;
+        pic_irq0 && pic_irq0_count && pic_eoi && apic_available && apic2_enabled &&
+        local_apic_enabled && apic_timer_probe && hpet_rsdp && hpet_checksum &&
+        hpet_table && hpet_enabled && hpet_counter && apic_timer_interrupt &&
+        apic_irq_counters && apic_eoi && interrupt_chain && debug_exit;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -112,11 +125,17 @@ static void WriteBootReport(
     fprintf(file, "  Kernel started IDT install: %s\n", PassFail(idt_installing));
     fprintf(file, "  Kernel installed and verified IDT: %s\n", PassFail(idt_installed));
     fprintf(file, "  Kernel installed all 256 IDT entries: %s\n", PassFail(idt_entries));
+    fprintf(file, "  Interrupt dispatcher initialized: %s\n", PassFail(interrupt_dispatcher));
+    fprintf(file, "  Interrupt handler table ready: %s\n", PassFail(interrupt_handlers));
+    fprintf(file, "  CPU interrupts controlled during boot: %s\n", PassFail(interrupt_controlled));
     fprintf(file, "  Kernel had no trapped CPU exception: %s\n", PassFail(!cpu_exception));
     fprintf(file, "  CPU local APIC feature present: %s\n", PassFail(cpu_local_apic));
     fprintf(file, "  CPU APIC2/x2APIC feature present: %s\n", PassFail(cpu_apic2));
     fprintf(file, "  PIC initialized: %s\n", PassFail(pic_initialized));
     fprintf(file, "  PIC remapped to 0x20-0x2F: %s\n", PassFail(pic_remapped));
+    fprintf(file, "  PIC IRQ0 interrupt fired: %s\n", PassFail(pic_irq0));
+    fprintf(file, "  PIC IRQ0 counter updated: %s\n", PassFail(pic_irq0_count));
+    fprintf(file, "  PIC EOI path executed: %s\n", PassFail(pic_eoi));
     fprintf(file, "  PIC masked for APIC handoff: %s\n", PassFail(pic_masked));
     fprintf(file, "  APIC CPU feature available: %s\n", PassFail(apic_available));
     fprintf(file, "  APIC2/x2APIC mode enabled: %s\n", PassFail(apic2_enabled));
@@ -127,6 +146,10 @@ static void WriteBootReport(
     fprintf(file, "  HPET table discovered: %s\n", PassFail(hpet_table));
     fprintf(file, "  HPET main counter enabled: %s\n", PassFail(hpet_enabled));
     fprintf(file, "  HPET counter advanced: %s\n", PassFail(hpet_counter));
+    fprintf(file, "  APIC timer interrupt fired: %s\n", PassFail(apic_timer_interrupt));
+    fprintf(file, "  APIC timer IRQ counter updated: %s\n", PassFail(apic_irq_counters));
+    fprintf(file, "  APIC EOI path executed: %s\n", PassFail(apic_eoi));
+    fprintf(file, "  Interrupt chain PIC upward complete: %s\n", PassFail(interrupt_chain));
     fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
     fprintf(file, "  Kernel virtual memory required ranges mapped: %s\n", PassFail(virtual_memory_required_mapped));
     fprintf(file, "  Kernel virtual memory CR3 switch requested: %s\n", PassFail(virtual_memory_switching_cr3));
@@ -162,6 +185,12 @@ static void WriteBootReport(
             "The kernel did not verify the IDT install." :
         !idt_entries ?
             "The kernel did not install all 256 IDT entries." :
+        !interrupt_dispatcher ?
+            "The interrupt dispatcher did not initialize." :
+        !interrupt_handlers ?
+            "The interrupt handler table was not prepared." :
+        !interrupt_controlled ?
+            "CPU interrupts were not under controlled CLI/STI boot state." :
         cpu_exception ?
             "The IDT trapped a CPU exception. Check the exception vector and register dump." :
         !cpu_local_apic ?
@@ -174,6 +203,12 @@ static void WriteBootReport(
             "The kernel did not remap the PIC vectors to 0x20-0x2F." :
         !pic_masked ?
             "The kernel did not mask the PIC for APIC handoff." :
+        !pic_irq0 ?
+            "The remapped PIC did not deliver IRQ0 through IDT vector 0x20." :
+        !pic_irq0_count ?
+            "The PIC IRQ0 handler did not update its dispatch counter." :
+        !pic_eoi ?
+            "The PIC interrupt EOI path did not execute." :
         !apic_available ?
             "The kernel did not reach APIC feature validation." :
         !apic2_enabled ?
@@ -192,6 +227,14 @@ static void WriteBootReport(
             "The HPET main counter was not enabled." :
         !hpet_counter ?
             "The HPET counter did not advance during the probe." :
+        !apic_timer_interrupt ?
+            "The APIC timer interrupt did not fire through the IDT dispatcher." :
+        !apic_irq_counters ?
+            "The APIC timer IRQ counter did not update." :
+        !apic_eoi ?
+            "The APIC EOI path did not execute." :
+        !interrupt_chain ?
+            "The interrupt chain did not pass from PIC upward through APIC/APIC2." :
         !virtual_memory_started ?
             "The kernel stopped before virtual-memory initialization." :
         !virtual_memory_required_mapped ?
@@ -459,11 +502,15 @@ int OrynRunQemu(const OrynProject* project)
         TextContains(debug_text, "[KERNEL] GDT entries: 7") &&
         TextContains(debug_text, "[KERNEL] PASS: TSS loaded.") &&
         TextContains(debug_text, "[KERNEL] PASS: IDT installed.") &&
+        TextContains(debug_text, "[KERNEL] PASS: Interrupt dispatcher initialized.") &&
+        TextContains(debug_text, "[KERNEL] PASS: PIC IRQ0 interrupt fired through IDT dispatch.") &&
         TextContains(debug_text, "[KERNEL] PASS: CPU APIC2/x2APIC feature present.") &&
         TextContains(debug_text, "[KERNEL] PASS: PIC masked/disabled for APIC handoff.") &&
         TextContains(debug_text, "[KERNEL] PASS: APIC2/x2APIC mode enabled.") &&
         TextContains(debug_text, "[KERNEL] PASS: APIC timer counter moved in masked probe.") &&
         TextContains(debug_text, "[KERNEL] PASS: HPET counter advanced in probe.") &&
+        TextContains(debug_text, "[KERNEL] PASS: APIC timer interrupt fired through IDT dispatch.") &&
+        TextContains(debug_text, "[KERNEL] PASS: Interrupts work from PIC upward through APIC/APIC2.") &&
         !TextContains(debug_text, "[KERNEL] EXCEPTION:") &&
         TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success") && command_ok;
 

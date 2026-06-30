@@ -20,6 +20,7 @@ Boot and handoff:
 [TOBE] We Need SysCalls
 [TOBE] We need PCI Discovery
 [TOBE] We Need Multi-Core processing
+[TOBE] We need to be able to set the PIC/APIC/2xAPIC/HPET settings for the VM
 
 Kernel entry and ownership:
 [TOBE] KernelMain is minimal.
