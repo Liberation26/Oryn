@@ -50,6 +50,7 @@ typedef struct OrynKernelSmpState
 int OrynKernelSmpDiscover(const OrynBootInfo* bootInfo);
 int OrynKernelSmpInit(const OrynBootInfo* bootInfo);
 const OrynKernelSmpState* OrynKernelSmpGetState(void);
+void OrynKernelSmpPrintDiscoveryProof(const OrynKernelSmpState* state);
 void OrynKernelSmpPrintProof(void);
 void OrynKernelSmpApEntry(unsigned int localApicId);
 

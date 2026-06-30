@@ -250,3 +250,9 @@ Any displayed QEMU mode, such as Display=sdl, is now treated as an interactive s
 KernelConsole.c now keeps dirty-line state, presents only completed dirty lines during normal output, and uses a fast tail-scroll path once the visible area is full. Framebuffer mode still renders to a kernel-owned back buffer first; VGA fallback uses the shadow text buffer first.
 
 KernelPhysicalMemory.h raises the static page-tracking capacity so the 2G QEMU memory profile is fully tracked without the static-capacity warning.
+
+
+0.5.46 Early SMP startup
+- Kernel-5 starts SMP immediately after APIC/APIC2 setup.
+- SMP no longer waits for framebuffer console setup or the physical/virtual memory proof path.
+- Application processors are parked in the AP loop before HPET, PCI, console, memory, and VM proof output.

@@ -239,17 +239,20 @@ static void WriteBootReport(
     int pci_complete = TextContains(debug_text, "[KERNEL] PASS: PCI Discovery complete.");
     int pci_english = TextContains(debug_text, "[KERNEL] PASS: PCI device output uses English labels.");
     int smp_started = TextContains(debug_text, "[KERNEL] SMP: multi-core processing discovery starting.");
+    int smp_started_early = TextContains(debug_text, "[KERNEL] SMP: starting early after APIC/APIC2 enable.");
     int smp_rsdp = TextContains(debug_text, "[KERNEL] PASS: SMP ACPI RSDP input present.");
     int smp_checksum = TextContains(debug_text, "[KERNEL] PASS: SMP ACPI checksum validation passed.");
     int smp_madt = TextContains(debug_text, "[KERNEL] PASS: SMP ACPI MADT table discovered.");
     int smp_cached = TextContains(debug_text, "[KERNEL] PASS: SMP ACPI topology cached before virtual memory switch.");
     int smp_topology = TextContains(debug_text, "[KERNEL] PASS: SMP multi-core CPU topology discovered.");
+    int smp_early_stage = TextContains(debug_text, "[KERNEL] PASS: SMP AP startup moved before PCI/HPET/console/memory proof.");
     int smp_trampoline = TextContains(debug_text, "[KERNEL] PASS: SMP AP startup trampoline prepared below 1MB.");
     int smp_cr3 = TextContains(debug_text, "[KERNEL] PASS: SMP startup CR3 is reachable by the AP trampoline.");
     int smp_ipi = TextContains(debug_text, "[KERNEL] PASS: SMP Local APIC IPI path ready.");
     int smp_init_ipi = TextContains(debug_text, "[KERNEL] PASS: SMP INIT IPI sent to application processors.");
     int smp_startup_ipi = TextContains(debug_text, "[KERNEL] PASS: SMP STARTUP IPI sent to application processors.");
     int smp_aps_started = TextContains(debug_text, "[KERNEL] PASS: SMP application processors entered kernel AP loop.");
+    int smp_early_complete = TextContains(debug_text, "[KERNEL] PASS: SMP AP startup completed before PCI/HPET/console/memory proof.");
     int smp_complete = TextContains(debug_text, "[KERNEL] PASS: Multi-Core processing initialized.");
     int qemu_debug_colour = TextContains(debug_text, "\033[32m[KERNEL] PASS") &&
         TextContains(debug_text, "\033[0m");
@@ -295,9 +298,9 @@ static void WriteBootReport(
     int hpet_ok = want_hpet ? (hpet_rsdp && hpet_checksum && hpet_table && hpet_enabled && hpet_counter) : hpet_skipped;
     int interrupt_chain_ok = TextContains(debug_text, "[KERNEL] PASS: Interrupts work from PIC upward through APIC/APIC2.") ||
         TextContains(debug_text, "[KERNEL] PASS: VMSettings interrupt/timer profile applied.");
-    int smp_ok = want_smp ? (smp_started && smp_rsdp && smp_checksum && smp_madt && smp_cached &&
-        smp_topology && smp_trampoline && smp_cr3 && smp_ipi && smp_init_ipi &&
-        smp_startup_ipi && smp_aps_started && smp_complete) : smp_skipped;
+    int smp_ok = want_smp ? (smp_started_early && smp_started && smp_rsdp && smp_checksum && smp_madt && smp_cached &&
+        smp_topology && smp_early_stage && smp_trampoline && smp_cr3 && smp_ipi && smp_init_ipi &&
+        smp_startup_ipi && smp_aps_started && smp_early_complete && smp_complete) : smp_skipped;
 
     int virtual_memory_started = TextContains(debug_text, "[KERNEL] Virtual memory: starting");
     int virtual_memory_required_mapped = TextContains(debug_text, "[KERNEL] Virtual memory: required ranges mapped");
@@ -458,18 +461,21 @@ static void WriteBootReport(
     fprintf(file, "  PCI class-code decoding ready: %s\n", PassFail(pci_class));
     fprintf(file, "  PCI discovery complete: %s\n", PassFail(pci_complete));
     fprintf(file, "  PCI device output uses English labels: %s\n", PassFail(pci_english));
+    fprintf(file, "  SMP early startup requested after APIC/APIC2: %s\n", PassFail(want_smp ? smp_started_early : smp_skipped));
     fprintf(file, "  SMP discovery started: %s\n", PassFail(want_smp ? smp_started : smp_skipped));
     fprintf(file, "  SMP ACPI RSDP present: %s\n", PassFail(want_smp ? smp_rsdp : smp_skipped));
     fprintf(file, "  SMP ACPI checksum validated: %s\n", PassFail(want_smp ? smp_checksum : smp_skipped));
     fprintf(file, "  SMP ACPI MADT table discovered: %s\n", PassFail(want_smp ? smp_madt : smp_skipped));
     fprintf(file, "  SMP ACPI topology cached before VM: %s\n", PassFail(want_smp ? smp_cached : smp_skipped));
     fprintf(file, "  SMP multi-core topology discovered: %s\n", PassFail(want_smp ? smp_topology : smp_skipped));
+    fprintf(file, "  SMP moved before PCI/HPET/console/memory: %s\n", PassFail(want_smp ? smp_early_stage : smp_skipped));
     fprintf(file, "  SMP AP trampoline prepared: %s\n", PassFail(want_smp ? smp_trampoline : smp_skipped));
     fprintf(file, "  SMP startup CR3 reachable: %s\n", PassFail(want_smp ? smp_cr3 : smp_skipped));
     fprintf(file, "  SMP Local APIC IPI path ready: %s\n", PassFail(want_smp ? smp_ipi : smp_skipped));
     fprintf(file, "  SMP INIT IPI sent: %s\n", PassFail(want_smp ? smp_init_ipi : smp_skipped));
     fprintf(file, "  SMP STARTUP IPI sent: %s\n", PassFail(want_smp ? smp_startup_ipi : smp_skipped));
     fprintf(file, "  SMP APs entered kernel loop: %s\n", PassFail(want_smp ? smp_aps_started : smp_skipped));
+    fprintf(file, "  SMP AP startup completed before late boot proofs: %s\n", PassFail(want_smp ? smp_early_complete : smp_skipped));
     fprintf(file, "  Multi-Core processing initialized: %s\n", PassFail(want_smp ? smp_complete : smp_skipped));
     fprintf(file, "  QEMU debug output includes ANSI colour: %s\n", PassFail(qemu_debug_colour));
     fprintf(file, "  Kernel console initialized: %s\n", PassFail(kernel_console));

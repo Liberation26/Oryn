@@ -1,4 +1,4 @@
-OrynWsl 0.5.45 Quick Start
+OrynWsl 0.5.46 Quick Start
 
 This package is a WSL-native Oryn SDK baseline.
 
@@ -819,3 +819,14 @@ OrynWsl 0.5.45 Fast interactive screen refresh
 Kernel screen double buffering is now line/scroll optimized. Printable characters update the kernel-owned back buffer only; the visible framebuffer is presented after a completed line. When the live view reaches the bottom of the screen, the console uses a fast scroll path instead of redrawing every visible cell for every line. In interactive Display=sdl mode, QEMU serial is connected to a null sink so the WSL terminal is not flooded while the QEMU window is being used for manual scrolling tests. Debug output is still captured through QEMU debugcon in Output/Debug.log.
 
 The physical allocator tracking capacity was increased to cover the normal 2G VM profile without reporting that the static page tracker was full. The allocator now prints a PASS marker when all usable pages are tracked.
+
+
+OrynWsl 0.5.46 Early SMP startup
+
+SMP is now started at the earliest safe point in the UEFI x64 kernel boot path.
+The order is now GDT/IDT/syscalls, CPU/PIC/APIC/APIC2 setup, then SMP discovery and AP startup.
+Application processors are started and parked before HPET proof, PCI discovery, framebuffer console setup, BootInfo summary printing, physical memory setup, and virtual-memory proof.
+BootReport now verifies the early-SMP markers:
+  [KERNEL] SMP: starting early after APIC/APIC2 enable.
+  [KERNEL] PASS: SMP AP startup moved before PCI/HPET/console/memory proof.
+  [KERNEL] PASS: SMP AP startup completed before PCI/HPET/console/memory proof.

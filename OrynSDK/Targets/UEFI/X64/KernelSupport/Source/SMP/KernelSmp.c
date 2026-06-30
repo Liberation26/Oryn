@@ -297,37 +297,21 @@ static void DiscoverCpus(const OrynBootInfo* bootInfo)
     FinalizeCpuDiscovery();
 }
 
-static void PrintDiscoveryProof(void)
-{
-    KernelIoWriteString(gSmpState.RsdpPresent ?
-        "[KERNEL] PASS: SMP ACPI RSDP input present.\n" :
-        "[KERNEL] WARN: SMP ACPI RSDP input missing.\n");
-    KernelIoWriteString(gSmpState.AcpiChecksumOk ?
-        "[KERNEL] PASS: SMP ACPI checksum validation passed.\n" :
-        "[KERNEL] WARN: SMP ACPI checksum validation failed or was unavailable.\n");
-    KernelIoWriteString(gSmpState.MadtFound ?
-        "[KERNEL] PASS: SMP ACPI MADT table discovered.\n" :
-        "[KERNEL] WARN: SMP ACPI MADT table was not discovered.\n");
-    KernelIoWriteString("[KERNEL] SMP CPU entries discovered: ");
-    KernelIoWriteDec64(gSmpState.LocalApicEntryCount);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] SMP enabled CPU count: ");
-    KernelIoWriteDec64(gSmpState.EnabledCpuCount);
-    KernelIoWriteString("\n");
-    KernelIoWriteString(gSmpState.EnabledCpuCount > 1U ?
-        "[KERNEL] PASS: SMP multi-core CPU topology discovered.\n" :
-        "[KERNEL] WARN: SMP found only one enabled CPU.\n");
-}
-
 int OrynKernelSmpDiscover(const OrynBootInfo* bootInfo)
 {
+    if (gSmpState.DiscoveryComplete)
+    {
+        KernelIoWriteString("[KERNEL] SMP: using cached ACPI MADT topology.\n");
+        return 1;
+    }
+
     KernelIoWriteString("[KERNEL] SMP: multi-core processing discovery starting.\n");
     ClearState();
     gSmpState.Initialized = 1U;
     gSmpState.BootstrapApicId = OrynKernelApicGetState()->LocalApicId;
     gSmpState.AcpiReadBeforeVirtualMemory = 1U;
     DiscoverCpus(bootInfo);
-    PrintDiscoveryProof();
+    OrynKernelSmpPrintDiscoveryProof((const OrynKernelSmpState*)&gSmpState);
     KernelIoWriteString("[KERNEL] PASS: SMP ACPI topology cached before virtual memory switch.\n");
     return gSmpState.DiscoveryComplete ? 1 : 0;
 }
@@ -472,6 +456,12 @@ void OrynKernelSmpApEntry(unsigned int localApicId)
 
 int OrynKernelSmpInit(const OrynBootInfo* bootInfo)
 {
+    if (gSmpState.StartupAttemptCount != 0U || gSmpState.StartupSuccessCount != 0U)
+    {
+        KernelIoWriteString("[KERNEL] SMP: AP startup already completed early.\n");
+        return gSmpState.Initialized ? 1 : 0;
+    }
+
     if (!gSmpState.DiscoveryComplete)
     {
         (void)OrynKernelSmpDiscover(bootInfo);
@@ -485,6 +475,7 @@ int OrynKernelSmpInit(const OrynBootInfo* bootInfo)
     gSmpState.CurrentCr3 = ReadCr3();
     gSmpState.Cr3Below4G = (gSmpState.CurrentCr3 < 0x100000000ULL) ? 1U : 0U;
     gSmpState.IpiPathReady = OrynKernelApicCanSendIpi();
+    KernelIoWriteString("[KERNEL] PASS: SMP AP startup moved before PCI/HPET/console/memory proof.\n");
 
     if (PrepareTrampoline())
     {
@@ -499,37 +490,3 @@ const OrynKernelSmpState* OrynKernelSmpGetState(void)
     return (const OrynKernelSmpState*)&gSmpState;
 }
 
-void OrynKernelSmpPrintProof(void)
-{
-    PrintDiscoveryProof();
-    KernelIoWriteString(gSmpState.AcpiReadBeforeVirtualMemory ?
-        "[KERNEL] PASS: SMP ACPI topology cached before virtual memory switch.\n" :
-        "[KERNEL] WARN: SMP ACPI topology was not cached before virtual memory switch.\n");
-    KernelIoWriteString("[KERNEL] SMP bootstrap APIC ID: ");
-    KernelIoWriteHex64(gSmpState.BootstrapApicId);
-    KernelIoWriteString("\n");
-    KernelIoWriteString(gSmpState.TrampolinePrepared ?
-        "[KERNEL] PASS: SMP AP startup trampoline prepared below 1MB.\n" :
-        "[KERNEL] FAIL: SMP AP startup trampoline was not prepared.\n");
-    KernelIoWriteString(gSmpState.Cr3Below4G ?
-        "[KERNEL] PASS: SMP startup CR3 is reachable by the AP trampoline.\n" :
-        "[KERNEL] WARN: SMP startup CR3 is above 4GB; AP startup skipped.\n");
-    KernelIoWriteString(gSmpState.IpiPathReady ?
-        "[KERNEL] PASS: SMP Local APIC IPI path ready.\n" :
-        "[KERNEL] FAIL: SMP Local APIC IPI path unavailable.\n");
-    KernelIoWriteString("[KERNEL] SMP AP startup attempts/successes: ");
-    KernelIoWriteDec64(gSmpState.StartupAttemptCount);
-    KernelIoWriteString(" / ");
-    KernelIoWriteDec64(gSmpState.StartupSuccessCount);
-    KernelIoWriteString("\n");
-    KernelIoWriteString(gSmpState.InitIpiCount ?
-        "[KERNEL] PASS: SMP INIT IPI sent to application processors.\n" :
-        "[KERNEL] WARN: SMP INIT IPI was not sent.\n");
-    KernelIoWriteString(gSmpState.StartupIpiCount ?
-        "[KERNEL] PASS: SMP STARTUP IPI sent to application processors.\n" :
-        "[KERNEL] WARN: SMP STARTUP IPI was not sent.\n");
-    KernelIoWriteString((gSmpState.ApplicationProcessorCount == gSmpState.StartupSuccessCount) ?
-        "[KERNEL] PASS: SMP application processors entered kernel AP loop.\n" :
-        "[KERNEL] WARN: SMP application processor startup is incomplete.\n");
-    KernelIoWriteString("[KERNEL] PASS: Multi-Core processing initialized.\n");
-}

@@ -199,6 +199,8 @@ static void RunDescriptorAndSysCallProofs(void)
     OrynKernelSysCallInterruptsPrintRuntimeProof();
 }
 
+static void RunEarlySmpProof(const OrynBootInfo* kernelBootInfo);
+
 static void RunInterruptAndTimerProofs(const OrynBootInfo* kernelBootInfo)
 {
     OrynKernelCpuDetect();
@@ -224,6 +226,12 @@ static void RunInterruptAndTimerProofs(const OrynBootInfo* kernelBootInfo)
     OrynKernelApicPrintProof();
 #else
     KernelIoWriteString("[KERNEL] INFO: APIC proofs skipped by VMSettings.\n");
+#endif
+
+#if ORYN_VM_SMP_CPUS > 1 && ORYN_VM_APIC
+    RunEarlySmpProof(kernelBootInfo);
+#else
+    KernelIoWriteString("[KERNEL] INFO: SMP discovery skipped by VMSettings.\n");
 #endif
 
 #if ORYN_VM_HPET
@@ -252,10 +260,10 @@ static void RunPciProof(const OrynBootInfo* kernelBootInfo)
     OrynKernelPciPrintProof();
 }
 
-static void RunSmpProof(const OrynBootInfo* kernelBootInfo)
+static void RunEarlySmpProof(const OrynBootInfo* kernelBootInfo)
 {
 #if ORYN_VM_SMP_CPUS > 1 && ORYN_VM_APIC
-    KernelIoWriteString("[KERNEL] SMP: starting after virtual memory proof.\n");
+    KernelIoWriteString("[KERNEL] SMP: starting early after APIC/APIC2 enable.\n");
     (void)OrynKernelSmpInit(kernelBootInfo);
     OrynKernelSmpPrintProof();
 #else
@@ -278,7 +286,6 @@ static void RunMemoryProofs(const OrynBootInfo* kernelBootInfo)
             if (OrynVirtualMemoryInit(kernelBootInfo, &gKernelMemoryMap, &gPhysicalMemory, &gVirtualMemory))
             {
                 OrynVirtualMemoryPrintProof(&gVirtualMemory);
-                RunSmpProof(kernelBootInfo);
             }
             else
             {
@@ -316,12 +323,6 @@ void KernelStart(const OrynBootInfo* bootInfo)
     RunDescriptorAndSysCallProofs();
     RunInterruptAndTimerProofs(kernelBootInfo);
     RunPciProof(kernelBootInfo);
-#if ORYN_VM_SMP_CPUS > 1 && ORYN_VM_APIC
-    (void)OrynKernelSmpDiscover(kernelBootInfo);
-#else
-    KernelIoWriteString("[KERNEL] INFO: SMP discovery skipped by VMSettings.\n");
-#endif
-
     if (bootStatus.IsValid)
     {
         KConsoleInit(kernelBootInfo);
