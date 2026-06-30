@@ -82,6 +82,34 @@ static const char* OnOffText(int value)
     return value ? "on" : "off";
 }
 
+
+static const char* ResolveQemuCpuModel(const char* configured_cpu)
+{
+    if (configured_cpu == 0 || configured_cpu[0] == 0)
+    {
+        return "qemu64";
+    }
+
+    if (TextEqualsIgnoreCaseCommand(configured_cpu, "host") ||
+        TextEqualsIgnoreCaseCommand(configured_cpu, "native"))
+    {
+        return "max";
+    }
+
+    return configured_cpu;
+}
+
+static int QemuCpuWasTranslated(const char* configured_cpu, const char* resolved_cpu)
+{
+    return configured_cpu != 0 && resolved_cpu != 0 &&
+        !TextEqualsIgnoreCaseCommand(configured_cpu, resolved_cpu);
+}
+
+static int DebugTextIsEmpty(const char* text)
+{
+    return text == 0 || text[0] == 0;
+}
+
 static int IsSafeQemuArgumentValue(const char* value)
 {
     if (value == 0 || value[0] == 0)
@@ -120,6 +148,7 @@ static void WriteBootReport(
     const char* ovmf_qemu,
     const char* disk_windows,
     const char* debug_log,
+    const char* resolved_cpu,
     const char* command,
     const char* debug_text,
     int exit_code,
@@ -215,6 +244,7 @@ static void WriteBootReport(
     int smp_complete = TextContains(debug_text, "[KERNEL] PASS: Multi-Core processing initialized.");
     int qemu_debug_colour = TextContains(debug_text, "\033[32m[KERNEL] PASS") &&
         TextContains(debug_text, "\033[0m");
+    int qemu_preboot_failure = (!command_ok) && !loader_started && DebugTextIsEmpty(debug_text);
 
     int want_pic = ProjectBoolEnabled(project->run_pic, 1);
     int want_apic = ProjectBoolEnabled(project->run_apic, 1);
@@ -276,6 +306,10 @@ static void WriteBootReport(
     fprintf(file, "VM: %s\n", project->run_vm);
     fprintf(file, "VM Memory: %s\n", project->run_memory);
     fprintf(file, "VM CPU: %s\n", project->run_cpu);
+    if (resolved_cpu != 0 && QemuCpuWasTranslated(project->run_cpu, resolved_cpu))
+    {
+        fprintf(file, "VM CPU resolved for QEMU: %s\n", resolved_cpu);
+    }
     fprintf(file, "VM SMP CPUs: %s\n", project->run_smp);
     fprintf(file, "VM PIC/APIC/APIC2/HPET: %s/%s/%s/%s\n",
         project->run_pic, project->run_apic, project->run_apic2, project->run_hpet);
@@ -286,6 +320,31 @@ static void WriteBootReport(
 
     fprintf(file, "Checks:\n");
     fprintf(file, "  QEMU command accepted: %s\n", PassFail(command_ok));
+    if (qemu_preboot_failure)
+    {
+        fprintf(file, "  Firmware, loader, and kernel checks: SKIPPED - QEMU exited before UEFI firmware started.\n");
+        fprintf(file, "\nFailure hint:\n");
+        if (TextEqualsIgnoreCaseCommand(project->run_cpu, "host") ||
+            TextEqualsIgnoreCaseCommand(project->run_cpu, "native"))
+        {
+            fprintf(file, "  CPU=%s requires hardware acceleration and is not valid for the current Windows QEMU from WSL runner. Use CPU=max or CPU=qemu64.\n\n", project->run_cpu);
+        }
+        else
+        {
+            fprintf(file, "  QEMU exited before UEFI firmware started. Check the VM CPU, memory, acceleration, and QEMU command line above.\n\n");
+        }
+        fprintf(file, "Paths:\n");
+        fprintf(file, "  QEMU: %s\n", qemu_path);
+        fprintf(file, "  OVMF Windows: %s\n", ovmf_windows);
+        fprintf(file, "  OVMF QEMU: %s\n", ovmf_qemu);
+        fprintf(file, "  FAT32 disk image: %s\n", disk_windows);
+        fprintf(file, "  Debug log: %s\n", debug_log);
+        fprintf(file, "  Boot report: %s\n\n", report_path);
+        fprintf(file, "Command:\n%s\n\n", command);
+        fprintf(file, "Captured debug output:\n%s\n", DebugTextIsEmpty(debug_text) ? "[empty]" : debug_text);
+        fclose(file);
+        return;
+    }
     fprintf(file, "  Loader started: %s\n", PassFail(loader_started));
     fprintf(file, "  Kernel loaded physical address printed: %s\n", PassFail(kernel_loaded));
     fprintf(file, "  Kernel virtual entry address printed: %s\n", PassFail(entry_printed));
@@ -385,6 +444,8 @@ static void WriteBootReport(
     fprintf(file, "\nFailure hint:\n  %s\n\n",
         boot_pass ?
             "No kernel-side failure detected by the boot-proof markers." :
+        !command_ok ?
+            "QEMU did not accept the VM command line. Check CPU, memory, and acceleration settings." :
         !loader_started ?
             "The loader did not start." :
         !kernel_jump ?
@@ -782,13 +843,19 @@ int OrynRunQemu(const OrynProject* project)
     int vm_apic2 = ProjectBoolEnabled(project->run_apic2, 1) && vm_apic;
     int vm_hpet = ProjectBoolEnabled(project->run_hpet, 1);
     unsigned int vm_smp_count = ProjectCpuCount(project);
+    const char* qemu_cpu_model = ResolveQemuCpuModel(project->run_cpu);
+    if (QemuCpuWasTranslated(project->run_cpu, qemu_cpu_model))
+    {
+        OrynLogWarn("CPU=host/native requires KVM/HVF/WHX acceleration; using CPU=max for Windows QEMU from WSL.");
+    }
 
     char smp_text[32];
     snprintf(smp_text, sizeof(smp_text), "%u", vm_smp_count);
     OrynLogKeyValue("Display", display_mode);
     OrynLogKeyValue("SMP CPUs", smp_text);
     OrynLogKeyValue("Memory", project->run_memory);
-    OrynLogKeyValue("CPU", project->run_cpu);
+    OrynLogKeyValue("CPU requested", project->run_cpu);
+    OrynLogKeyValue("CPU resolved", qemu_cpu_model);
     OrynLogKeyValue("PIC", OnOffText(vm_pic));
     OrynLogKeyValue("APIC", OnOffText(vm_apic));
     OrynLogKeyValue("APIC2/x2APIC", OnOffText(vm_apic2));
@@ -828,7 +895,7 @@ int OrynRunQemu(const OrynProject* project)
     char cpu_argument[256];
     snprintf(machine_argument, sizeof(machine_argument), "q35,hpet=%s", vm_hpet ? "on" : "off");
     snprintf(cpu_argument, sizeof(cpu_argument), "%s,%sapic,%sx2apic",
-        project->run_cpu,
+        qemu_cpu_model,
         vm_apic ? "+" : "-",
         vm_apic2 ? "+" : "-");
 
@@ -858,7 +925,7 @@ int OrynRunQemu(const OrynProject* project)
     char debug_text[65536];
     ReadFileText(debug_log, debug_text, sizeof(debug_text));
     WriteBootReport(project, boot_report, qemu_path, ovmf_windows, ovmf_qemu, disk_windows,
-        debug_log, command, debug_text, exit_code, command_ok);
+        debug_log, qemu_cpu_model, command, debug_text, exit_code, command_ok);
 
     PrintFileIfPresent("QEMU debug output", debug_log);
     PrintFileIfPresent("Boot report", boot_report);

@@ -284,6 +284,25 @@ AskValueShell()
     done
 }
 
+
+NormalizeQemuCpuForWslShell()
+{
+    CpuValue="$1"
+    case "$CpuValue" in
+        host|Host|HOST|native|Native|NATIVE)
+            PrintTag "$ColorWarn" "[WARN]" "CPU=$CpuValue requires KVM/HVF/WHX acceleration and is not valid for the current Windows QEMU from WSL runner." 2
+            PrintTag "$ColorWarn" "[WARN]" "Saving CPU=max instead. Use qemu64 for the most conservative profile." 2
+            printf 'max\n'
+            ;;
+        '')
+            printf 'qemu64\n'
+            ;;
+        *)
+            printf '%s\n' "$CpuValue"
+            ;;
+    esac
+}
+
 RunVMSettingsQuestionnaire()
 {
     ProjectFile="$1"
@@ -341,7 +360,8 @@ RunVMSettingsQuestionnaire()
     fi
 
     NewMemory="$(AskValueShell 'VM memory, for example 512M, 1G, 2G' "$CurrentMemory" vm)"
-    NewCPU="$(AskValueShell 'QEMU CPU model base, for example qemu64, max, host' "$CurrentCPU" vm)"
+    NewCPU="$(AskValueShell 'QEMU CPU model base, for example qemu64 or max' "$CurrentCPU" vm)"
+    NewCPU="$(NormalizeQemuCpuForWslShell "$NewCPU")"
     NewSMP="$(AskValueShell 'VM CPU/core count' "$CurrentSMP" number)"
     [ "$NewSMP" -lt 1 ] && NewSMP=1
     if [ "$NewSMP" -gt 64 ]; then
@@ -409,7 +429,16 @@ RunVMSettingsQuestionnaire()
     Info "VMSettings summary: VM=$NewVM FormatVM=$NewFormatVM DiskFormat=$NewDiskFormat StorageInterface=$NewStorage"
     Info "VMSettings summary: Display=$NewDisplay Memory=$NewMemory CPU=$NewCPU SMP=$NewSMP"
     Info "VMSettings summary: PIC=$NewPIC APIC=$NewAPIC APIC2=$NewAPIC2 HPET=$NewHPET"
-    Info "Use ./Oryn.sh run to build/image/run with these settings."
+
+    case "${ORYN_VMSETTINGS_CONTINUE:-}" in
+        BootConfig|bootconfig)
+            Info "Continuing to BootConfig questionnaire."
+            RunBootConfigQuestionnaire "$ProjectFile" "$@"
+            ;;
+        *)
+            Info "Use ./Oryn.sh run to build/image/run with these settings."
+            ;;
+    esac
 }
 
 
@@ -608,8 +637,8 @@ RunOSNameQuestionnaire()
     fi
 
     Ok "Saved kernel/OS name: $NewName"
-    Info "Continuing to Headless questionnaire."
-    RunHeadlessQuestionnaire "$ProjectFile" "$@"
+    Info "Continuing to VMSettings questionnaire."
+    ORYN_VMSETTINGS_CONTINUE=BootConfig RunVMSettingsQuestionnaire "$ProjectFile" "$@"
 }
 
 RunHeadlessQuestionnaire()

@@ -197,7 +197,7 @@ KernelInterrupts provides separate PIC and APIC runtime proof printing so PIC-up
 KernelSmp is still target-owned and now starts APs after the kernel-owned virtual memory PML4 is active.
 
 
-0.5.38 VMSettings ownership
+0.5.39 VMSettings ownership
 ----------------------------
 The VM profile is project-owned data in `OrynProjects/<Name>/Project.oryn` under `[Run]`.
 `Oryn.sh VMSettings` is the shell questionnaire entry point. It saves VM formatting and hardware exposure values such as `FormatVM`, `DiskFormat`, `StorageInterface`, `Memory`, `CPU`, `SMP`, `PIC`, `APIC`, `APIC2`, and `HPET`.
@@ -205,3 +205,8 @@ The VM profile is project-owned data in `OrynProjects/<Name>/Project.oryn` under
 `Common/OrynBuild/Project.c` parses those keys into `OrynProject`.
 `Targets/UEFI/X64/OrynBuild/Commands.c` applies them to the QEMU command line and BootReport expectations.
 `Targets/UEFI/X64/OrynBuild/Build.c` turns the selected hardware profile into kernel compile-time VMSettings macros so Kernel-5 can skip or prove only the requested PIC/APIC/APIC2/HPET/SMP paths.
+
+
+0.5.39 VMSettings CPU validation
+
+`Oryn.sh VMSettings` owns user-facing VM hardware choices. It rejects `host`/`native` for the WSL Windows-QEMU runner by saving `CPU=max`, because `-cpu host` requires KVM/HVF/WHX acceleration. `Targets/UEFI/X64/OrynBuild/Commands.c` also resolves stale project files that still contain `CPU=host` to `CPU=max` before command construction and records the resolved CPU in BootReport.

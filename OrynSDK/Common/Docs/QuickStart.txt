@@ -1,4 +1,4 @@
-OrynWsl 0.5.38 Quick Start
+OrynWsl 0.5.39 Quick Start
 
 This package is a WSL-native Oryn SDK baseline.
 
@@ -188,7 +188,7 @@ Kernel/Selected.txt to that number and reports that the existing matching varian
 
 
 
-OrynWsl 0.5.38 VMSettings questionnaire
+OrynWsl 0.5.39 VMSettings questionnaire
 --------------------------------------
 Use this command from the workspace root to set the VM profile that `run` will use:
 
@@ -730,3 +730,10 @@ SMP startup now runs after virtual memory activation, and the AP trampoline uses
 0.5.37 SMP fault fix:
   [KERNEL] PASS: SMP ACPI topology cached before virtual memory switch.
   [KERNEL] SMP: using cached ACPI MADT topology.
+
+
+OrynWsl 0.5.39 VMSettings CPU safety
+
+CPU=host is not valid for the current Windows QEMU from WSL runner because QEMU requires hardware acceleration for the host CPU model. The VMSettings questionnaire now saves CPU=max instead when host/native is entered, and the run path also resolves stale CPU=host projects to CPU=max before launching QEMU. The BootReport now treats a QEMU pre-boot command rejection as a pre-boot failure and skips loader/kernel checks instead of printing a wall of unrelated FAIL lines.
+
+The OSName questionnaire now continues into VMSettings before BootConfig and BootInfo so VM format, memory, CPU, SMP, PIC, APIC, APIC2, HPET, and display settings are refreshed during the normal setup flow.
