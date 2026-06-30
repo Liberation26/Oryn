@@ -2,10 +2,10 @@ Kernel requirements status:
 
 Boot and handoff:
 [ OK ] UEFI loader entry point exists.
-[TOBE] Loader may collect firmware data before handoff.
-[TOBE] Kernel receives plain OrynBootInfo.
-[TOBE] Kernel-side raw GOP dependency removed.
-[TOBE] BootInfo has a stable versioned ABI contract and compatibility checks.
+[ OK ] Loader may collect firmware data before handoff.
+[ OK ] Kernel receives plain OrynBootInfo.
+[ OK ] Kernel-side raw GOP dependency removed.
+[ OK ] BootInfo has a stable versioned ABI contract and compatibility checks.
        BootInfo ABI compatible
 [TOBE] Loader-to-kernel handoff validation checksum.
        BootInfo checksum OK: loader handoff data verified

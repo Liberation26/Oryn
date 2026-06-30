@@ -302,9 +302,51 @@ RemoveObsoleteSdkSourcePaths()
 }
 
 
+RemoveMovedKernelFile()
+{
+    MovedPath="$1"
+
+    if [ -e "$MovedPath" ]; then
+        rm -rf "$MovedPath"
+        Ok "Removed project-owned copy now supplied by SDK: ${MovedPath#$WorkspaceRoot/}"
+    fi
+}
+
+
+RemoveMovedSharedKernelProjectPaths()
+{
+    KernelProject="$WorkspaceRoot/OrynProjects/Kernel-5"
+    [ -d "$KernelProject" ] || return 0
+
+    RemoveMovedKernelFile "$KernelProject/Include/KernelBootInfo.h"
+    RemoveMovedKernelFile "$KernelProject/Include/KernelConsole.h"
+    RemoveMovedKernelFile "$KernelProject/Include/KernelIo.h"
+    RemoveMovedKernelFile "$KernelProject/Include/KernelMemoryMap.h"
+    RemoveMovedKernelFile "$KernelProject/Include/KernelPhysicalMemory.h"
+    RemoveMovedKernelFile "$KernelProject/Include/KernelTtf.h"
+    RemoveMovedKernelFile "$KernelProject/Include/KernelVirtualMemory.h"
+    RemoveMovedKernelFile "$KernelProject/Include/Serial.h"
+
+    RemoveMovedKernelFile "$KernelProject/Source/BootInfo"
+    RemoveMovedKernelFile "$KernelProject/Source/Console"
+    RemoveMovedKernelFile "$KernelProject/Source/Fonts"
+    RemoveMovedKernelFile "$KernelProject/Source/KernelIo.c"
+    RemoveMovedKernelFile "$KernelProject/Source/Serial.c"
+    RemoveMovedKernelFile "$KernelProject/Source/Memory/KernelMemoryMap.c"
+    RemoveMovedKernelFile "$KernelProject/Source/Memory/KernelMemoryMapPrint.c"
+    RemoveMovedKernelFile "$KernelProject/Source/Memory/KernelPhysicalMemory.c"
+    RemoveMovedKernelFile "$KernelProject/Source/Memory/KernelPhysicalMemoryPrint.c"
+    RemoveMovedKernelFile "$KernelProject/Source/Memory/KernelVirtualMemory.c"
+    RemoveMovedKernelFile "$KernelProject/Source/Memory/KernelVirtualMemoryPrint.c"
+    find "$KernelProject/Source" -type d -empty -delete 2>/dev/null || true
+    find "$KernelProject/Include" -type d -empty -delete 2>/dev/null || true
+}
+
+
 MigrateLegacyKernelBootInfoVariants "Kernel-3"
 MigrateLegacyKernelBootInfoVariants "Kernel-4"
 RemoveObsoleteSdkSourcePaths
+RemoveMovedSharedKernelProjectPaths
 RemoveLegacyProjectIfGenerated "$WorkspaceRoot/OrynProjects/TestOS" "TestOS"
 RemoveLegacyProjectIfGenerated "$WorkspaceRoot/OrynProjects/Kernel-1" "Kernel-1"
 RemoveLegacyProjectIfGenerated "$WorkspaceRoot/OrynProjects/Kernel-2" "Kernel-2"

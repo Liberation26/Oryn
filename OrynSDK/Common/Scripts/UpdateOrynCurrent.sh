@@ -193,6 +193,46 @@ RemoveObsoleteSdkSourcePaths()
 }
 
 
+RemoveMovedKernelFile()
+{
+    local moved_path="$1"
+
+    if [ -e "$moved_path" ]; then
+        rm -rf "$moved_path"
+        Ok "Removed project-owned copy now supplied by SDK: ${moved_path#$WorkspaceRoot/}"
+    fi
+}
+
+RemoveMovedSharedKernelProjectPaths()
+{
+    local kernel_project="$ProjectsRoot/Kernel-5"
+    [ -d "$kernel_project" ] || return 0
+
+    RemoveMovedKernelFile "$kernel_project/Include/KernelBootInfo.h"
+    RemoveMovedKernelFile "$kernel_project/Include/KernelConsole.h"
+    RemoveMovedKernelFile "$kernel_project/Include/KernelIo.h"
+    RemoveMovedKernelFile "$kernel_project/Include/KernelMemoryMap.h"
+    RemoveMovedKernelFile "$kernel_project/Include/KernelPhysicalMemory.h"
+    RemoveMovedKernelFile "$kernel_project/Include/KernelTtf.h"
+    RemoveMovedKernelFile "$kernel_project/Include/KernelVirtualMemory.h"
+    RemoveMovedKernelFile "$kernel_project/Include/Serial.h"
+
+    RemoveMovedKernelFile "$kernel_project/Source/BootInfo"
+    RemoveMovedKernelFile "$kernel_project/Source/Console"
+    RemoveMovedKernelFile "$kernel_project/Source/Fonts"
+    RemoveMovedKernelFile "$kernel_project/Source/KernelIo.c"
+    RemoveMovedKernelFile "$kernel_project/Source/Serial.c"
+    RemoveMovedKernelFile "$kernel_project/Source/Memory/KernelMemoryMap.c"
+    RemoveMovedKernelFile "$kernel_project/Source/Memory/KernelMemoryMapPrint.c"
+    RemoveMovedKernelFile "$kernel_project/Source/Memory/KernelPhysicalMemory.c"
+    RemoveMovedKernelFile "$kernel_project/Source/Memory/KernelPhysicalMemoryPrint.c"
+    RemoveMovedKernelFile "$kernel_project/Source/Memory/KernelVirtualMemory.c"
+    RemoveMovedKernelFile "$kernel_project/Source/Memory/KernelVirtualMemoryPrint.c"
+    find "$kernel_project/Source" -type d -empty -delete 2>/dev/null || true
+    find "$kernel_project/Include" -type d -empty -delete 2>/dev/null || true
+}
+
+
 ApplyChangedFiles()
 {
     local extract_root="$1"
@@ -333,6 +373,7 @@ fi
 
 RemoveLegacyGeneratedProjects
 RemoveObsoleteSdkSourcePaths
+RemoveMovedSharedKernelProjectPaths
 
 chmod +x \
   "$WorkspaceRoot/Oryn.sh" \

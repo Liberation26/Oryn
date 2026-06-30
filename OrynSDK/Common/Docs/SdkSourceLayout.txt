@@ -47,3 +47,12 @@ Rules
   The previous 0.5.4 layout still had SDK peer directories such as Source, Bin, Docs, and Scripts at the SDK root.
   0.5.5 removes that ambiguity: SDK implementation directories are now Common or Targets/UEFI/X64.
   The old Source, Bin, Docs, and Scripts paths are removed automatically on the next Oryn.sh run or update.
+
+0.5.17 kernel support move
+--------------------------
+
+  Shared kernel support was moved out of OrynProjects/Kernel-5 and into the SDK.
+  Kernel-5 now owns only its project entry point, project manifest, BootInfo selection variants, and project assets.
+  Target-neutral support lives in Common/Kernel.
+  UEFI x64-specific support lives in Targets/UEFI/X64/KernelSupport.
+  The Oryn build stage compiles SDK common kernel source, SDK target kernel source, and project source into one linked Kernel.elf.

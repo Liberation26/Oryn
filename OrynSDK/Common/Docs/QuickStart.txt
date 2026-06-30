@@ -432,3 +432,28 @@ SDK source layout in 0.5.5:
   OrynSDK/Common/OrynBuild Native Oryn build tool source.
   OrynSDK/Common/OrynLibC Early freestanding C support.
   OrynSDK/Targets/UEFI/X64 UEFI x64 target, boot selection, loader, and linker script.
+
+0.5.17 SDK-supplied shared kernel code
+---------------------------------------
+
+OrynWsl 0.5.17 moves reusable kernel support out of the Kernel-5 project and into the SDK.
+
+Kernel-5 now keeps the project-owned files only:
+
+  OrynProjects/Kernel-5/Include/Kernel.h
+  OrynProjects/Kernel-5/Source/KernelMain.c
+  OrynProjects/Kernel-5/Kernel/<number>/Include/OrynBootInfoSelection.h
+  OrynProjects/Kernel-5/Project.oryn
+  OrynProjects/Kernel-5/System/
+
+Target-neutral SDK kernel support is here:
+
+  OrynSDK/Common/Kernel/Include
+  OrynSDK/Common/Kernel/Source
+
+UEFI x64-specific SDK kernel support is here:
+
+  OrynSDK/Targets/UEFI/X64/KernelSupport/Include
+  OrynSDK/Targets/UEFI/X64/KernelSupport/Source
+
+The build stage compiles all three source sets: SDK common kernel source, SDK target kernel source, and project source.

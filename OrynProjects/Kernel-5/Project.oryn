@@ -15,4 +15,4 @@ Include
 VM=QEMU
 Memory=512M
 Serial=stdio
-Display=sdl
+Display=none

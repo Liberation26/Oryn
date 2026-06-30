@@ -1,4 +1,5 @@
 #include "OrynBuild.h"
+#include <dirent.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -17,6 +18,23 @@ static unsigned long long OrynHashBytes(unsigned long long hash, const unsigned 
 static unsigned long long OrynHashText(unsigned long long hash, const char* text)
 {
     return OrynHashBytes(hash, (const unsigned char*)text, strlen(text));
+}
+
+static int EndsWith(const char* text, const char* suffix)
+{
+    size_t text_length = strlen(text);
+    size_t suffix_length = strlen(suffix);
+    if (suffix_length > text_length)
+    {
+        return 0;
+    }
+
+    return strcmp(text + text_length - suffix_length, suffix) == 0;
+}
+
+static int PathContains(const char* path, const char* needle)
+{
+    return strstr(path, needle) != 0;
 }
 
 static int OrynHashFile(unsigned long long* hash, const char* path)
@@ -38,12 +56,61 @@ static int OrynHashFile(unsigned long long* hash, const char* path)
     return 1;
 }
 
+static void OrynHashHeaderTreeRecursive(unsigned long long* hash, const char* directory)
+{
+    DIR* handle = opendir(directory);
+    if (handle == 0)
+    {
+        return;
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(handle)) != 0)
+    {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+        {
+            continue;
+        }
+
+        char child[ORYN_MAX_PATH];
+        OrynJoinPath(child, sizeof(child), directory, entry->d_name);
+
+        if (OrynDirectoryExists(child))
+        {
+            OrynHashHeaderTreeRecursive(hash, child);
+        }
+        else if (OrynFileExists(child) && EndsWith(child, ".h"))
+        {
+            *hash = OrynHashText(*hash, "\nheader:\n");
+            *hash = OrynHashText(*hash, child);
+            *hash = OrynHashText(*hash, "\n");
+            (void)OrynHashFile(hash, child);
+        }
+    }
+
+    closedir(handle);
+}
+
+static void OrynHashHeaderTree(unsigned long long* hash, const char* directory)
+{
+    if (directory[0] == 0 || !OrynDirectoryExists(directory))
+    {
+        return;
+    }
+
+    OrynHashHeaderTreeRecursive(hash, directory);
+}
+
 static unsigned long long ComputeSourceBuildHash(const OrynProject* project, const char* source_file)
 {
     unsigned long long hash = 1469598103934665603ULL;
     hash = OrynHashText(hash, ORYN_VERSION);
     hash = OrynHashText(hash, "\nsource:\n");
     (void)OrynHashFile(&hash, source_file);
+
+    OrynHashHeaderTree(&hash, project->include_dir);
+    OrynHashHeaderTree(&hash, project->sdk_kernel_common_include_dir);
+    OrynHashHeaderTree(&hash, project->sdk_kernel_target_include_dir);
 
     if (project->selected_kernel_include_dir[0] != 0)
     {
@@ -82,13 +149,28 @@ static void WriteStoredHash(const char* hash_file, unsigned long long value)
     fclose(file);
 }
 
-static int CompileSourceFile(const OrynProject* project, const char* source_file, char* object_file, size_t object_file_size)
+static unsigned long long ComputePathHash(const char* path)
+{
+    unsigned long long hash = 1469598103934665603ULL;
+    return OrynHashText(hash, path);
+}
+
+static void BuildObjectFileName(const OrynProject* project, const char* source_file, char* object_file, size_t object_file_size)
 {
     char base_name[ORYN_MAX_PATH];
+    char stem[ORYN_MAX_PATH];
     char object_name[ORYN_MAX_PATH];
+    unsigned long long path_hash = ComputePathHash(source_file);
+
     OrynGetBaseName(base_name, sizeof(base_name), source_file);
-    OrynReplaceExtension(object_name, sizeof(object_name), base_name, ".o");
+    OrynReplaceExtension(stem, sizeof(stem), base_name, "");
+    snprintf(object_name, sizeof(object_name), "%s-%016llX.o", stem, path_hash);
     OrynJoinPath(object_file, object_file_size, project->object_dir, object_name);
+}
+
+static int CompileSourceFile(const OrynProject* project, const char* source_file, char* object_file, size_t object_file_size)
+{
+    BuildObjectFileName(project, source_file, object_file, object_file_size);
 
     char hash_file[ORYN_MAX_PATH];
     snprintf(hash_file, sizeof(hash_file), "%s.hash", object_file);
@@ -121,13 +203,15 @@ static int CompileSourceFile(const OrynProject* project, const char* source_file
         selection_include_argument[0] = 0;
     }
 
-    char command[ORYN_MAX_PATH * 6];
+    char command[ORYN_MAX_PATH * 9];
     snprintf(command, sizeof(command),
         "clang --target=x86_64-none-elf -ffreestanding -fno-stack-protector "
         "-fno-stack-check -fno-builtin -fno-pic -fno-pie -mno-red-zone -m64 "
-        "-Wall -Wextra -I\"%s\" %s-I\"%s\" -I\"%s\" -I\"%s\" -c \"%s\" -o \"%s\"",
-        project->include_dir,
+        "-Wall -Wextra %s-I\"%s\" -I\"%s\" -I\"%s\" -I\"%s\" -I\"%s\" -I\"%s\" -c \"%s\" -o \"%s\"",
         selection_include_argument,
+        project->sdk_kernel_common_include_dir,
+        project->sdk_kernel_target_include_dir,
+        project->include_dir,
         libc_include,
         handoff_include,
         target_boot_include,
@@ -140,6 +224,79 @@ static int CompileSourceFile(const OrynProject* project, const char* source_file
     }
 
     WriteStoredHash(hash_file, source_hash);
+    return 1;
+}
+
+static int IsLegacyProjectSharedSource(const OrynProject* project, const char* source_file)
+{
+    size_t root_length = strlen(project->source_dir);
+    if (strncmp(source_file, project->source_dir, root_length) != 0)
+    {
+        return 0;
+    }
+
+    if (PathContains(source_file, "/Source/BootInfo/"))
+    {
+        return 1;
+    }
+
+    if (PathContains(source_file, "/Source/Console/KernelConsole.c") ||
+        PathContains(source_file, "/Source/Fonts/") ||
+        PathContains(source_file, "/Source/KernelIo.c") ||
+        PathContains(source_file, "/Source/Serial.c"))
+    {
+        return 1;
+    }
+
+    if (PathContains(source_file, "/Source/Memory/KernelMemoryMap.c") ||
+        PathContains(source_file, "/Source/Memory/KernelMemoryMapPrint.c") ||
+        PathContains(source_file, "/Source/Memory/KernelPhysicalMemory.c") ||
+        PathContains(source_file, "/Source/Memory/KernelPhysicalMemoryPrint.c") ||
+        PathContains(source_file, "/Source/Memory/KernelVirtualMemory.c") ||
+        PathContains(source_file, "/Source/Memory/KernelVirtualMemoryPrint.c"))
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+static int AppendSourcesFromDirectory(const OrynProject* project, const char* directory, OrynStringList* sources, const char* label)
+{
+    if (directory[0] == 0 || !OrynDirectoryExists(directory))
+    {
+        return 1;
+    }
+
+    OrynStringList found;
+    if (!OrynCollectCFiles(directory, &found))
+    {
+        char message[ORYN_MAX_PATH + 128];
+        snprintf(message, sizeof(message), "Could not collect %s source files: %s", label, directory);
+        OrynLogFail(message);
+        return 0;
+    }
+
+    for (int index = 0; index < found.count; ++index)
+    {
+        if (IsLegacyProjectSharedSource(project, found.items[index]))
+        {
+            char message[ORYN_MAX_PATH + 128];
+            snprintf(message, sizeof(message), "Ignored legacy project-owned SDK source: %s", found.items[index]);
+            OrynLogWarn(message);
+            continue;
+        }
+
+        if (sources->count >= ORYN_MAX_ITEMS)
+        {
+            OrynLogFail("Too many kernel source files were found.");
+            return 0;
+        }
+
+        snprintf(sources->items[sources->count], ORYN_MAX_PATH, "%s", found.items[index]);
+        sources->count += 1;
+    }
+
     return 1;
 }
 
@@ -160,11 +317,24 @@ int OrynBuildKernel(const OrynProject* project)
     OrynMakeDirectoryRecursive(project->object_dir);
 
     OrynStringList sources;
-    if (!OrynCollectCFiles(project->source_dir, &sources) || sources.count == 0)
+    sources.count = 0;
+
+    if (!AppendSourcesFromDirectory(project, project->sdk_kernel_common_source_dir, &sources, "SDK common kernel") ||
+        !AppendSourcesFromDirectory(project, project->sdk_kernel_target_source_dir, &sources, "SDK target kernel") ||
+        !AppendSourcesFromDirectory(project, project->source_dir, &sources, "project kernel"))
+    {
+        return 0;
+    }
+
+    if (sources.count == 0)
     {
         OrynLogFail("No kernel source files were found.");
         return 0;
     }
+
+    char message[256];
+    snprintf(message, sizeof(message), "Kernel source units: %d", sources.count);
+    OrynLogInfo(message);
 
     OrynStringList objects;
     objects.count = 0;

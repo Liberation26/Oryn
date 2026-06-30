@@ -136,6 +136,10 @@ int OrynLoadProject(const char* executable_path, const char* project_file, OrynP
 
     OrynJoinPath(project->source_dir, sizeof(project->source_dir), project->project_root, "Source");
     OrynJoinPath(project->include_dir, sizeof(project->include_dir), project->project_root, "Include");
+    OrynJoinPath(project->sdk_kernel_common_include_dir, sizeof(project->sdk_kernel_common_include_dir), project->sdk_root, "Common/Kernel/Include");
+    OrynJoinPath(project->sdk_kernel_common_source_dir, sizeof(project->sdk_kernel_common_source_dir), project->sdk_root, "Common/Kernel/Source");
+    OrynJoinPath(project->sdk_kernel_target_include_dir, sizeof(project->sdk_kernel_target_include_dir), project->sdk_root, "Targets/UEFI/X64/KernelSupport/Include");
+    OrynJoinPath(project->sdk_kernel_target_source_dir, sizeof(project->sdk_kernel_target_source_dir), project->sdk_root, "Targets/UEFI/X64/KernelSupport/Source");
     OrynJoinPath(project->build_dir, sizeof(project->build_dir), project->project_root, "Build");
     OrynJoinPath(project->object_dir, sizeof(project->object_dir), project->build_dir, "Objects");
     OrynJoinPath(project->output_dir, sizeof(project->output_dir), project->project_root, "Output");
