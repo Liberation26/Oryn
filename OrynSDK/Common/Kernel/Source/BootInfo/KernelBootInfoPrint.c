@@ -122,6 +122,38 @@ static void PrintNvramSnapshot(const OrynBootInfo* bootInfo)
     WriteBootInfoField("[KERNEL] Secure Boot dbx size: ", nvram->DbxSize);
 }
 
+
+static void PrintBootConfiguration(const OrynBootInfo* bootInfo)
+{
+    const OrynBootConfigurationBlock* config = &bootInfo->BootConfiguration;
+
+    if (!KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_BOOT_CONFIGURATION))
+    {
+        KernelIoWriteString("[KERNEL] Boot configuration block: not supplied.\n");
+        return;
+    }
+
+    WriteBootInfoField("[KERNEL] Boot configuration flags: ", config->Flags);
+    KernelIoWriteString("[KERNEL] Boot configuration project: ");
+    KernelIoWriteString(config->ProjectName[0] != 0 ? config->ProjectName : "unknown");
+    KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] Boot configuration target: ");
+    KernelIoWriteString(config->TargetName[0] != 0 ? config->TargetName : "unknown");
+    KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] Boot configuration toolchain: ");
+    KernelIoWriteString(config->ToolchainName[0] != 0 ? config->ToolchainName : "unknown");
+    KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] Boot configuration architecture: ");
+    KernelIoWriteString(config->ArchitectureName[0] != 0 ? config->ArchitectureName : "unknown");
+    KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] Kernel command line length: ");
+    KernelIoWriteDec64(config->CommandLineLength);
+    KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] Kernel command line: ");
+    KernelIoWriteString(config->KernelCommandLine[0] != 0 ? config->KernelCommandLine : "<empty>");
+    KernelIoWriteString("\n");
+}
+
 static void PrintRuntimeServices(const OrynBootInfo* bootInfo)
 {
     const OrynBootRuntimeServices* runtime = &bootInfo->RuntimeServices;
@@ -193,6 +225,8 @@ void KernelBootInfoPrintSelection(void)
 void KernelBootInfoPrintSummary(const OrynBootInfo* bootInfo)
 {
     WriteBootInfoField("[KERNEL] BootInfo flags: ", bootInfo->Flags);
+
+    PrintBootConfiguration(bootInfo);
 
     if (KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_KERNEL_RANGE))
     {

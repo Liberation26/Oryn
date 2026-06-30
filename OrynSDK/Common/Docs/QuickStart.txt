@@ -482,3 +482,31 @@ Project.oryn may contain a [KernelLayout] block:
   KernelVirtualBase=0xFFFFFFFF80000000
 
 OrynBuild passes these values to Kernel.ld. The ELF PT_LOAD segment is copied to the physical base while the ELF entry and symbol addresses use the chosen virtual base. The UEFI x64 loader prepares a temporary identity plus higher-half/chosen virtual map before jumping to the kernel virtual entry.
+
+
+0.5.25 kernel command line and boot configuration
+-------------------------------------------------
+Project.oryn may contain a [BootConfiguration] block:
+
+  [BootConfiguration]
+  CommandLine=oryn.boot=normal oryn.log=serial
+
+The launcher flow is now:
+
+  ./Oryn.sh OSName
+    -> Headless
+    -> BootConfig
+    -> BootInfo
+
+BootConfig shows the saved command line as the default, saves the answer back
+to Project.oryn, and then continues to the BootInfo questionnaire. OrynBuild
+emits the saved value into the generated OrynBootTarget.h. BOOTX64.EFI copies
+it into OrynBootConfigurationBlock inside OrynBootInfo ABI v7 before sealing
+the handoff checksum. The kernel validates and prints the block before using
+later boot configuration.
+
+Expected proof lines include:
+
+  [BOOT] PASS: Boot configuration block prepared.
+  [KERNEL] PASS: Boot configuration block received.
+  [KERNEL] PASS: Kernel command line received.

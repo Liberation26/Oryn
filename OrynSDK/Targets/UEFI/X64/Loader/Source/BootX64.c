@@ -65,6 +65,68 @@ static void CopyUtf16ToAscii(char* target, UINTN targetSize, const CHAR16* sourc
     target[index] = 0;
 }
 
+
+static UINTN AsciiLength(const char* text)
+{
+    UINTN length = 0;
+    if (text == ORYN_NULL)
+    {
+        return 0;
+    }
+
+    while (text[length] != 0)
+    {
+        ++length;
+    }
+
+    return length;
+}
+
+static void FillBootConfiguration(OrynBootInfo* bootInfo)
+{
+    OrynBootConfigurationBlock* config = &bootInfo->BootConfiguration;
+    SetMemory(config, 0, sizeof(*config));
+    config->Version = ORYN_BOOT_CONFIGURATION_VERSION;
+    config->Size = sizeof(*config);
+
+    CopyAscii(config->ProjectName, sizeof(config->ProjectName), ORYN_BOOT_TARGET_KERNEL_NAME);
+    CopyAscii(config->TargetName, sizeof(config->TargetName), ORYN_BOOT_TARGET_TARGET_NAME);
+    CopyAscii(config->ToolchainName, sizeof(config->ToolchainName), ORYN_BOOT_TARGET_TOOLCHAIN_NAME);
+    CopyAscii(config->ArchitectureName, sizeof(config->ArchitectureName), ORYN_BOOT_TARGET_ARCHITECTURE_NAME);
+    CopyAscii(config->KernelCommandLine, sizeof(config->KernelCommandLine), ORYN_BOOT_TARGET_KERNEL_COMMAND_LINE);
+
+    config->Flags |= ORYN_BOOT_CONFIGURATION_FLAG_PROJECT_NAME_PRESENT;
+    config->Flags |= ORYN_BOOT_CONFIGURATION_FLAG_TARGET_PRESENT;
+    config->Flags |= ORYN_BOOT_CONFIGURATION_FLAG_TOOLCHAIN_PRESENT;
+    config->Flags |= ORYN_BOOT_CONFIGURATION_FLAG_ARCHITECTURE_PRESENT;
+    config->CommandLineLength = (UINT32)AsciiLength(config->KernelCommandLine);
+    if (config->CommandLineLength != 0U)
+    {
+        config->Flags |= ORYN_BOOT_CONFIGURATION_FLAG_COMMAND_LINE_PRESENT;
+        bootInfo->Flags |= ORYN_BOOTINFO_FLAG_COMMAND_LINE;
+    }
+
+    bootInfo->Flags |= ORYN_BOOTINFO_FLAG_BOOT_CONFIGURATION;
+}
+
+static void PrintBootConfiguration(const OrynBootInfo* bootInfo)
+{
+    const OrynBootConfigurationBlock* config = &bootInfo->BootConfiguration;
+    Print("[BOOT] Boot configuration project: ");
+    Print(config->ProjectName[0] != 0 ? config->ProjectName : "unknown");
+    Print("\n");
+    Print("[BOOT] Boot configuration target: ");
+    Print(config->TargetName[0] != 0 ? config->TargetName : "unknown");
+    Print("\n");
+    Print("[BOOT] Boot configuration toolchain: ");
+    Print(config->ToolchainName[0] != 0 ? config->ToolchainName : "unknown");
+    Print("\n");
+    Print("[BOOT] Kernel command line: ");
+    Print(config->KernelCommandLine[0] != 0 ? config->KernelCommandLine : "<empty>");
+    Print("\n");
+    Print("[BOOT] PASS: Boot configuration block prepared.\n");
+}
+
 static void CaptureFirmwareData(OrynBootInfo* bootInfo)
 {
     OrynBootFirmwareData* firmware = &bootInfo->FirmwareData;
@@ -144,6 +206,7 @@ static void FillBaseBootInfo(
 
     CopyAscii(bootInfo->BootLoaderName, sizeof(bootInfo->BootLoaderName), "Oryn BOOTX64.EFI");
     CopyAscii(bootInfo->KernelName, sizeof(bootInfo->KernelName), ORYN_BOOT_TARGET_KERNEL_NAME);
+    FillBootConfiguration(bootInfo);
 }
 
 static void PrintBootInfoSelection(void)
@@ -208,6 +271,7 @@ static EFI_STATUS AllocateBootInfo(
     }
 
     FillBaseBootInfo(bootInfo, kernelLayout, fontBuffer, fontSize);
+    PrintBootConfiguration(bootInfo);
 #if ORYN_BOOTINFO_WANT_FIRMWARE_DATA
     CaptureFirmwareData(bootInfo);
 #else

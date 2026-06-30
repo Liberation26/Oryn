@@ -75,6 +75,39 @@ static int SourceListContainsBaseName(const OrynStringList* sources, const char*
     return 0;
 }
 
+
+static void WriteCStringLiteral(FILE* file, const char* text)
+{
+    const unsigned char* bytes = (const unsigned char*)text;
+    fputc('"', file);
+    while (*bytes != 0U)
+    {
+        unsigned char ch = *bytes;
+        if (ch == '\\' || ch == '"')
+        {
+            fputc('\\', file);
+            fputc((int)ch, file);
+        }
+        else if (ch >= 32U && ch <= 126U)
+        {
+            fputc((int)ch, file);
+        }
+        else
+        {
+            fprintf(file, "\\x%02X", ch);
+        }
+        ++bytes;
+    }
+    fputc('"', file);
+}
+
+static void WriteCStringDefine(FILE* file, const char* name, const char* value)
+{
+    fprintf(file, "#define %s ", name);
+    WriteCStringLiteral(file, value);
+    fprintf(file, "\n");
+}
+
 static int WriteBootTargetHeader(const OrynProject* project, char* include_dir, size_t include_dir_size)
 {
     char generated_root[ORYN_MAX_PATH];
@@ -105,7 +138,11 @@ static int WriteBootTargetHeader(const OrynProject* project, char* include_dir, 
 
     fprintf(file, "#ifndef ORYN_BOOT_TARGET_H\n");
     fprintf(file, "#define ORYN_BOOT_TARGET_H\n\n");
-    fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_NAME \"%s\"\n", project->name);
+    WriteCStringDefine(file, "ORYN_BOOT_TARGET_KERNEL_NAME", project->name);
+    WriteCStringDefine(file, "ORYN_BOOT_TARGET_TARGET_NAME", project->target);
+    WriteCStringDefine(file, "ORYN_BOOT_TARGET_TOOLCHAIN_NAME", project->toolchain);
+    WriteCStringDefine(file, "ORYN_BOOT_TARGET_ARCHITECTURE_NAME", project->architecture);
+    WriteCStringDefine(file, "ORYN_BOOT_TARGET_KERNEL_COMMAND_LINE", project->kernel_command_line);
     fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_DIRECTORY \"%s\"\n", kernel_directory);
     fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_HOST_FILE \"%s\"\n", kernel_file_name);
     fprintf(file, "#define ORYN_BOOT_TARGET_KERNEL_FILE \"%s.elf\"\n", kernel_file_base);
@@ -116,6 +153,8 @@ static int WriteBootTargetHeader(const OrynProject* project, char* include_dir, 
 
     char message[ORYN_MAX_PATH + 128];
     snprintf(message, sizeof(message), "Generated loader boot target: \\System\\%s\\%s.elf", kernel_directory, kernel_file_base);
+    OrynLogOk(message);
+    snprintf(message, sizeof(message), "Generated kernel command line: %s", project->kernel_command_line[0] != 0 ? project->kernel_command_line : "<empty>");
     OrynLogOk(message);
     return 1;
 }

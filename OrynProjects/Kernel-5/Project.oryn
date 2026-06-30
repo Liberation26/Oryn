@@ -9,6 +9,9 @@ Entry=KernelStart
 KernelPhysicalBase=0x4000000
 KernelVirtualBase=0xFFFFFFFF80000000
 
+[BootConfiguration]
+CommandLine=oryn.boot=normal oryn.log=serial
+
 [Source]
 Source/**/*.c
 

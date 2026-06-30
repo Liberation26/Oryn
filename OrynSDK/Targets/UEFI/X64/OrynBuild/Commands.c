@@ -24,12 +24,15 @@ static void WriteBootReport(
     int virtual_map_active = TextContains(debug_text, "[BOOT] PASS: Temporary higher-half/chosen virtual map activated");
     int boot_services_exited = TextContains(debug_text, "[BOOT] Stage 07: ExitBootServices succeeded");
     int bootinfo_created = TextContains(debug_text, "[BOOT] BootInfo allocated at");
+    int boot_config_prepared = TextContains(debug_text, "[BOOT] PASS: Boot configuration block prepared");
     int memory_map_requested = !TextContains(debug_text, "[BOOT] BootInfo selection memory map: disabled");
     int bootinfo_memory_map = !memory_map_requested || TextContains(debug_text, "[BOOT] BootInfo memory map entries");
     int kernel_jump = TextContains(debug_text, "[BOOT] Stage 08: Jumping to kernel entry");
     int kernel_entered = TextContains(debug_text, "[KERNEL] PASS: Kernel entered successfully");
     int serial_ok = TextContains(debug_text, "[KERNEL] PASS: Serial/debug output path is working");
     int bootinfo_received = TextContains(debug_text, "[KERNEL] PASS: BootInfo received");
+    int kernel_boot_config = TextContains(debug_text, "[KERNEL] PASS: Boot configuration block received");
+    int kernel_command_line = TextContains(debug_text, "[KERNEL] PASS: Kernel command line received");
     int virtual_memory_started = TextContains(debug_text, "[KERNEL] Virtual memory: starting");
     int virtual_memory_required_mapped = TextContains(debug_text, "[KERNEL] Virtual memory: required ranges mapped");
     int virtual_memory_switching_cr3 = TextContains(debug_text, "[KERNEL] Virtual memory: switching CR3 to kernel-owned PML4");
@@ -39,8 +42,8 @@ static void WriteBootReport(
     int debug_exit = TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success");
     int boot_pass = command_ok && (exit_code == 0 || exit_code == 33) && loader_started &&
         kernel_loaded && entry_printed && virtual_map_prepared && virtual_map_active &&
-        bootinfo_created && bootinfo_memory_map && boot_services_exited && kernel_jump &&
-        kernel_entered && serial_ok && bootinfo_received && debug_exit;
+        bootinfo_created && boot_config_prepared && bootinfo_memory_map && boot_services_exited && kernel_jump &&
+        kernel_entered && serial_ok && bootinfo_received && kernel_boot_config && kernel_command_line && debug_exit;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -65,6 +68,7 @@ static void WriteBootReport(
     fprintf(file, "  Loader prepared temporary higher-half/chosen map: %s\n", PassFail(virtual_map_prepared));
     fprintf(file, "  Loader activated temporary higher-half/chosen map: %s\n", PassFail(virtual_map_active));
     fprintf(file, "  BootInfo allocated: %s\n", PassFail(bootinfo_created));
+    fprintf(file, "  Loader prepared boot configuration block: %s\n", PassFail(boot_config_prepared));
     fprintf(file, "  BootInfo memory map requested: %s\n", PassFail(memory_map_requested));
     fprintf(file, "  BootInfo memory map captured or intentionally omitted: %s\n", PassFail(bootinfo_memory_map));
     fprintf(file, "  ExitBootServices succeeded: %s\n", PassFail(boot_services_exited));
@@ -72,6 +76,8 @@ static void WriteBootReport(
     fprintf(file, "  Kernel entered: %s\n", PassFail(kernel_entered));
     fprintf(file, "  Serial/debug output reached kernel: %s\n", PassFail(serial_ok));
     fprintf(file, "  Kernel received BootInfo: %s\n", PassFail(bootinfo_received));
+    fprintf(file, "  Kernel received boot configuration block: %s\n", PassFail(kernel_boot_config));
+    fprintf(file, "  Kernel received command line: %s\n", PassFail(kernel_command_line));
     fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
     fprintf(file, "  Kernel virtual memory required ranges mapped: %s\n", PassFail(virtual_memory_required_mapped));
     fprintf(file, "  Kernel virtual memory CR3 switch requested: %s\n", PassFail(virtual_memory_switching_cr3));
@@ -89,6 +95,10 @@ static void WriteBootReport(
             "The loader did not reach the kernel jump." :
         !kernel_entered ?
             "The kernel did not print the entry success marker." :
+        !kernel_boot_config ?
+            "The kernel did not validate the boot configuration block." :
+        !kernel_command_line ?
+            "The kernel did not validate the command line." :
         !virtual_memory_started ?
             "The kernel stopped before virtual-memory initialization." :
         !virtual_memory_required_mapped ?

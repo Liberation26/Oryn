@@ -34,6 +34,7 @@ static void SetDefaultProjectValues(OrynProject* project)
     snprintf(project->toolchain, sizeof(project->toolchain), "clang");
     snprintf(project->architecture, sizeof(project->architecture), "x86_64");
     snprintf(project->entry, sizeof(project->entry), "KernelStart");
+    project->kernel_command_line[0] = 0;
     snprintf(project->run_display, sizeof(project->run_display), "none");
     project->kernel_physical_base = 0x0000000004000000ULL;
     project->kernel_virtual_base = 0xFFFFFFFF80000000ULL;
@@ -130,6 +131,10 @@ static void ApplyProjectKey(OrynProject* project, const char* key, const char* v
     else if (strcmp(key, "Entry") == 0)
     {
         snprintf(project->entry, sizeof(project->entry), "%s", value);
+    }
+    else if (strcmp(key, "CommandLine") == 0 || strcmp(key, "KernelCommandLine") == 0)
+    {
+        snprintf(project->kernel_command_line, sizeof(project->kernel_command_line), "%s", value);
     }
     else if (strcmp(key, "Display") == 0)
     {

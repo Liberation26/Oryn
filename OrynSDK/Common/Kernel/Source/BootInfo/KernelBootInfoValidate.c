@@ -299,6 +299,50 @@ static void ValidateFont(const OrynBootInfo* bootInfo, OrynKernelBootInfoStatus*
     }
 }
 
+
+static void ValidateBootConfiguration(const OrynBootInfo* bootInfo, OrynKernelBootInfoStatus* status)
+{
+    const OrynBootConfigurationBlock* config = &bootInfo->BootConfiguration;
+
+    if (!KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_BOOT_CONFIGURATION))
+    {
+        WriteValidationFail("Boot configuration block flag is missing.", status);
+        return;
+    }
+
+    if (config->Version != ORYN_BOOT_CONFIGURATION_VERSION)
+    {
+        WriteValidationFail("Boot configuration block version is unsupported.", status);
+    }
+
+    if (config->Size < sizeof(OrynBootConfigurationBlock))
+    {
+        WriteValidationFail("Boot configuration block size is smaller than OrynBootConfigurationBlock.", status);
+    }
+
+    if (config->ProjectName[0] == 0)
+    {
+        WriteValidationFail("Boot configuration project name is empty.", status);
+    }
+
+    if ((config->Flags & ORYN_BOOT_CONFIGURATION_FLAG_COMMAND_LINE_PRESENT) != 0U)
+    {
+        if (!KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_COMMAND_LINE))
+        {
+            WriteValidationFail("Boot configuration command line flag and BootInfo flag disagree.", status);
+        }
+
+        if (config->CommandLineLength == 0U || config->CommandLineLength >= ORYN_BOOTINFO_MAX_COMMAND_LINE)
+        {
+            WriteValidationFail("Kernel command line length is invalid.", status);
+        }
+        else if (config->KernelCommandLine[config->CommandLineLength] != 0)
+        {
+            WriteValidationFail("Kernel command line is not NUL terminated at its declared length.", status);
+        }
+    }
+}
+
 static int ValidateHandoffChecksum(const OrynBootInfo* bootInfo, OrynKernelBootInfoStatus* status)
 {
     unsigned int calculated = OrynBootInfoComputeHandoffChecksum(bootInfo);
@@ -417,9 +461,12 @@ OrynKernelBootInfoStatus KernelBootInfoValidate(const OrynBootInfo* bootInfo)
     ValidateNvramSnapshot(bootInfo, &status);
     ValidateRuntimeServices(bootInfo, &status);
     ValidateFont(bootInfo, &status);
+    ValidateBootConfiguration(bootInfo, &status);
 
     if (status.IsValid)
     {
+        KernelIoWriteString("[KERNEL] PASS: Boot configuration block received.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel command line received.\n");
         KernelIoWriteString("[KERNEL] PASS: BootInfo received.\n");
         KernelIoWriteString("[KERNEL] PASS: BootInfo valid.\n");
     }

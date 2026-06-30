@@ -203,6 +203,113 @@ WriteProjectOSName()
     return 0
 }
 
+
+ProjectKernelCommandLine()
+{
+    ProjectFile="$1"
+    awk '
+        BEGIN { section=""; command_line="" }
+        /^[[:space:]]*\[/ {
+            section=$0
+            gsub(/^[[:space:]]*\[/, "", section)
+            gsub(/\][[:space:]]*$/, "", section)
+            gsub(/\r/, "", section)
+            next
+        }
+        section == "BootConfiguration" && /^[[:space:]]*CommandLine[[:space:]]*=/ {
+            sub(/^[[:space:]]*CommandLine[[:space:]]*=[[:space:]]*/, "")
+            gsub(/\r/, "")
+            command_line=$0
+        }
+        END { print command_line }
+    ' "$ProjectFile"
+}
+
+WriteProjectKernelCommandLine()
+{
+    ProjectFile="$1"
+    CommandLineValue="$2"
+    TempFile="$(mktemp)"
+
+    awk -v command_line="$CommandLineValue" '
+        BEGIN { section=""; saw_boot=0; wrote_command_line=0 }
+        /^[[:space:]]*\[/ {
+            if (section == "BootConfiguration" && wrote_command_line == 0) {
+                print "CommandLine=" command_line
+                wrote_command_line=1
+            }
+            section=$0
+            gsub(/^[[:space:]]*\[/, "", section)
+            gsub(/\][[:space:]]*$/, "", section)
+            gsub(/\r/, "", section)
+            if (section == "BootConfiguration") {
+                saw_boot=1
+            }
+            print
+            next
+        }
+        section == "BootConfiguration" && /^[[:space:]]*CommandLine[[:space:]]*=/ {
+            if (wrote_command_line == 0) {
+                print "CommandLine=" command_line
+                wrote_command_line=1
+            }
+            next
+        }
+        { print }
+        END {
+            if (saw_boot == 0) {
+                print ""
+                print "[BootConfiguration]"
+                print "CommandLine=" command_line
+            } else if (section == "BootConfiguration" && wrote_command_line == 0) {
+                print "CommandLine=" command_line
+            }
+        }
+    ' "$ProjectFile" > "$TempFile" || {
+        rm -f "$TempFile"
+        return 1
+    }
+
+    cat "$TempFile" > "$ProjectFile"
+    rm -f "$TempFile"
+    return 0
+}
+
+RunBootConfigQuestionnaire()
+{
+    ProjectFile="$1"
+    shift || true
+
+    if [ ! -f "$ProjectFile" ]; then
+        Fail "Project was not found: $ProjectFile"
+        exit 1
+    fi
+
+    CurrentCommandLine="$(ProjectKernelCommandLine "$ProjectFile")"
+
+    Info "Kernel boot configuration questionnaire."
+    Info "Current kernel command line: ${CurrentCommandLine:-<empty>}"
+    printf 'Kernel command line [%s]: ' "${CurrentCommandLine:-<empty>}"
+    IFS= read -r NewCommandLine || NewCommandLine=""
+    NewCommandLine="$(printf '%s' "$NewCommandLine" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    [ "$NewCommandLine" = "<empty>" ] && NewCommandLine=""
+    [ -n "$NewCommandLine" ] || NewCommandLine="$CurrentCommandLine"
+
+    if [ "${#NewCommandLine}" -ge 256 ]; then
+        Fail "Kernel command line must be shorter than 256 bytes for the current BootInfo ABI."
+        exit 1
+    fi
+
+    if ! WriteProjectKernelCommandLine "$ProjectFile" "$NewCommandLine"; then
+        Fail "Could not save the kernel command line to: $ProjectFile"
+        exit 1
+    fi
+
+    Ok "Saved kernel command line: ${NewCommandLine:-<empty>}"
+    Info "Continuing to BootInfo questionnaire."
+    exec "$OrynBin" bootinfo "$ProjectFile" "$@"
+}
+
 RunOSNameQuestionnaire()
 {
     ProjectFile="$1"
@@ -278,8 +385,8 @@ RunHeadlessQuestionnaire()
 
     Ok "Saved VM headless mode: $HeadlessText"
     Ok "Saved project [Run] Display=$NewDisplay"
-    Info "Continuing to BootInfo questionnaire."
-    exec "$OrynBin" bootinfo "$ProjectFile" "$@"
+    Info "Continuing to BootConfig questionnaire."
+    RunBootConfigQuestionnaire "$ProjectFile" "$@"
 }
 
 
@@ -595,6 +702,24 @@ case "$Command" in
                 ;;
             *)
                 RunHeadlessQuestionnaire "$DefaultProject" "$@"
+                ;;
+        esac
+        ;;
+
+
+    BootConfig|bootconfig|CommandLine|commandline)
+        if [ "$#" -eq 0 ]; then
+            RunBootConfigQuestionnaire "$DefaultProject"
+        fi
+
+        case "$1" in
+            *.oryn)
+                ProjectFile="$1"
+                shift || true
+                RunBootConfigQuestionnaire "$ProjectFile" "$@"
+                ;;
+            *)
+                RunBootConfigQuestionnaire "$DefaultProject" "$@"
                 ;;
         esac
         ;;

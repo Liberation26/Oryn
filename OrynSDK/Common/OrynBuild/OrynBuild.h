@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#define ORYN_VERSION "0.5.24"
+#define ORYN_VERSION "0.5.25"
 #define ORYN_MAX_PATH 4096
 #define ORYN_MAX_ITEMS 512
 
@@ -21,6 +21,7 @@ typedef struct OrynProject
     char toolchain[64];
     char architecture[64];
     char entry[128];
+    char kernel_command_line[256];
     char project_file[ORYN_MAX_PATH];
     char project_root[ORYN_MAX_PATH];
     char sdk_root[ORYN_MAX_PATH];
