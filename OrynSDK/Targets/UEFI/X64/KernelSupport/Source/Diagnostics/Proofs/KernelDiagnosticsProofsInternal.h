@@ -7,6 +7,8 @@
 #include "KernelCpu.h"
 #include "KernelGdt.h"
 #include "KernelHpet.h"
+#include "KernelFat32.h"
+#include "KernelVfs.h"
 #include "KernelIdt.h"
 #include "KernelInterrupts.h"
 #include "KernelIo.h"
@@ -58,6 +60,7 @@ int OrynKernelDiagnosticsConsoleRunLineBufferedProbe(void);
 int OrynKernelDiagnosticsConsoleRunFastRefreshProbe(void);
 int OrynKernelDiagnosticsRunKeyboardScrollProof(void);
 void OrynKernelDiagnosticsRunMemoryProofs(const OrynBootInfo* kernelBootInfo);
+void OrynKernelDiagnosticsRunFat32VfsProof(void);
 void OrynKernelDiagnosticsRunBootInfoFailureProof(void);
 
 #endif
