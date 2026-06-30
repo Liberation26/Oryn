@@ -15,14 +15,8 @@ void KernelStart(const OrynBootInfo* bootInfo)
     const OrynBootInfo* kernelBootInfo = KernelBootInfoAdopt(bootInfo);
 
     KernelIoInit();
-    KConsoleInit(kernelBootInfo);
-    KConsole.ClearScreen();
-    KernelIoWriteString("[KERNEL] Oryn Kernel-5 booted.\n");
-    KernelIoWriteString("[KERNEL] Target: uefi-x64\n");
-    KernelIoWriteString("[KERNEL] Toolchain: clang + lld\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel entered successfully.\n");
+    KernelIoWriteString("[KERNEL] Oryn Kernel-5 entered.\n");
     KernelIoWriteString("[KERNEL] PASS: Serial/debug output path is working.\n");
-    KernelIoWriteString(KConsole.IsTtfActive() ? "[KERNEL] TTF renderer: active\n" : "[KERNEL] TTF renderer: fallback bitmap glyphs\n");
     KernelIoWriteString("[KERNEL] PASS: Kernel entry received one plain OrynBootInfo pointer.\n");
     if (KernelBootInfoIsKernelOwned(kernelBootInfo))
     {
@@ -43,6 +37,13 @@ void KernelStart(const OrynBootInfo* bootInfo)
     OrynKernelBootInfoStatus bootStatus = KernelBootInfoValidate(kernelBootInfo);
     if (bootStatus.IsValid)
     {
+        KConsoleInit(kernelBootInfo);
+        KConsole.ClearScreen();
+        KernelIoWriteString("[KERNEL] Oryn Kernel-5 booted.\n");
+        KernelIoWriteString("[KERNEL] Target: uefi-x64\n");
+        KernelIoWriteString("[KERNEL] Toolchain: clang + lld\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel entered successfully.\n");
+        KernelIoWriteString(KConsole.IsTtfActive() ? "[KERNEL] TTF renderer: active\n" : "[KERNEL] TTF renderer: fallback bitmap glyphs\n");
         KernelBootInfoPrintSummary(kernelBootInfo);
         if (OrynMemoryMapBuildFromBootInfo(kernelBootInfo, &gKernelMemoryMap))
         {

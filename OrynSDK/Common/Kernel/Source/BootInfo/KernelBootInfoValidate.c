@@ -265,6 +265,35 @@ static void ValidateFont(const OrynBootInfo* bootInfo, OrynKernelBootInfoStatus*
     }
 }
 
+static int ValidateHandoffChecksum(const OrynBootInfo* bootInfo, OrynKernelBootInfoStatus* status)
+{
+    unsigned int calculated = OrynBootInfoComputeHandoffChecksum(bootInfo);
+
+    WriteBootInfoField("[KERNEL] BootInfo checksum supplied: ", (unsigned long long)bootInfo->HandoffChecksum);
+    WriteBootInfoField("[KERNEL] BootInfo checksum calculated: ", (unsigned long long)calculated);
+
+    if (bootInfo->HandoffChecksum == 0U)
+    {
+        WriteValidationFail("BootInfo handoff checksum is missing.", status);
+        return 0;
+    }
+
+    if (calculated == 0U)
+    {
+        WriteValidationFail("BootInfo handoff checksum could not be calculated over the supplied data.", status);
+        return 0;
+    }
+
+    if (calculated != bootInfo->HandoffChecksum)
+    {
+        WriteValidationFail("BootInfo handoff checksum mismatch.", status);
+        return 0;
+    }
+
+    KernelIoWriteString("[KERNEL] PASS: BootInfo checksum OK: loader handoff data verified.\n");
+    return 1;
+}
+
 OrynKernelBootInfoStatus KernelBootInfoValidate(const OrynBootInfo* bootInfo)
 {
     OrynKernelBootInfoStatus status;
@@ -320,6 +349,11 @@ OrynKernelBootInfoStatus KernelBootInfoValidate(const OrynBootInfo* bootInfo)
     }
 
     KernelIoWriteString("[KERNEL] PASS: BootInfo ABI compatible.\n");
+
+    if (!ValidateHandoffChecksum(bootInfo, &status))
+    {
+        return status;
+    }
 
     CheckDisabledFlag(bootInfo, ORYN_BOOTINFO_FLAG_KERNEL_RANGE, ORYN_BOOTINFO_WANT_KERNEL_RANGE, "kernel range", &status);
     CheckDisabledFlag(bootInfo, ORYN_BOOTINFO_FLAG_MEMORY_MAP, ORYN_BOOTINFO_WANT_MEMORY_MAP, "memory map", &status);

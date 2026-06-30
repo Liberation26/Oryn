@@ -61,6 +61,34 @@ static int ValidateBootInfoAbiForHandoff(const OrynBootInfo* bootInfo)
     return 1;
 }
 
+static int SealBootInfoChecksumForHandoff(OrynBootInfo* bootInfo)
+{
+    if (bootInfo == ORYN_NULL)
+    {
+        Print("[BOOT] FAIL: BootInfo checksum seal received a null pointer.\n");
+        return 0;
+    }
+
+    OrynBootInfoSealHandoffChecksum(bootInfo);
+    if (bootInfo->HandoffChecksum == 0U)
+    {
+        Print("[BOOT] FAIL: BootInfo handoff checksum could not be computed.\n");
+        return 0;
+    }
+
+    if (!OrynBootInfoVerifyHandoffChecksum(bootInfo))
+    {
+        Print("[BOOT] FAIL: BootInfo handoff checksum self-check failed.\n");
+        return 0;
+    }
+
+    Print("[BOOT] BootInfo handoff checksum CRC32: ");
+    PrintHex64((UINT64)bootInfo->HandoffChecksum);
+    Print("\n");
+    Print("[BOOT] PASS: BootInfo checksum sealed before kernel handoff.\n");
+    return 1;
+}
+
 static EFI_STATUS AllocateMemoryMapStorage(
     EFI_MEMORY_DESCRIPTOR** outMemoryMap,
     UINTN* outMemoryMapSize,
@@ -196,6 +224,11 @@ EFI_STATUS ExitBootServicesWithBootInfo(EFI_HANDLE imageHandle, OrynBootInfo* bo
 #endif
 
         if (!ValidateBootInfoAbiForHandoff(bootInfo))
+        {
+            return EFI_INVALID_PARAMETER;
+        }
+
+        if (!SealBootInfoChecksumForHandoff(bootInfo))
         {
             return EFI_INVALID_PARAMETER;
         }

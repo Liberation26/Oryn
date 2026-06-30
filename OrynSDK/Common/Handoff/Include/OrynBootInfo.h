@@ -2,17 +2,22 @@
 #define ORYN_BOOT_INFO_H
 
 #define ORYN_BOOTINFO_SIGNATURE 0x544F4F424E59524FULL
-#define ORYN_BOOTINFO_VERSION 4U
+#define ORYN_BOOTINFO_VERSION 5U
 #define ORYN_BOOTINFO_ABI_STABLE 1U
 #define ORYN_BOOTINFO_ABI_MAJOR 1U
-#define ORYN_BOOTINFO_ABI_MINOR 0U
+#define ORYN_BOOTINFO_ABI_MINOR 1U
 #define ORYN_BOOTINFO_ABI_CURRENT_VERSION ORYN_BOOTINFO_VERSION
-#define ORYN_BOOTINFO_ABI_MIN_COMPATIBLE_VERSION 4U
+#define ORYN_BOOTINFO_ABI_MIN_COMPATIBLE_VERSION 5U
 #define ORYN_BOOTINFO_ABI_CURRENT_SIZE 1672U
 #define ORYN_BOOTINFO_ABI_MIN_COMPATIBLE_SIZE 1672U
-#define ORYN_BOOTINFO_ABI_NAME "OrynBootInfo-v4-stable"
+#define ORYN_BOOTINFO_ABI_NAME "OrynBootInfo-v5-stable-checksummed"
 #define ORYN_BOOTINFO_ABI_PLAIN_C 1U
 #define ORYN_BOOTINFO_X64_ENTRY_REGISTER_RDI 1U
+#define ORYN_BOOTINFO_HANDOFF_CHECKSUM_ALGORITHM_CRC32 1U
+#define ORYN_BOOTINFO_HANDOFF_CHECKSUM_INITIAL 0xFFFFFFFFU
+#define ORYN_BOOTINFO_HANDOFF_CHECKSUM_POLYNOMIAL 0xEDB88320U
+#define ORYN_BOOTINFO_HANDOFF_CHECKSUM_MAX_MEMORY_MAP_BYTES 1048576ULL
+#define ORYN_BOOTINFO_HANDOFF_CHECKSUM_MAX_FONT_BYTES 8388608ULL
 #define ORYN_BOOTINFO_OFFSET_OF(type, field) __builtin_offsetof(type, field)
 
 #define ORYN_BOOTINFO_STATIC_ASSERT(name, condition) typedef char name[(condition) ? 1 : -1]
@@ -179,7 +184,7 @@ typedef struct OrynBootInfo
     unsigned long long MemoryMapEntryCount;
     unsigned long long MemoryMapEntrySize;
     unsigned int MemoryMapVersion;
-    unsigned int Reserved0;
+    unsigned int HandoffChecksum;
     OrynBootFramebuffer Framebuffer;
     unsigned long long Rsdp;
     unsigned long long Acpi10Rsdp;
@@ -248,6 +253,146 @@ static inline int OrynBootInfoAbiIsCompatible(const OrynBootInfo* bootInfo)
     return 1;
 }
 
+static inline unsigned int OrynBootInfoChecksumUpdate(
+    unsigned int checksum,
+    const void* source,
+    unsigned long long count)
+{
+    const unsigned char* bytes = (const unsigned char*)source;
+
+    if (source == 0 && count != 0ULL)
+    {
+        return 0U;
+    }
+
+    for (unsigned long long index = 0ULL; index < count; ++index)
+    {
+        checksum ^= (unsigned int)bytes[index];
+        for (unsigned int bit = 0U; bit < 8U; ++bit)
+        {
+            unsigned int mask = 0U - (checksum & 1U);
+            checksum = (checksum >> 1U) ^ (ORYN_BOOTINFO_HANDOFF_CHECKSUM_POLYNOMIAL & mask);
+        }
+    }
+
+    return checksum;
+}
+
+static inline int OrynBootInfoChecksumAppendPointerBlock(
+    unsigned int* checksum,
+    unsigned long long address,
+    unsigned long long count,
+    unsigned long long maximumCount)
+{
+    if (address == 0ULL || count == 0ULL || count > maximumCount)
+    {
+        return 0;
+    }
+
+    *checksum = OrynBootInfoChecksumUpdate(
+        *checksum,
+        (const void*)address,
+        count);
+
+    return 1;
+}
+
+static inline unsigned int OrynBootInfoComputeHandoffChecksum(const OrynBootInfo* bootInfo)
+{
+    unsigned int checksum = ORYN_BOOTINFO_HANDOFF_CHECKSUM_INITIAL;
+    unsigned long long bootInfoSize;
+    unsigned long long checksumOffset;
+    unsigned long long checksumEnd;
+
+    if (!OrynBootInfoAbiIsCompatible(bootInfo))
+    {
+        return 0U;
+    }
+
+    bootInfoSize = (unsigned long long)bootInfo->Size;
+    if (bootInfoSize > (unsigned long long)sizeof(OrynBootInfo))
+    {
+        bootInfoSize = (unsigned long long)sizeof(OrynBootInfo);
+    }
+
+    checksumOffset = (unsigned long long)ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, HandoffChecksum);
+    checksumEnd = checksumOffset + (unsigned long long)sizeof(bootInfo->HandoffChecksum);
+    if (checksumEnd > bootInfoSize)
+    {
+        return 0U;
+    }
+
+    checksum = OrynBootInfoChecksumUpdate(checksum, bootInfo, checksumOffset);
+    checksum = OrynBootInfoChecksumUpdate(
+        checksum,
+        (const unsigned char*)bootInfo + checksumEnd,
+        bootInfoSize - checksumEnd);
+
+    if ((bootInfo->Flags & ORYN_BOOTINFO_FLAG_MEMORY_MAP) != 0ULL)
+    {
+        unsigned long long memoryMapBytes;
+
+        if (bootInfo->MemoryMapEntrySize < (unsigned long long)sizeof(OrynBootMemoryEntry))
+        {
+            return 0U;
+        }
+
+        if (bootInfo->MemoryMapEntrySize != 0ULL &&
+            bootInfo->MemoryMapEntryCount >
+                (ORYN_BOOTINFO_HANDOFF_CHECKSUM_MAX_MEMORY_MAP_BYTES / bootInfo->MemoryMapEntrySize))
+        {
+            return 0U;
+        }
+
+        memoryMapBytes = bootInfo->MemoryMapEntryCount * bootInfo->MemoryMapEntrySize;
+        if (!OrynBootInfoChecksumAppendPointerBlock(
+                &checksum,
+                bootInfo->MemoryMap,
+                memoryMapBytes,
+                ORYN_BOOTINFO_HANDOFF_CHECKSUM_MAX_MEMORY_MAP_BYTES))
+        {
+            return 0U;
+        }
+    }
+
+    if ((bootInfo->Flags & ORYN_BOOTINFO_FLAG_FONT) != 0ULL)
+    {
+        if (!OrynBootInfoChecksumAppendPointerBlock(
+                &checksum,
+                bootInfo->FontBase,
+                bootInfo->FontSize,
+                ORYN_BOOTINFO_HANDOFF_CHECKSUM_MAX_FONT_BYTES))
+        {
+            return 0U;
+        }
+    }
+
+    checksum ^= ORYN_BOOTINFO_HANDOFF_CHECKSUM_INITIAL;
+    return checksum != 0U ? checksum : ORYN_BOOTINFO_HANDOFF_CHECKSUM_INITIAL;
+}
+
+static inline void OrynBootInfoSealHandoffChecksum(OrynBootInfo* bootInfo)
+{
+    if (bootInfo != 0)
+    {
+        bootInfo->HandoffChecksum = 0U;
+        bootInfo->HandoffChecksum = OrynBootInfoComputeHandoffChecksum(bootInfo);
+    }
+}
+
+static inline int OrynBootInfoVerifyHandoffChecksum(const OrynBootInfo* bootInfo)
+{
+    unsigned int expected;
+
+    if (bootInfo == 0 || bootInfo->HandoffChecksum == 0U)
+    {
+        return 0;
+    }
+
+    expected = OrynBootInfoComputeHandoffChecksum(bootInfo);
+    return expected != 0U && expected == bootInfo->HandoffChecksum;
+}
+
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootGuid_must_be_plain_16_bytes, sizeof(OrynBootGuid) == 16U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootMemoryEntry_must_be_plain_40_bytes, sizeof(OrynBootMemoryEntry) == 40U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootFramebuffer_must_be_plain_56_bytes, sizeof(OrynBootFramebuffer) == 56U);
@@ -263,8 +408,11 @@ ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_stable_size, sizeof(OrynBootInfo) == OR
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_signature_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, Signature) == 0U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_version_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, Version) == 8U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_size_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, Size) == 12U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_handoff_checksum_is_32_bit, sizeof(((OrynBootInfo*)0)->HandoffChecksum) == 4U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_flags_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, Flags) == 16U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_memory_map_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, MemoryMap) == 24U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_memory_map_version_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, MemoryMapVersion) == 48U);
+ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_handoff_checksum_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, HandoffChecksum) == 52U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_framebuffer_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, Framebuffer) == 56U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_rsdp_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, Rsdp) == 112U);
 ORYN_BOOTINFO_STATIC_ASSERT(OrynBootInfo_configuration_tables_offset_stable, ORYN_BOOTINFO_OFFSET_OF(OrynBootInfo, ConfigurationTables) == 168U);

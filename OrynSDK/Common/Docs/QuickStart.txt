@@ -457,3 +457,18 @@ UEFI x64-specific SDK kernel support is here:
   OrynSDK/Targets/UEFI/X64/KernelSupport/Source
 
 The build stage compiles all three source sets: SDK common kernel source, SDK target kernel source, and project source.
+
+
+0.5.18 BootInfo handoff checksum
+----------------------------------
+
+OrynWsl 0.5.18 adds a shared CRC32 handoff checksum to the BootInfo ABI.
+The UEFI loader seals OrynBootInfo after the final memory map has been copied
+and before ExitBootServices. The kernel copies OrynBootInfo into kernel-owned
+storage, verifies the checksum, and only then initializes framebuffer/font
+console services or consumes memory-map data.
+
+Expected proof lines include:
+
+  [BOOT] PASS: BootInfo checksum sealed before kernel handoff.
+  [KERNEL] PASS: BootInfo checksum OK: loader handoff data verified.

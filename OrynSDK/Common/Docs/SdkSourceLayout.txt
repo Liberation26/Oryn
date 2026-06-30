@@ -56,3 +56,12 @@ Rules
   Target-neutral support lives in Common/Kernel.
   UEFI x64-specific support lives in Targets/UEFI/X64/KernelSupport.
   The Oryn build stage compiles SDK common kernel source, SDK target kernel source, and project source into one linked Kernel.elf.
+
+
+0.5.18 handoff checksum ABI
+----------------------------
+
+  OrynBootInfo ABI v5 keeps the checksum contract in Common/Handoff/Include/OrynBootInfo.h.
+  Loader-side sealing happens in Targets/UEFI/X64/Loader/Source/BootX64Handoff.c.
+  Kernel-side verification happens in Common/Kernel/Source/BootInfo/KernelBootInfoValidate.c.
+  Project KernelMain validates BootInfo before initializing framebuffer/font console state.
