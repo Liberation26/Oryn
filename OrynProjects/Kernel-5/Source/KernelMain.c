@@ -1,425 +1,22 @@
 #include "Kernel.h"
 #include "KernelBootInfo.h"
-#include "KernelConsole.h"
+#include "KernelDiagnostics.h"
 #include "KernelIo.h"
 #include "KernelLifecycle.h"
 #include "KernelPanic.h"
 #include "KernelScreenReport.h"
-#include "KernelCpu.h"
-#include "KernelGdt.h"
-#include "KernelIdt.h"
-#include "KernelInterrupts.h"
-#include "KernelSysCallInterrupts.h"
-#include "KernelPic.h"
-#include "KernelApic.h"
-#include "KernelHpet.h"
-#include "KernelKeyboard.h"
-#include "KernelPci.h"
-#include "KernelSmp.h"
-#include "KernelMemoryMap.h"
-#include "KernelPhysicalMemory.h"
-#include "KernelVirtualMemory.h"
-#include "SysCall.h"
-
-#ifndef ORYN_VM_PIC
-#define ORYN_VM_PIC 1
-#endif
-
-#ifndef ORYN_VM_APIC
-#define ORYN_VM_APIC 1
-#endif
-
-#ifndef ORYN_VM_APIC2
-#define ORYN_VM_APIC2 1
-#endif
-
-#ifndef ORYN_VM_HPET
-#define ORYN_VM_HPET 1
-#endif
-
-#ifndef ORYN_VM_SMP_CPUS
-#define ORYN_VM_SMP_CPUS 1
-#endif
 
 #ifndef ORYN_VM_INTERACTIVE_DISPLAY
 #define ORYN_VM_INTERACTIVE_DISPLAY 0
 #endif
-
-static OrynKernelMemoryMap gKernelMemoryMap;
-static OrynKernelPhysicalMemory gPhysicalMemory;
-static OrynKernelVirtualMemory gVirtualMemory;
 
 static void KernelDisableInterrupts(void)
 {
     __asm__ volatile ("cli" ::: "memory");
 }
 
-static void ReserveRangeIfPresent(
-    OrynKernelPhysicalMemory* physicalMemory,
-    unsigned long long start,
-    unsigned long long bytes)
+static void KernelHaltForever(void)
 {
-    if (start != 0ULL && bytes != 0ULL)
-    {
-        (void)OrynPhysicalMemoryReserveRange(physicalMemory, start, bytes);
-    }
-}
-
-static void ReserveBootHandoffRanges(
-    const OrynBootInfo* bootInfo,
-    OrynKernelPhysicalMemory* physicalMemory)
-{
-    if (bootInfo == 0 || physicalMemory == 0)
-    {
-        return;
-    }
-
-    ReserveRangeIfPresent(physicalMemory, (unsigned long long)bootInfo, sizeof(*bootInfo));
-    ReserveRangeIfPresent(physicalMemory, KernelBootInfoSourceAddress(), sizeof(*bootInfo));
-
-    if (KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_KERNEL_RANGE))
-    {
-        ReserveRangeIfPresent(physicalMemory, bootInfo->KernelPhysicalBase, bootInfo->KernelSize);
-    }
-
-    if (KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_MEMORY_MAP) &&
-        bootInfo->MemoryMapEntrySize != 0ULL)
-    {
-        ReserveRangeIfPresent(
-            physicalMemory,
-            bootInfo->MemoryMap,
-            bootInfo->MemoryMapEntryCount * bootInfo->MemoryMapEntrySize);
-    }
-
-    if (KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_FONT))
-    {
-        ReserveRangeIfPresent(physicalMemory, bootInfo->FontBase, bootInfo->FontSize);
-    }
-
-    if (KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_FRAMEBUFFER))
-    {
-        ReserveRangeIfPresent(
-            physicalMemory,
-            bootInfo->Framebuffer.Base,
-            bootInfo->Framebuffer.Size);
-    }
-
-    ReserveRangeIfPresent(physicalMemory, ORYN_SMP_TRAMPOLINE_BASE, 4096ULL);
-}
-
-static void PrintBootInfoOwnership(const OrynBootInfo* kernelBootInfo)
-{
-    KernelIoWriteString("[KERNEL] PASS: Kernel entry received one plain OrynBootInfo pointer.\n");
-    if (KernelBootInfoIsKernelOwned(kernelBootInfo))
-    {
-        KernelIoWriteString("[KERNEL] PASS: OrynBootInfo copied into kernel-owned storage.\n");
-        KernelIoWriteString("[KERNEL] Loader BootInfo pointer: ");
-        KernelIoWriteHex64(KernelBootInfoSourceAddress());
-        KernelIoWriteString("\n");
-        KernelIoWriteString("[KERNEL] Kernel BootInfo copy: ");
-        KernelIoWriteHex64((unsigned long long)kernelBootInfo);
-        KernelIoWriteString("\n");
-    }
-    else
-    {
-        KernelIoWriteString("[KERNEL] FAIL: Kernel could not adopt OrynBootInfo.\n");
-    }
-}
-
-
-
-static int RunKernelKeyboardScrollProof(void)
-{
-    if (OrynKernelKeyboardInitForConsoleScroll())
-    {
-        OrynKernelKeyboardPrintProof();
-        return 1;
-    }
-
-    OrynKernelKeyboardPrintProof();
-    return 0;
-}
-
-static void RunKernelScreenScrollProof(void)
-{
-    KernelIoWriteString("[KERNEL] Kernel screen scrolling: starting proof.\n");
-    KernelIoWriteString("[KERNEL] Kernel screen visible rows: ");
-    KernelIoWriteDec64(KConsole.VisibleRows());
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Kernel screen visible columns: ");
-    KernelIoWriteDec64(KConsole.VisibleColumns());
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Kernel screen scrollback rows: ");
-    KernelIoWriteDec64(KConsole.ScrollbackRows());
-    KernelIoWriteString("\n");
-
-    if (KConsoleRunScrollProof())
-    {
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen scrollback buffer initialized.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen scrollback stores coloured cells.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen scroll up/down works.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen page up/down works.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen scroll-to-bottom works.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen scroll proof keeps visible output stable.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen scrolling implemented.\n");
-    }
-    else
-    {
-        KernelIoWriteString("[KERNEL] FAIL: Kernel screen scrolling proof failed.\n");
-    }
-}
-
-static void RunKernelScreenDoubleBufferProof(void)
-{
-    KernelIoWriteString("[KERNEL] Kernel screen double buffer: starting proof.\n");
-    KernelIoWriteString("[KERNEL] Kernel screen back buffer bytes: ");
-    KernelIoWriteDec64(KConsole.BackBufferBytes());
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Kernel screen present count: ");
-    KernelIoWriteDec64(KConsole.PresentCount());
-    KernelIoWriteString("\n");
-
-    if (KConsole.IsDoubleBuffered() && KConsoleRunDoubleBufferProof() &&
-        KConsoleRunLineBufferedFlipProof() && KConsoleRunFastRefreshProof())
-    {
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen back buffer allocated.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen renders into back buffer first.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen defers visible flip while line is being written.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen flips after completed line.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen presents dirty completed line only.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen uses fast scroll path after visible area is full.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen presents completed frame to visible output.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen visible presents are atomic.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen refresh is line/scroll optimized.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen double buffering implemented.\n");
-    }
-    else
-    {
-        KernelIoWriteString("[KERNEL] FAIL: Kernel screen double buffering proof failed.\n");
-    }
-}
-
-static void RunDescriptorAndSysCallProofs(void)
-{
-    (void)OrynKernelGdtInit();
-    OrynKernelGdtPrintProof();
-    (void)OrynKernelIdtInit();
-    (void)OrynKernelInterruptsInit();
-    OrynSysCallInit();
-    (void)OrynKernelSysCallInterruptsInit();
-    OrynKernelIdtPrintProof();
-    OrynKernelInterruptsPrintProof();
-    OrynSysCallPrintProof();
-    OrynKernelSysCallInterruptsPrintProof();
-    (void)OrynSysCallRunInternalProof();
-    (void)OrynKernelSysCallInterruptsRunProof();
-    OrynSysCallPrintRuntimeProof();
-    OrynKernelSysCallInterruptsPrintRuntimeProof();
-}
-
-static void RunEarlySmpProof(const OrynBootInfo* kernelBootInfo);
-
-static void RunInterruptAndTimerProofs(const OrynBootInfo* kernelBootInfo)
-{
-    OrynKernelCpuDetect();
-    OrynKernelCpuPrintFeatures();
-
-#if ORYN_VM_PIC
-    (void)OrynKernelPicInitAndDisable();
-    OrynKernelPicPrintProof();
-    (void)OrynKernelInterruptsRunPicTimerProof();
-    OrynKernelInterruptsPrintPicRuntimeProof();
-    OrynKernelPicPrintProof();
-#else
-    KernelIoWriteString("[KERNEL] INFO: PIC IRQ0 proof skipped by VMSettings.\n");
-#endif
-
-#if ORYN_VM_APIC || ORYN_VM_APIC2
-#if ORYN_VM_APIC2
-    (void)OrynKernelApicInit(1);
-#else
-    KernelIoWriteString("[KERNEL] INFO: APIC2/x2APIC disabled by VMSettings.\n");
-    (void)OrynKernelApicInit(0);
-#endif
-    OrynKernelApicPrintProof();
-#else
-    KernelIoWriteString("[KERNEL] INFO: APIC proofs skipped by VMSettings.\n");
-#endif
-
-#if ORYN_VM_SMP_CPUS > 1 && (ORYN_VM_APIC || ORYN_VM_APIC2)
-    RunEarlySmpProof(kernelBootInfo);
-#else
-    KernelIoWriteString("[KERNEL] INFO: SMP AP startup skipped by VMSettings.\n");
-#endif
-
-#if ORYN_VM_HPET
-    (void)OrynKernelHpetInit(kernelBootInfo);
-    OrynKernelHpetPrintProof();
-#else
-    (void)kernelBootInfo;
-    KernelIoWriteString("[KERNEL] INFO: HPET proof skipped by VMSettings.\n");
-#endif
-
-#if ORYN_VM_APIC || ORYN_VM_APIC2
-    (void)OrynKernelInterruptsRunApicTimerProof();
-#if ORYN_VM_PIC
-    OrynKernelInterruptsPrintRuntimeProof();
-#else
-    OrynKernelInterruptsPrintApicRuntimeProof();
-#endif
-#else
-    KernelIoWriteString("[KERNEL] PASS: VMSettings interrupt/timer profile applied.\n");
-#endif
-
-#if (ORYN_VM_APIC || ORYN_VM_APIC2) && (!ORYN_VM_PIC || !ORYN_VM_HPET || !ORYN_VM_APIC2 || !ORYN_VM_APIC)
-    KernelIoWriteString("[KERNEL] PASS: VMSettings interrupt/timer profile applied.\n");
-#endif
-}
-
-static void RunPciProof(const OrynBootInfo* kernelBootInfo)
-{
-    OrynKernelPciInit(kernelBootInfo);
-    OrynKernelPciPrintProof();
-}
-
-static void RunEarlySmpProof(const OrynBootInfo* kernelBootInfo)
-{
-#if ORYN_VM_SMP_CPUS > 1 && (ORYN_VM_APIC || ORYN_VM_APIC2)
-    KernelIoWriteString("[KERNEL] SMP: starting early after APIC/APIC2 enable.\n");
-    (void)OrynKernelSmpInit(kernelBootInfo);
-    OrynKernelSmpPrintProof();
-#else
-    (void)kernelBootInfo;
-    KernelIoWriteString("[KERNEL] INFO: SMP AP startup skipped by VMSettings.\n");
-#endif
-}
-
-static void RunMemoryProofs(const OrynBootInfo* kernelBootInfo)
-{
-    if (OrynMemoryMapBuildFromBootInfo(kernelBootInfo, &gKernelMemoryMap))
-    {
-        OrynMemoryMapPrintSummary(&gKernelMemoryMap);
-        if (OrynPhysicalMemoryInit(&gKernelMemoryMap, &gPhysicalMemory))
-        {
-            ReserveBootHandoffRanges(kernelBootInfo, &gPhysicalMemory);
-            OrynPhysicalMemoryPrintSummary(&gPhysicalMemory);
-            (void)OrynKernelLifecycleTransition(OrynKernelLifecycleMemoryReady);
-            OrynPhysicalMemoryRunSelfTest(&gPhysicalMemory);
-            KernelIoWriteString("[KERNEL] Virtual memory: starting\n");
-            if (OrynVirtualMemoryInit(kernelBootInfo, &gKernelMemoryMap, &gPhysicalMemory, &gVirtualMemory))
-            {
-                OrynVirtualMemoryPrintProof(&gVirtualMemory);
-                (void)OrynKernelLifecycleTransition(OrynKernelLifecycleVirtualMemoryReady);
-            }
-            else
-            {
-                OrynVirtualMemoryPrintProof(&gVirtualMemory);
-                KernelIoWriteString("[KERNEL] Virtual memory: failed\n");
-                KernelIoWriteString("[KERNEL] WARN: SMP AP startup skipped because virtual memory did not activate.\n");
-            }
-            OrynPhysicalMemoryPrintFinalState(&gPhysicalMemory);
-        }
-        else
-        {
-            KernelIoWriteString("[KERNEL] Physical memory allocator: unavailable\n");
-        }
-    }
-    else
-    {
-        KernelIoWriteString("[KERNEL] Memory map parser: unavailable.\n");
-        KernelIoWriteString("[KERNEL] Physical memory allocator: unavailable\n");
-    }
-}
-
-void KernelStart(const OrynBootInfo* bootInfo)
-{
-    KernelDisableInterrupts();
-    KernelIoInit();
-    OrynKernelScreenReportInit();
-    OrynKernelLifecycleInit();
-    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleEntered);
-    const OrynBootInfo* kernelBootInfo = KernelBootInfoAdopt(bootInfo);
-    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleBootInfoAdopted);
-    OrynKernelPanicInit(kernelBootInfo);
-
-    KernelIoWriteString("[KERNEL] Oryn Kernel-5 entered.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel entered successfully.\n");
-    KernelIoWriteString("[KERNEL] PASS: Serial/debug output path is working.\n");
-    PrintBootInfoOwnership(kernelBootInfo);
-    KernelBootInfoPrintSelection();
-    OrynKernelBootInfoStatus bootStatus = KernelBootInfoValidate(kernelBootInfo);
-
-    RunDescriptorAndSysCallProofs();
-    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleDescriptorsReady);
-    RunInterruptAndTimerProofs(kernelBootInfo);
-    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleInterruptsReady);
-    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleTimersReady);
-    RunPciProof(kernelBootInfo);
-    if (bootStatus.IsValid)
-    {
-        KConsoleInit(kernelBootInfo);
-        (void)OrynKernelLifecycleTransition(OrynKernelLifecycleConsoleReady);
-        KConsole.ClearScreen();
-        KernelIoWriteString("[KERNEL] Oryn Kernel-5 booted.\n");
-        KernelIoWriteString("[KERNEL] Target: uefi-x64\n");
-        KernelIoWriteString("[KERNEL] Toolchain: clang + lld\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel console initialized.\n");
-        KernelIoWriteString(KConsole.IsTtfActive() ?
-            "[KERNEL] TTF renderer: active\n" :
-            "[KERNEL] TTF renderer: fallback bitmap glyphs\n");
-        RunKernelScreenScrollProof();
-        RunKernelScreenDoubleBufferProof();
-        (void)RunKernelKeyboardScrollProof();
-        KernelBootInfoPrintSummary(kernelBootInfo);
-        RunMemoryProofs(kernelBootInfo);
-    }
-    else
-    {
-        KernelIoWriteString("[KERNEL] BootInfo invalid. Memory services are disabled.\n");
-        OrynKernelPanicBegin(
-            "BootInfo validation failed",
-            "Kernel-owned panic report path handles invalid handoff data",
-            0xB0070001ULL);
-    }
-
-    if (OrynKernelPanicIsActive())
-    {
-        KernelIoWriteString("[KERNEL] System halted by Kernel-5.\n");
-        OrynKernelPanicHalt();
-    }
-
-    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleRunning);
-
-    KernelIoWriteString("[KERNEL] System halted by Kernel-5.\n");
-#if ORYN_VM_INTERACTIVE_DISPLAY
-    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleInteractiveHalt);
-    OrynKernelKeyboardEnableInteractiveInterrupts();
-    int keyboardInterruptsReady = OrynKernelInterruptsAreEnabled() ? 1 : 0;
-    OrynKernelInterruptsDisable();
-    KernelIoWriteString(keyboardInterruptsReady ?
-        "[KERNEL] PASS: Interactive halt loop leaves interrupts enabled for keyboard scrolling.\n" :
-        "[KERNEL] FAIL: Interactive halt loop could not enable keyboard interrupts.\n");
-    KernelIoWriteString("[KERNEL] PASS: Interactive QEMU display mode keeps VM open for scroll testing.\n");
-    KernelIoWriteString("[KERNEL] INFO: Use Up/Down to scroll one line and PgUp/PgDn to scroll one page.\n");
-    KernelIoWriteString("[KERNEL] INFO: Close the QEMU window after manual scroll testing is complete.\n");
-    if (keyboardInterruptsReady)
-    {
-        OrynKernelInterruptsEnable();
-    }
-    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalting);
-    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalted);
-    OrynKernelLifecyclePrintProof();
-    OrynKernelScreenReportPrint();
-#else
-    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleDebugExitRequested);
-    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalting);
-    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalted);
-    OrynKernelLifecyclePrintProof();
-    OrynKernelScreenReportPrint();
-    KernelIoExitQemuSuccess();
-#endif
-
 #if ORYN_VM_INTERACTIVE_DISPLAY
     for (;;)
     {
@@ -433,4 +30,40 @@ void KernelStart(const OrynBootInfo* bootInfo)
         __asm__ volatile ("hlt");
     }
 #endif
+}
+
+static const OrynBootInfo* KernelEnter(const OrynBootInfo* bootInfo)
+{
+    KernelDisableInterrupts();
+    KernelIoInit();
+    OrynKernelScreenReportInit();
+    OrynKernelLifecycleInit();
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleEntered);
+
+    const OrynBootInfo* kernelBootInfo = KernelBootInfoAdopt(bootInfo);
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleBootInfoAdopted);
+    OrynKernelPanicInit(kernelBootInfo);
+    return kernelBootInfo;
+}
+
+void KernelStart(const OrynBootInfo* bootInfo)
+{
+    const OrynBootInfo* kernelBootInfo = KernelEnter(bootInfo);
+    OrynKernelDiagnosticsRunBootProofs(kernelBootInfo);
+
+    if (OrynKernelPanicIsActive())
+    {
+        KernelIoWriteString("[KERNEL] System halted by Kernel-5.\n");
+        OrynKernelPanicHalt();
+    }
+
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleRunning);
+    KernelIoWriteString("[KERNEL] System halted by Kernel-5.\n");
+    OrynKernelDiagnosticsRunHaltProofs();
+
+#if !ORYN_VM_INTERACTIVE_DISPLAY
+    KernelIoExitQemuSuccess();
+#endif
+
+    KernelHaltForever();
 }
