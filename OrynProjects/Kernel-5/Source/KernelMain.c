@@ -157,6 +157,7 @@ static void RunKernelScreenScrollProof(void)
         KernelIoWriteString("[KERNEL] PASS: Kernel screen scroll up/down works.\n");
         KernelIoWriteString("[KERNEL] PASS: Kernel screen page up/down works.\n");
         KernelIoWriteString("[KERNEL] PASS: Kernel screen scroll-to-bottom works.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen scroll proof keeps visible output stable.\n");
         KernelIoWriteString("[KERNEL] PASS: Kernel screen scrolling implemented.\n");
     }
     else
@@ -185,6 +186,7 @@ static void RunKernelScreenDoubleBufferProof(void)
         KernelIoWriteString("[KERNEL] PASS: Kernel screen presents dirty completed line only.\n");
         KernelIoWriteString("[KERNEL] PASS: Kernel screen uses fast scroll path after visible area is full.\n");
         KernelIoWriteString("[KERNEL] PASS: Kernel screen presents completed frame to visible output.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen visible presents are atomic.\n");
         KernelIoWriteString("[KERNEL] PASS: Kernel screen refresh is line/scroll optimized.\n");
         KernelIoWriteString("[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.\n");
         KernelIoWriteString("[KERNEL] PASS: Kernel screen double buffering implemented.\n");

@@ -262,10 +262,12 @@ static void WriteBootReport(
     int screen_scroll_lines = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scroll up/down works.");
     int screen_page_scroll = TextContains(debug_text, "[KERNEL] PASS: Kernel screen page up/down works.");
     int screen_bottom = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scroll-to-bottom works.");
+    int screen_stable_proof = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scroll proof keeps visible output stable.");
     int screen_scrolling = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scrolling implemented.");
     int screen_back_buffer = TextContains(debug_text, "[KERNEL] PASS: Kernel screen back buffer allocated.");
     int screen_renders_back = TextContains(debug_text, "[KERNEL] PASS: Kernel screen renders into back buffer first.");
     int screen_present = TextContains(debug_text, "[KERNEL] PASS: Kernel screen presents completed frame to visible output.");
+    int screen_atomic_present = TextContains(debug_text, "[KERNEL] PASS: Kernel screen visible presents are atomic.");
     int screen_deferred_flip = TextContains(debug_text, "[KERNEL] PASS: Kernel screen defers visible flip while line is being written.");
     int screen_line_flip = TextContains(debug_text, "[KERNEL] PASS: Kernel screen flips after completed line.");
     int screen_dirty_line = TextContains(debug_text, "[KERNEL] PASS: Kernel screen presents dirty completed line only.");
@@ -337,9 +339,9 @@ static void WriteBootReport(
         pci_scan && pci_devices && pci_class && pci_complete && pci_english &&
         smp_ok && qemu_debug_colour && kernel_console && screen_scrollback &&
         screen_coloured_cells && screen_scroll_lines && screen_page_scroll &&
-        screen_bottom && screen_scrolling && screen_back_buffer && screen_renders_back &&
+        screen_bottom && screen_stable_proof && screen_scrolling && screen_back_buffer && screen_renders_back &&
         screen_deferred_flip && screen_line_flip && screen_dirty_line && screen_fast_scroll &&
-        screen_refresh_optimized && screen_line_buffered && screen_present && screen_double_buffer &&
+        screen_refresh_optimized && screen_line_buffered && screen_present && screen_atomic_present && screen_double_buffer &&
         physical_capacity && keyboard_initialized && keyboard_irq1 && keyboard_interrupts && keyboard_pic_unmasked &&
         keyboard_decoder && keyboard_make_break && keyboard_release_stop && keyboard_line && keyboard_page &&
         keyboard_stops_on_release && (!interactive_display || interactive_interrupts) &&
@@ -498,6 +500,7 @@ static void WriteBootReport(
     fprintf(file, "  Kernel screen line scroll up/down: %s\n", PassFail(screen_scroll_lines));
     fprintf(file, "  Kernel screen page up/down: %s\n", PassFail(screen_page_scroll));
     fprintf(file, "  Kernel screen scroll-to-bottom: %s\n", PassFail(screen_bottom));
+    fprintf(file, "  Kernel screen stable scroll proof: %s\n", PassFail(screen_stable_proof));
     fprintf(file, "  Kernel screen scrolling implemented: %s\n", PassFail(screen_scrolling));
     fprintf(file, "  Kernel screen back buffer allocated: %s\n", PassFail(screen_back_buffer));
     fprintf(file, "  Kernel screen renders into back buffer first: %s\n", PassFail(screen_renders_back));
@@ -508,6 +511,7 @@ static void WriteBootReport(
     fprintf(file, "  Kernel screen refresh line/scroll optimized: %s\n", PassFail(screen_refresh_optimized));
     fprintf(file, "  Kernel screen line-buffered double buffering implemented: %s\n", PassFail(screen_line_buffered));
     fprintf(file, "  Kernel screen presents completed frame: %s\n", PassFail(screen_present));
+    fprintf(file, "  Kernel screen visible presents are atomic: %s\n", PassFail(screen_atomic_present));
     fprintf(file, "  Kernel screen double buffering implemented: %s\n", PassFail(screen_double_buffer));
     fprintf(file, "  Physical allocator tracking capacity sufficient: %s\n", PassFail(physical_capacity));
     fprintf(file, "  Keyboard interrupt scrolling initialized: %s\n", PassFail(keyboard_initialized));
@@ -713,6 +717,8 @@ static void WriteBootReport(
             "The kernel screen page scrolling proof did not pass." :
         !screen_bottom ?
             "The kernel screen did not return to the live bottom view." :
+        !screen_stable_proof ?
+            "The kernel screen scroll proof visibly replayed old rows instead of staying stable." :
         !screen_scrolling ?
             "Kernel screen scrolling did not complete." :
         !screen_back_buffer ?
@@ -733,6 +739,8 @@ static void WriteBootReport(
             "Kernel screen line-buffered double buffering did not complete." :
         !screen_present ?
             "The kernel screen did not present completed frames to visible output." :
+        !screen_atomic_present ?
+            "The kernel screen visible framebuffer presents were not atomic." :
         !screen_double_buffer ?
             "Kernel screen double buffering did not complete." :
         !physical_capacity ?
@@ -1160,6 +1168,8 @@ int OrynRunQemu(const OrynProject* project)
         TextContains(debug_text, "[KERNEL] PASS: Kernel screen uses fast scroll path after visible area is full.") &&
         TextContains(debug_text, "[KERNEL] PASS: Kernel screen refresh is line/scroll optimized.") &&
         TextContains(debug_text, "[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.") &&
+        TextContains(debug_text, "[KERNEL] PASS: Kernel screen scroll proof keeps visible output stable.") &&
+        TextContains(debug_text, "[KERNEL] PASS: Kernel screen visible presents are atomic.") &&
         TextContains(debug_text, "[KERNEL] PASS: Physical allocator tracking capacity is sufficient.") &&
         (interactive_display ?
             TextContains(debug_text, "[KERNEL] PASS: Interactive QEMU display mode keeps VM open for scroll testing.") :

@@ -115,6 +115,9 @@ typedef struct KConsoleState
     unsigned int LinePresentCount;
     unsigned int FastScrollPresentCount;
     unsigned int FullPresentCount;
+    unsigned int StateOnlyScrollProofCount;
+    unsigned int AtomicPresentCount;
+    unsigned int PresentSuppressed;
     unsigned int DirtyLineActive;
     unsigned int DirtyScreenRow;
     unsigned int DirtyMinColumn;
@@ -164,6 +167,9 @@ static void KConsoleUseVgaTextFallback(void)
     gConsole.LinePresentCount = 0U;
     gConsole.FastScrollPresentCount = 0U;
     gConsole.FullPresentCount = 0U;
+    gConsole.StateOnlyScrollProofCount = 0U;
+    gConsole.AtomicPresentCount = 0U;
+    gConsole.PresentSuppressed = 0U;
     gConsole.DirtyLineActive = 0U;
     gConsole.DirtyScreenRow = 0U;
     gConsole.DirtyMinColumn = 0U;
@@ -264,13 +270,36 @@ static void KConsolePutPixel(unsigned int x, unsigned int y, unsigned int colour
     gConsole.FramebufferBackBuffer[index] = colour;
 }
 
+static unsigned long long KConsoleSaveFlagsAndDisableInterrupts(void)
+{
+#if defined(__x86_64__) || defined(_M_X64)
+    unsigned long long flags;
+    __asm__ volatile ("pushfq; popq %0; cli" : "=r" (flags) :: "memory", "cc");
+    return flags;
+#else
+    return 0ULL;
+#endif
+}
+
+static void KConsoleRestoreFlags(unsigned long long flags)
+{
+#if defined(__x86_64__) || defined(_M_X64)
+    __asm__ volatile ("pushq %0; popfq" :: "r" (flags) : "memory", "cc");
+#else
+    (void)flags;
+#endif
+}
+
 static void KConsolePresentFramebuffer(void)
 {
     if (!gConsole.Available || gConsole.Mode != KCONSOLE_MODE_FRAMEBUFFER ||
-        gConsole.Framebuffer == 0 || gConsole.FramebufferBackBuffer == 0)
+        gConsole.Framebuffer == 0 || gConsole.FramebufferBackBuffer == 0 ||
+        gConsole.PresentSuppressed)
     {
         return;
     }
+
+    unsigned long long flags = KConsoleSaveFlagsAndDisableInterrupts();
 
     for (unsigned int y = 0U; y < gConsole.Height; ++y)
     {
@@ -289,6 +318,8 @@ static void KConsolePresentFramebuffer(void)
     }
 
     gConsole.PresentCount += 1U;
+    gConsole.AtomicPresentCount += 1U;
+    KConsoleRestoreFlags(flags);
 }
 
 static void KConsolePresentFramebufferRect(
@@ -299,7 +330,8 @@ static void KConsolePresentFramebufferRect(
 {
     if (!gConsole.Available || gConsole.Mode != KCONSOLE_MODE_FRAMEBUFFER ||
         gConsole.Framebuffer == 0 || gConsole.FramebufferBackBuffer == 0 ||
-        width == 0U || height == 0U || left >= gConsole.Width || top >= gConsole.Height)
+        width == 0U || height == 0U || left >= gConsole.Width || top >= gConsole.Height ||
+        gConsole.PresentSuppressed)
     {
         return;
     }
@@ -313,6 +345,8 @@ static void KConsolePresentFramebufferRect(
     {
         height = gConsole.Height - top;
     }
+
+    unsigned long long flags = KConsoleSaveFlagsAndDisableInterrupts();
 
     for (unsigned int y = top; y < top + height; ++y)
     {
@@ -331,14 +365,18 @@ static void KConsolePresentFramebufferRect(
     }
 
     gConsole.PresentCount += 1U;
+    gConsole.AtomicPresentCount += 1U;
+    KConsoleRestoreFlags(flags);
 }
 
 static void KConsolePresentVga(void)
 {
-    if (!gConsole.Available || gConsole.Mode != KCONSOLE_MODE_VGA_TEXT)
+    if (!gConsole.Available || gConsole.Mode != KCONSOLE_MODE_VGA_TEXT || gConsole.PresentSuppressed)
     {
         return;
     }
+
+    unsigned long long flags = KConsoleSaveFlagsAndDisableInterrupts();
 
     for (unsigned int row = 0U; row < KCONSOLE_VGA_HEIGHT; ++row)
     {
@@ -350,14 +388,19 @@ static void KConsolePresentVga(void)
     }
 
     gConsole.PresentCount += 1U;
+    gConsole.AtomicPresentCount += 1U;
+    KConsoleRestoreFlags(flags);
 }
 
 static void KConsolePresentVgaRow(unsigned int row)
 {
-    if (!gConsole.Available || gConsole.Mode != KCONSOLE_MODE_VGA_TEXT || row >= KCONSOLE_VGA_HEIGHT)
+    if (!gConsole.Available || gConsole.Mode != KCONSOLE_MODE_VGA_TEXT ||
+        row >= KCONSOLE_VGA_HEIGHT || gConsole.PresentSuppressed)
     {
         return;
     }
+
+    unsigned long long flags = KConsoleSaveFlagsAndDisableInterrupts();
 
     for (unsigned int col = 0U; col < KCONSOLE_VGA_WIDTH; ++col)
     {
@@ -366,6 +409,8 @@ static void KConsolePresentVgaRow(unsigned int row)
     }
 
     gConsole.PresentCount += 1U;
+    gConsole.AtomicPresentCount += 1U;
+    KConsoleRestoreFlags(flags);
 }
 
 static void KConsolePresent(void)
@@ -1241,6 +1286,7 @@ unsigned int KConsolePresentCount(void)
 int KConsoleRunDoubleBufferProof(void)
 {
     unsigned int before;
+    unsigned int beforeAtomic;
 
     if (!gConsole.Available || !gConsole.DoubleBuffered || KConsoleBackBufferBytes() == 0ULL)
     {
@@ -1248,8 +1294,9 @@ int KConsoleRunDoubleBufferProof(void)
     }
 
     before = gConsole.PresentCount;
+    beforeAtomic = gConsole.AtomicPresentCount;
     KConsoleRenderVisible();
-    return gConsole.PresentCount > before;
+    return gConsole.PresentCount > before && gConsole.AtomicPresentCount > beforeAtomic;
 }
 
 int KConsoleRunLineBufferedFlipProof(void)
@@ -1348,11 +1395,23 @@ int KConsoleRunScrollProof(void)
         KConsoleWriteChar('\n');
     }
 
-    ok = gConsole.TotalLines > gConsole.VisibleRows &&
-        KConsoleScrollUpLines(1U) &&
-        KConsoleScrollDownLines(1U) &&
-        KConsolePageUp() &&
-        KConsolePageDown();
+    if (gConsole.TotalLines > gConsole.VisibleRows)
+    {
+        unsigned int savedSuppress = gConsole.PresentSuppressed;
+        gConsole.PresentSuppressed = 1U;
+
+        ok = KConsoleScrollUpLines(1U) &&
+            KConsoleScrollDownLines(1U) &&
+            KConsolePageUp() &&
+            KConsolePageDown();
+
+        gConsole.PresentSuppressed = savedSuppress;
+        gConsole.StateOnlyScrollProofCount += ok ? 1U : 0U;
+    }
+    else
+    {
+        ok = 0;
+    }
 
     KConsoleScrollToBottom();
     ok = ok && gConsole.ViewFollowsTail && gConsole.ViewTopLine == KConsoleMaximumViewTop();

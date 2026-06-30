@@ -1,4 +1,4 @@
-OrynWsl 0.5.48 Quick Start
+OrynWsl 0.5.49 Quick Start
 
 This package is a WSL-native Oryn SDK baseline.
 
@@ -848,3 +848,12 @@ Expected proof markers:
 [KERNEL] PASS: Keyboard PgUp/PgDn scroll one page while held.
 [KERNEL] PASS: Keyboard scrolling stops when key is released.
 [KERNEL] PASS: Interactive halt loop leaves interrupts enabled for keyboard scrolling.
+
+
+OrynWsl 0.5.49 stable screen-scroll proof presentation
+
+The kernel console scroll proof now validates line, page, and bottom scrolling without visibly replaying older scrollback rows on the QEMU display. The proof temporarily suppresses visible framebuffer presents while it exercises the scrollback state, then presents the restored live-bottom view once. This prevents the momentary old-text flash that could appear around the scroll proof lines. Visible framebuffer presents are also wrapped as atomic console presents so interrupt-driven keyboard scrolling cannot interleave with a visible copy.
+
+Expected proof markers include:
+[KERNEL] PASS: Kernel screen scroll proof keeps visible output stable.
+[KERNEL] PASS: Kernel screen visible presents are atomic.
