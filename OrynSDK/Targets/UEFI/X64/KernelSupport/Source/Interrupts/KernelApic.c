@@ -10,6 +10,7 @@
 #define ORYN_MSR_X2APIC_ICR 0x830U
 #define ORYN_MSR_X2APIC_SVR 0x80FU
 #define ORYN_MSR_X2APIC_LVT_TIMER 0x832U
+#define ORYN_MSR_X2APIC_LVT_LINT0 0x835U
 #define ORYN_MSR_X2APIC_TIMER_INITIAL 0x838U
 #define ORYN_MSR_X2APIC_TIMER_CURRENT 0x839U
 #define ORYN_MSR_X2APIC_TIMER_DIVIDE 0x83EU
@@ -23,12 +24,14 @@
 #define ORYN_APIC_REG_ICR_HIGH 0x310U
 #define ORYN_APIC_REG_SVR 0x0F0U
 #define ORYN_APIC_REG_LVT_TIMER 0x320U
+#define ORYN_APIC_REG_LVT_LINT0 0x350U
 #define ORYN_APIC_REG_TIMER_INITIAL 0x380U
 #define ORYN_APIC_REG_TIMER_CURRENT 0x390U
 #define ORYN_APIC_REG_TIMER_DIVIDE 0x3E0U
 #define ORYN_APIC_SPURIOUS_VECTOR 0xFFU
 #define ORYN_APIC_SOFTWARE_ENABLE 0x100U
 #define ORYN_APIC_LVT_MASKED 0x10000U
+#define ORYN_APIC_LVT_DELIVERY_EXTINT 0x700U
 #define ORYN_APIC_ICR_DELIVERY_PENDING 0x1000U
 #define ORYN_APIC_ICR_DELIVERY_INIT 0x500U
 #define ORYN_APIC_ICR_DELIVERY_STARTUP 0x600U
@@ -312,6 +315,31 @@ int OrynKernelApicSendStartupIpi(unsigned int targetApicId, unsigned int startup
 {
     return SendIpiRaw(targetApicId,
         ORYN_APIC_ICR_DELIVERY_STARTUP | (startupVector & 0xFFU));
+}
+
+
+int OrynKernelApicEnableLegacyPicBridge(void)
+{
+    if (!gApicState.Initialized)
+    {
+        return 0;
+    }
+
+    if (gApicState.Apic2Enabled)
+    {
+        OrynMsrWrite(ORYN_MSR_X2APIC_LVT_LINT0, ORYN_APIC_LVT_DELIVERY_EXTINT);
+        gApicState.LegacyPicBridgeEnabled = 1U;
+        return 1;
+    }
+
+    if (gApicState.XApicEnabled)
+    {
+        ApicWrite(ORYN_APIC_REG_LVT_LINT0, ORYN_APIC_LVT_DELIVERY_EXTINT);
+        gApicState.LegacyPicBridgeEnabled = 1U;
+        return 1;
+    }
+
+    return 0;
 }
 
 void OrynKernelApicPrintProof(void)

@@ -1,4 +1,4 @@
-OrynWsl 0.5.46 Quick Start
+OrynWsl 0.5.47 Quick Start
 
 This package is a WSL-native Oryn SDK baseline.
 
@@ -830,3 +830,18 @@ BootReport now verifies the early-SMP markers:
   [KERNEL] SMP: starting early after APIC/APIC2 enable.
   [KERNEL] PASS: SMP AP startup moved before PCI/HPET/console/memory proof.
   [KERNEL] PASS: SMP AP startup completed before PCI/HPET/console/memory proof.
+
+
+OrynWsl 0.5.47 Interrupt-driven keyboard screen scrolling
+
+Interactive QEMU display mode now keeps CPU interrupts enabled in the halt loop so the PS/2 keyboard can deliver IRQ1 interrupts. The kernel registers a PS/2 IRQ1 handler on vector 0x21. Up and Down scroll the kernel screen one line at a time. PgUp and PgDn scroll one page at a time. The handler reads scan codes from ports 0x64/0x60 and calls the common console scrollback functions; it does not poll the keyboard.
+
+Expected proof markers:
+[KERNEL] PASS: Keyboard interrupt scrolling initialized.
+[KERNEL] PASS: PS/2 keyboard IRQ1 handler registered.
+[KERNEL] PASS: Keyboard scrolling uses IRQ1 interrupts.
+[KERNEL] PASS: PIC IRQ1 unmasked for keyboard input.
+[KERNEL] PASS: Keyboard arrow and page key decoder ready.
+[KERNEL] PASS: Keyboard Up/Down scroll one line.
+[KERNEL] PASS: Keyboard PgUp/PgDn scroll one page.
+[KERNEL] PASS: Interactive halt loop leaves interrupts enabled for keyboard scrolling.

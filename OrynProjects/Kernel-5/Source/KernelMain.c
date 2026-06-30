@@ -10,6 +10,7 @@
 #include "KernelPic.h"
 #include "KernelApic.h"
 #include "KernelHpet.h"
+#include "KernelKeyboard.h"
 #include "KernelPci.h"
 #include "KernelSmp.h"
 #include "KernelMemoryMap.h"
@@ -122,6 +123,19 @@ static void PrintBootInfoOwnership(const OrynBootInfo* kernelBootInfo)
     }
 }
 
+
+
+static int RunKernelKeyboardScrollProof(void)
+{
+    if (OrynKernelKeyboardInitForConsoleScroll())
+    {
+        OrynKernelKeyboardPrintProof();
+        return 1;
+    }
+
+    OrynKernelKeyboardPrintProof();
+    return 0;
+}
 
 static void RunKernelScreenScrollProof(void)
 {
@@ -336,6 +350,7 @@ void KernelStart(const OrynBootInfo* bootInfo)
             "[KERNEL] TTF renderer: fallback bitmap glyphs\n");
         RunKernelScreenScrollProof();
         RunKernelScreenDoubleBufferProof();
+        (void)RunKernelKeyboardScrollProof();
         KernelBootInfoPrintSummary(kernelBootInfo);
         RunMemoryProofs(kernelBootInfo);
     }
@@ -346,15 +361,34 @@ void KernelStart(const OrynBootInfo* bootInfo)
 
     KernelIoWriteString("[KERNEL] System halted by Kernel-5.\n");
 #if ORYN_VM_INTERACTIVE_DISPLAY
+    OrynKernelKeyboardEnableInteractiveInterrupts();
+    int keyboardInterruptsReady = OrynKernelInterruptsAreEnabled() ? 1 : 0;
+    OrynKernelInterruptsDisable();
+    KernelIoWriteString(keyboardInterruptsReady ?
+        "[KERNEL] PASS: Interactive halt loop leaves interrupts enabled for keyboard scrolling.\n" :
+        "[KERNEL] FAIL: Interactive halt loop could not enable keyboard interrupts.\n");
     KernelIoWriteString("[KERNEL] PASS: Interactive QEMU display mode keeps VM open for scroll testing.\n");
+    KernelIoWriteString("[KERNEL] INFO: Use Up/Down to scroll one line and PgUp/PgDn to scroll one page.\n");
     KernelIoWriteString("[KERNEL] INFO: Close the QEMU window after manual scroll testing is complete.\n");
+    if (keyboardInterruptsReady)
+    {
+        OrynKernelInterruptsEnable();
+    }
 #else
     KernelIoExitQemuSuccess();
 #endif
 
+#if ORYN_VM_INTERACTIVE_DISPLAY
+    for (;;)
+    {
+        __asm__ volatile ("sti");
+        __asm__ volatile ("hlt");
+    }
+#else
     for (;;)
     {
         __asm__ volatile ("cli");
         __asm__ volatile ("hlt");
     }
+#endif
 }

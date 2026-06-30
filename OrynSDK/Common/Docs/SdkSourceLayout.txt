@@ -256,3 +256,8 @@ KernelPhysicalMemory.h raises the static page-tracking capacity so the 2G QEMU m
 - Kernel-5 starts SMP immediately after APIC/APIC2 setup.
 - SMP no longer waits for framebuffer console setup or the physical/virtual memory proof path.
 - Application processors are parked in the AP loop before HPET, PCI, console, memory, and VM proof output.
+
+
+0.5.47 Interrupt-driven keyboard scrolling ownership
+
+Keyboard scan-code handling is target-owned under Targets/UEFI/X64/KernelSupport because it uses x86 PS/2 ports and IRQ1. The common console still owns scrollback, line/page movement, redraw, double buffering, and scrollbars. The keyboard target module only translates IRQ1 scan codes into KConsole.ScrollUpLines, KConsole.ScrollDownLines, KConsole.PageUp, and KConsole.PageDown calls.

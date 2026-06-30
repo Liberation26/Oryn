@@ -21,6 +21,7 @@ typedef struct OrynKernelApicState
     unsigned long long TimerCountAfter;
     unsigned int TimerInterruptVector;
     unsigned int TimerInterruptArmed;
+    unsigned int LegacyPicBridgeEnabled;
 } OrynKernelApicState;
 
 int OrynKernelApicInit(int preferApic2);
@@ -32,6 +33,7 @@ unsigned long long OrynKernelApicReadTimerCurrent(void);
 int OrynKernelApicCanSendIpi(void);
 int OrynKernelApicSendInitIpi(unsigned int targetApicId);
 int OrynKernelApicSendStartupIpi(unsigned int targetApicId, unsigned int startupVector);
+int OrynKernelApicEnableLegacyPicBridge(void);
 void OrynKernelApicPrintProof(void);
 
 #endif

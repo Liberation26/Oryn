@@ -274,6 +274,14 @@ static void WriteBootReport(
     int screen_line_buffered = TextContains(debug_text, "[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.");
     int screen_double_buffer = TextContains(debug_text, "[KERNEL] PASS: Kernel screen double buffering implemented.");
     int physical_capacity = TextContains(debug_text, "[KERNEL] PASS: Physical allocator tracking capacity is sufficient.");
+    int keyboard_initialized = TextContains(debug_text, "[KERNEL] PASS: Keyboard interrupt scrolling initialized.");
+    int keyboard_irq1 = TextContains(debug_text, "[KERNEL] PASS: PS/2 keyboard IRQ1 handler registered.");
+    int keyboard_interrupts = TextContains(debug_text, "[KERNEL] PASS: Keyboard scrolling uses IRQ1 interrupts.");
+    int keyboard_pic_unmasked = TextContains(debug_text, "[KERNEL] PASS: PIC IRQ1 unmasked for keyboard input.");
+    int keyboard_decoder = TextContains(debug_text, "[KERNEL] PASS: Keyboard arrow and page key decoder ready.");
+    int keyboard_line = TextContains(debug_text, "[KERNEL] PASS: Keyboard Up/Down scroll one line.");
+    int keyboard_page = TextContains(debug_text, "[KERNEL] PASS: Keyboard PgUp/PgDn scroll one page.");
+    int interactive_interrupts = TextContains(debug_text, "[KERNEL] PASS: Interactive halt loop leaves interrupts enabled for keyboard scrolling.");
     int qemu_preboot_failure = (!command_ok) && !loader_started && DebugTextIsEmpty(debug_text);
     const char* report_display_mode = ResolveQemuDisplayMode(project);
     int interactive_display = IsInteractiveDisplayMode(report_display_mode);
@@ -329,7 +337,9 @@ static void WriteBootReport(
         screen_bottom && screen_scrolling && screen_back_buffer && screen_renders_back &&
         screen_deferred_flip && screen_line_flip && screen_dirty_line && screen_fast_scroll &&
         screen_refresh_optimized && screen_line_buffered && screen_present && screen_double_buffer &&
-        physical_capacity && virtual_memory_active && qemu_exit_or_hold;
+        physical_capacity && keyboard_initialized && keyboard_irq1 && keyboard_interrupts && keyboard_pic_unmasked &&
+        keyboard_decoder && keyboard_line && keyboard_page && (!interactive_display || interactive_interrupts) &&
+        virtual_memory_active && qemu_exit_or_hold;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -496,6 +506,14 @@ static void WriteBootReport(
     fprintf(file, "  Kernel screen presents completed frame: %s\n", PassFail(screen_present));
     fprintf(file, "  Kernel screen double buffering implemented: %s\n", PassFail(screen_double_buffer));
     fprintf(file, "  Physical allocator tracking capacity sufficient: %s\n", PassFail(physical_capacity));
+    fprintf(file, "  Keyboard interrupt scrolling initialized: %s\n", PassFail(keyboard_initialized));
+    fprintf(file, "  PS/2 keyboard IRQ1 handler registered: %s\n", PassFail(keyboard_irq1));
+    fprintf(file, "  Keyboard scrolling uses IRQ1 interrupts: %s\n", PassFail(keyboard_interrupts));
+    fprintf(file, "  PIC IRQ1 unmasked for keyboard input: %s\n", PassFail(keyboard_pic_unmasked));
+    fprintf(file, "  Keyboard arrow/page decoder ready: %s\n", PassFail(keyboard_decoder));
+    fprintf(file, "  Keyboard Up/Down scroll one line: %s\n", PassFail(keyboard_line));
+    fprintf(file, "  Keyboard PgUp/PgDn scroll one page: %s\n", PassFail(keyboard_page));
+    fprintf(file, "  Interactive halt leaves interrupts enabled: %s\n", interactive_display ? PassFail(interactive_interrupts) : "SKIPPED - headless run");
     fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
     fprintf(file, "  Kernel virtual memory required ranges mapped: %s\n", PassFail(virtual_memory_required_mapped));
     fprintf(file, "  Kernel virtual memory CR3 switch requested: %s\n", PassFail(virtual_memory_switching_cr3));
@@ -712,6 +730,22 @@ static void WriteBootReport(
             "Kernel screen double buffering did not complete." :
         !physical_capacity ?
             "The physical allocator did not have enough static tracking capacity for this VM memory size." :
+        !keyboard_initialized ?
+            "Keyboard interrupt scrolling was not initialized." :
+        !keyboard_irq1 ?
+            "The PS/2 keyboard IRQ1 handler was not registered." :
+        !keyboard_interrupts ?
+            "Keyboard scrolling is not using interrupt-driven IRQ1 input." :
+        !keyboard_pic_unmasked ?
+            "PIC IRQ1 was not unmasked for keyboard input." :
+        !keyboard_decoder ?
+            "The keyboard arrow/page scan-code decoder was not initialized." :
+        !keyboard_line ?
+            "Keyboard Up/Down line scrolling was not configured." :
+        !keyboard_page ?
+            "Keyboard PgUp/PgDn page scrolling was not configured." :
+        interactive_display && !interactive_interrupts ?
+            "Interactive display mode did not leave interrupts enabled for keyboard scrolling." :
         !virtual_memory_started ?
             "The kernel stopped before virtual-memory initialization." :
         !virtual_memory_required_mapped ?
