@@ -82,7 +82,10 @@ static void OrynKernelDiagnosticsRunPhysicalMemoryProof(const OrynBootInfo* kern
         OrynPhysicalMemoryPrintSummary(&gPhysicalMemory);
         (void)OrynKernelLifecycleTransition(OrynKernelLifecycleMemoryReady);
         OrynPhysicalMemoryRunSelfTest(&gPhysicalMemory);
-        OrynKernelDiagnosticsRunVirtualMemoryProof(kernelBootInfo);
+        if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleVirtualMemory))
+        {
+            OrynKernelDiagnosticsRunVirtualMemoryProof(kernelBootInfo);
+        }
         OrynPhysicalMemoryPrintFinalState(&gPhysicalMemory);
     }
     else

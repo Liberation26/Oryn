@@ -4,7 +4,7 @@
 
 OrynKernelModuleManifestItem* OrynKernelModuleManifestMutable(OrynKernelModuleId id);
 
-static int IsReady(OrynKernelModuleId id)
+int OrynKernelModuleManifestIsReady(OrynKernelModuleId id)
 {
     const OrynKernelModuleManifestItem* item = OrynKernelModuleManifestGet(id);
     return (item && item->State == OrynKernelModuleStateReady) ? 1 : 0;
@@ -29,7 +29,7 @@ int OrynKernelModuleManifestCanStart(OrynKernelModuleId id)
 
     for (unsigned int index = 0U; index < item->RequireCount; ++index)
     {
-        if (!IsReady(item->Requires[index]))
+        if (!OrynKernelModuleManifestIsReady(item->Requires[index]))
         {
             return 0;
         }
@@ -66,11 +66,34 @@ void OrynKernelModuleManifestReady(OrynKernelModuleId id)
     }
 }
 
+void OrynKernelModuleManifestSkipped(OrynKernelModuleId id)
+{
+    OrynKernelModuleManifestItem* item = OrynKernelModuleManifestMutable(id);
+    if (item)
+    {
+        item->State = OrynKernelModuleStateSkipped;
+    }
+}
+
 void OrynKernelModuleManifestFailed(OrynKernelModuleId id)
 {
     OrynKernelModuleManifestItem* item = OrynKernelModuleManifestMutable(id);
     if (item)
     {
         item->State = OrynKernelModuleStateFailed;
+    }
+}
+
+const char* OrynKernelModuleManifestStateName(OrynKernelModuleState state)
+{
+    switch (state)
+    {
+        case OrynKernelModuleStateAbsent: return "absent";
+        case OrynKernelModuleStateRegistered: return "registered";
+        case OrynKernelModuleStateStarting: return "starting";
+        case OrynKernelModuleStateReady: return "ready";
+        case OrynKernelModuleStateSkipped: return "skipped";
+        case OrynKernelModuleStateFailed: return "failed";
+        default: return "unknown";
     }
 }

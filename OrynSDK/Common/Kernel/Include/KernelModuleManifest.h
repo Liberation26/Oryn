@@ -32,6 +32,7 @@ typedef enum OrynKernelModuleState
     OrynKernelModuleStateRegistered,
     OrynKernelModuleStateStarting,
     OrynKernelModuleStateReady,
+    OrynKernelModuleStateSkipped,
     OrynKernelModuleStateFailed
 } OrynKernelModuleState;
 
@@ -48,9 +49,12 @@ typedef struct OrynKernelModuleManifestItem
 void OrynKernelModuleManifestInit(void);
 const OrynKernelModuleManifestItem* OrynKernelModuleManifestGet(OrynKernelModuleId id);
 int OrynKernelModuleManifestCanStart(OrynKernelModuleId id);
+int OrynKernelModuleManifestIsReady(OrynKernelModuleId id);
 int OrynKernelModuleManifestBegin(OrynKernelModuleId id);
 void OrynKernelModuleManifestReady(OrynKernelModuleId id);
+void OrynKernelModuleManifestSkipped(OrynKernelModuleId id);
 void OrynKernelModuleManifestFailed(OrynKernelModuleId id);
+const char* OrynKernelModuleManifestStateName(OrynKernelModuleState state);
 void OrynKernelModuleManifestPrintProof(void);
 
 #endif

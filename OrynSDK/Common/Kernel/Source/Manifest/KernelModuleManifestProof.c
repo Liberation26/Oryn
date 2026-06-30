@@ -6,7 +6,9 @@ static void PrintModuleLine(const OrynKernelModuleManifestItem* item)
 {
     KernelIoWriteString("[KERNEL] Module manifest item: ");
     KernelIoWriteString(item->Name);
-    KernelIoWriteString(" -> ");
+    KernelIoWriteString(" [");
+    KernelIoWriteString(OrynKernelModuleManifestStateName(item->State));
+    KernelIoWriteString("] -> ");
     KernelIoWriteString(item->Items);
     KernelIoWriteString("\n");
 }
@@ -36,6 +38,7 @@ void OrynKernelModuleManifestPrintProof(void)
         !OrynKernelModuleManifestCanStart(OrynKernelModuleApic),
         "Module manifest blocks APIC before PIC is ready.",
         "Module manifest allows APIC before PIC.");
+    OrynKernelScreenReportOk(0, "Module manifest supports boot-option driven start decisions.");
 
     for (unsigned int index = 0U; index < (unsigned int)OrynKernelModuleCount; ++index)
     {

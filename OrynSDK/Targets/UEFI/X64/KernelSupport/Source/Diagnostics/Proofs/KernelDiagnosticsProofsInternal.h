@@ -15,6 +15,7 @@
 #include "KernelKeyboard.h"
 #include "KernelLifecycle.h"
 #include "KernelMemoryMap.h"
+#include "KernelModuleManifest.h"
 #include "KernelPanic.h"
 #include "KernelPci.h"
 #include "KernelPhysicalMemory.h"
@@ -50,6 +51,8 @@
 #endif
 
 void OrynKernelDiagnosticsPrintEntryProofs(const OrynBootInfo* kernelBootInfo);
+void OrynKernelDiagnosticsPrintBootOptionPlan(const OrynBootInfo* kernelBootInfo);
+int OrynKernelDiagnosticsShouldStartModule(const OrynBootInfo* kernelBootInfo, OrynKernelModuleId id);
 void OrynKernelDiagnosticsRunDescriptorProofs(void);
 void OrynKernelDiagnosticsRunInterruptTimerProofs(const OrynBootInfo* kernelBootInfo);
 void OrynKernelDiagnosticsRunPciProof(const OrynBootInfo* kernelBootInfo);

@@ -44,6 +44,7 @@ void OrynKernelDiagnosticsRunBootProofs(const OrynBootInfo* kernelBootInfo)
 {
     OrynKernelDiagnosticsPrintEntryProofs(kernelBootInfo);
     OrynKernelModuleManifestPrintProof();
+    OrynKernelDiagnosticsPrintBootOptionPlan(kernelBootInfo);
     OrynKernelBootInfoStatus bootStatus = KernelBootInfoValidate(kernelBootInfo);
 
     OrynKernelDiagnosticsRunDescriptorProofs();
@@ -53,13 +54,27 @@ void OrynKernelDiagnosticsRunBootProofs(const OrynBootInfo* kernelBootInfo)
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleInterruptsReady);
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleTimersReady);
 
-    OrynKernelDiagnosticsRunPciProof(kernelBootInfo);
+    if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModulePci))
+    {
+        OrynKernelDiagnosticsRunPciProof(kernelBootInfo);
+    }
+
     if (bootStatus.IsValid)
     {
-        OrynKernelDiagnosticsRunConsoleProofs(kernelBootInfo);
+        if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleConsole))
+        {
+            OrynKernelDiagnosticsRunConsoleProofs(kernelBootInfo);
+        }
         KernelBootInfoPrintSummary(kernelBootInfo);
-        OrynKernelDiagnosticsRunFat32VfsProof();
-        OrynKernelDiagnosticsRunMemoryProofs(kernelBootInfo);
+        if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleFat32) &&
+            OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleVfs))
+        {
+            OrynKernelDiagnosticsRunFat32VfsProof();
+        }
+        if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModulePhysicalMemory))
+        {
+            OrynKernelDiagnosticsRunMemoryProofs(kernelBootInfo);
+        }
     }
     else
     {
