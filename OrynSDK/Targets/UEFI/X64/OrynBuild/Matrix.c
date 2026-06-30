@@ -246,7 +246,7 @@ int OrynCommandMatrix(const char* executable_path, const char* project_file)
     fprintf(report, "Version: %s\n", ORYN_VERSION);
     fprintf(report, "Project: %s\n", base_project.name);
     fprintf(report, "Run: %s\n", run_id);
-    fprintf(report, "Mode: build all profile kernels first, then run headless QEMU tests\n");
+    fprintf(report, "Mode: build all profile kernels first, then run headless QEMU tests with live serial output displayed\n");
     fprintf(report, "Build root: %s\n", build_run_root);
     fprintf(report, "Output root: %s\n\n", output_run_root);
     fclose(report);
@@ -293,6 +293,7 @@ int OrynCommandMatrix(const char* executable_path, const char* project_file)
 
     OrynLogStep("Testing built matrix kernels in headless QEMU.");
     OrynLogInfo("Each headless kernel requests QEMU debug-exit after its proof tasks complete.");
+    OrynLogInfo("Each headless QEMU test displays the kernel serial stream live in this terminal.");
     AppendMatrixSection(matrix_report_path, "Test phase:");
 
     for (unsigned int index = 0; index < gProfileCount; ++index)

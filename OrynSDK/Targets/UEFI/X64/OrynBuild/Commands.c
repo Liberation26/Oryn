@@ -1064,10 +1064,12 @@ int OrynRunQemu(const OrynProject* project)
     remove(debug_log);
     remove(boot_report);
 
-    const char* serial_argument = interactive_display ? "-serial null" : "-serial stdio";
+    const char* serial_argument = interactive_display ?
+        "-serial null" :
+        "-chardev stdio,id=orynserial,signal=off -serial chardev:orynserial";
     OrynLogKeyValue("Serial", interactive_display ?
         "null sink for faster interactive screen refresh" :
-        "live WSL terminal stdio");
+        "live WSL terminal stdio chardev");
     OrynLogKeyValue("Debug log", debug_log);
     OrynLogKeyValue("Debug log staged", stage_debug_windows);
     OrynLogKeyValue("Boot report", boot_report);
@@ -1125,7 +1127,19 @@ int OrynRunQemu(const OrynProject* project)
         drive_quoted);
 
     int exit_code = -1;
+    if (!interactive_display)
+    {
+        printf("\n======== LIVE SERIAL OUTPUT START: %s ========\n", project->name);
+        fflush(stdout);
+    }
+
     int command_ok = RunQemuAndGetExitCode(command, &exit_code);
+
+    if (!interactive_display)
+    {
+        printf("\n======== LIVE SERIAL OUTPUT END: %s ========\n", project->name);
+        fflush(stdout);
+    }
 
     if (OrynFileExists(stage_debug_log))
     {
