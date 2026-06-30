@@ -9,6 +9,12 @@ typedef struct OrynKernelKeyboardState
     unsigned int PicIrq1Unmasked;
     unsigned int ApicLegacyBridgeReady;
     unsigned int DecoderReady;
+    unsigned int MakeBreakStateReady;
+    unsigned int ReleaseStopsScrolling;
+    unsigned int UpHeld;
+    unsigned int DownHeld;
+    unsigned int PageUpHeld;
+    unsigned int PageDownHeld;
     unsigned int InterruptsEnabledForInteractiveMode;
     unsigned long long InterruptCount;
     unsigned long long ScanCodesRead;
@@ -16,6 +22,8 @@ typedef struct OrynKernelKeyboardState
     unsigned long long ScrollLineDownEvents;
     unsigned long long PageUpEvents;
     unsigned long long PageDownEvents;
+    unsigned long long ReleaseEvents;
+    unsigned long long StopOnReleaseEvents;
 } OrynKernelKeyboardState;
 
 int OrynKernelKeyboardInitForConsoleScroll(void);

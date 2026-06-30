@@ -258,6 +258,6 @@ KernelPhysicalMemory.h raises the static page-tracking capacity so the 2G QEMU m
 - Application processors are parked in the AP loop before HPET, PCI, console, memory, and VM proof output.
 
 
-0.5.47 Interrupt-driven keyboard scrolling ownership
+0.5.48 Interrupt-driven keyboard scrolling ownership
 
-Keyboard scan-code handling is target-owned under Targets/UEFI/X64/KernelSupport because it uses x86 PS/2 ports and IRQ1. The common console still owns scrollback, line/page movement, redraw, double buffering, and scrollbars. The keyboard target module only translates IRQ1 scan codes into KConsole.ScrollUpLines, KConsole.ScrollDownLines, KConsole.PageUp, and KConsole.PageDown calls.
+Keyboard scan-code handling is target-owned under Targets/UEFI/X64/KernelSupport because it uses x86 PS/2 ports and IRQ1. The common console still owns scrollback, line/page movement, redraw, double buffering, and scrollbars. The keyboard target module translates IRQ1 scan codes into KConsole.ScrollUpLines, KConsole.ScrollDownLines, KConsole.PageUp, and KConsole.PageDown calls. It now tracks PS/2 make/break state for Up, Down, PgUp, and PgDn so held keys can repeat scrolling and break/release scan codes stop scrolling immediately when the user lifts their finger.

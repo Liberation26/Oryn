@@ -279,8 +279,11 @@ static void WriteBootReport(
     int keyboard_interrupts = TextContains(debug_text, "[KERNEL] PASS: Keyboard scrolling uses IRQ1 interrupts.");
     int keyboard_pic_unmasked = TextContains(debug_text, "[KERNEL] PASS: PIC IRQ1 unmasked for keyboard input.");
     int keyboard_decoder = TextContains(debug_text, "[KERNEL] PASS: Keyboard arrow and page key decoder ready.");
-    int keyboard_line = TextContains(debug_text, "[KERNEL] PASS: Keyboard Up/Down scroll one line.");
-    int keyboard_page = TextContains(debug_text, "[KERNEL] PASS: Keyboard PgUp/PgDn scroll one page.");
+    int keyboard_make_break = TextContains(debug_text, "[KERNEL] PASS: Keyboard scroll keys use make/break state tracking.");
+    int keyboard_release_stop = TextContains(debug_text, "[KERNEL] PASS: Keyboard release scan codes stop scrolling immediately.");
+    int keyboard_line = TextContains(debug_text, "[KERNEL] PASS: Keyboard Up/Down scroll one line while held.");
+    int keyboard_page = TextContains(debug_text, "[KERNEL] PASS: Keyboard PgUp/PgDn scroll one page while held.");
+    int keyboard_stops_on_release = TextContains(debug_text, "[KERNEL] PASS: Keyboard scrolling stops when key is released.");
     int interactive_interrupts = TextContains(debug_text, "[KERNEL] PASS: Interactive halt loop leaves interrupts enabled for keyboard scrolling.");
     int qemu_preboot_failure = (!command_ok) && !loader_started && DebugTextIsEmpty(debug_text);
     const char* report_display_mode = ResolveQemuDisplayMode(project);
@@ -338,7 +341,8 @@ static void WriteBootReport(
         screen_deferred_flip && screen_line_flip && screen_dirty_line && screen_fast_scroll &&
         screen_refresh_optimized && screen_line_buffered && screen_present && screen_double_buffer &&
         physical_capacity && keyboard_initialized && keyboard_irq1 && keyboard_interrupts && keyboard_pic_unmasked &&
-        keyboard_decoder && keyboard_line && keyboard_page && (!interactive_display || interactive_interrupts) &&
+        keyboard_decoder && keyboard_make_break && keyboard_release_stop && keyboard_line && keyboard_page &&
+        keyboard_stops_on_release && (!interactive_display || interactive_interrupts) &&
         virtual_memory_active && qemu_exit_or_hold;
 
     FILE* file = fopen(report_path, "wb");
@@ -511,8 +515,11 @@ static void WriteBootReport(
     fprintf(file, "  Keyboard scrolling uses IRQ1 interrupts: %s\n", PassFail(keyboard_interrupts));
     fprintf(file, "  PIC IRQ1 unmasked for keyboard input: %s\n", PassFail(keyboard_pic_unmasked));
     fprintf(file, "  Keyboard arrow/page decoder ready: %s\n", PassFail(keyboard_decoder));
-    fprintf(file, "  Keyboard Up/Down scroll one line: %s\n", PassFail(keyboard_line));
-    fprintf(file, "  Keyboard PgUp/PgDn scroll one page: %s\n", PassFail(keyboard_page));
+    fprintf(file, "  Keyboard make/break state tracking: %s\n", PassFail(keyboard_make_break));
+    fprintf(file, "  Keyboard release stops scrolling immediately: %s\n", PassFail(keyboard_release_stop));
+    fprintf(file, "  Keyboard Up/Down scroll one line while held: %s\n", PassFail(keyboard_line));
+    fprintf(file, "  Keyboard PgUp/PgDn scroll one page while held: %s\n", PassFail(keyboard_page));
+    fprintf(file, "  Keyboard scrolling stops when key released: %s\n", PassFail(keyboard_stops_on_release));
     fprintf(file, "  Interactive halt leaves interrupts enabled: %s\n", interactive_display ? PassFail(interactive_interrupts) : "SKIPPED - headless run");
     fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
     fprintf(file, "  Kernel virtual memory required ranges mapped: %s\n", PassFail(virtual_memory_required_mapped));
@@ -740,10 +747,16 @@ static void WriteBootReport(
             "PIC IRQ1 was not unmasked for keyboard input." :
         !keyboard_decoder ?
             "The keyboard arrow/page scan-code decoder was not initialized." :
+        !keyboard_make_break ?
+            "Keyboard scroll keys do not use make/break state tracking." :
+        !keyboard_release_stop ?
+            "Keyboard release scan codes do not stop held scrolling immediately." :
         !keyboard_line ?
-            "Keyboard Up/Down line scrolling was not configured." :
+            "Keyboard Up/Down held line scrolling was not configured." :
         !keyboard_page ?
-            "Keyboard PgUp/PgDn page scrolling was not configured." :
+            "Keyboard PgUp/PgDn held page scrolling was not configured." :
+        !keyboard_stops_on_release ?
+            "Keyboard scrolling does not stop when the key is released." :
         interactive_display && !interactive_interrupts ?
             "Interactive display mode did not leave interrupts enabled for keyboard scrolling." :
         !virtual_memory_started ?

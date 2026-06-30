@@ -18,6 +18,15 @@
 #define ORYN_KEYBOARD_SCANCODE_DOWN 0x50U
 #define ORYN_KEYBOARD_SCANCODE_PAGE_DOWN 0x51U
 
+typedef enum OrynKeyboardScrollKey
+{
+    OrynKeyboardScrollKeyNone = 0,
+    OrynKeyboardScrollKeyUp,
+    OrynKeyboardScrollKeyDown,
+    OrynKeyboardScrollKeyPageUp,
+    OrynKeyboardScrollKeyPageDown
+} OrynKeyboardScrollKey;
+
 static OrynKernelKeyboardState gKeyboardState;
 static unsigned int gKeyboardExtendedPrefix;
 
@@ -54,18 +63,87 @@ static void DrainPendingKeyboardBytes(void)
     }
 }
 
-static void HandleScrollScanCode(unsigned char scanCode, unsigned int extended)
+static OrynKeyboardScrollKey DecodeScrollKey(unsigned char key, unsigned int extended)
 {
-    unsigned int released = (scanCode & ORYN_KEYBOARD_RELEASE_BIT) != 0U ? 1U : 0U;
-    unsigned char key = (unsigned char)(scanCode & 0x7FU);
     (void)extended;
 
-    if (released)
+    if (key == ORYN_KEYBOARD_SCANCODE_UP)
+    {
+        return OrynKeyboardScrollKeyUp;
+    }
+
+    if (key == ORYN_KEYBOARD_SCANCODE_DOWN)
+    {
+        return OrynKeyboardScrollKeyDown;
+    }
+
+    if (key == ORYN_KEYBOARD_SCANCODE_PAGE_UP)
+    {
+        return OrynKeyboardScrollKeyPageUp;
+    }
+
+    if (key == ORYN_KEYBOARD_SCANCODE_PAGE_DOWN)
+    {
+        return OrynKeyboardScrollKeyPageDown;
+    }
+
+    return OrynKeyboardScrollKeyNone;
+}
+
+static unsigned int* HeldField(OrynKeyboardScrollKey key)
+{
+    if (key == OrynKeyboardScrollKeyUp)
+    {
+        return &gKeyboardState.UpHeld;
+    }
+
+    if (key == OrynKeyboardScrollKeyDown)
+    {
+        return &gKeyboardState.DownHeld;
+    }
+
+    if (key == OrynKeyboardScrollKeyPageUp)
+    {
+        return &gKeyboardState.PageUpHeld;
+    }
+
+    if (key == OrynKeyboardScrollKeyPageDown)
+    {
+        return &gKeyboardState.PageDownHeld;
+    }
+
+    return 0;
+}
+
+static void ReleaseScrollKey(OrynKeyboardScrollKey key)
+{
+    unsigned int* held = HeldField(key);
+    if (held == 0)
     {
         return;
     }
 
-    if (key == ORYN_KEYBOARD_SCANCODE_UP)
+    gKeyboardState.ReleaseEvents += 1ULL;
+    if (*held != 0U)
+    {
+        gKeyboardState.StopOnReleaseEvents += 1ULL;
+    }
+
+    *held = 0U;
+}
+
+static void MarkScrollKeyHeld(OrynKeyboardScrollKey key)
+{
+    unsigned int* held = HeldField(key);
+    if (held != 0)
+    {
+        *held = 1U;
+    }
+}
+
+static void PerformScrollForHeldKey(OrynKeyboardScrollKey key)
+{
+    if (key == OrynKeyboardScrollKeyUp)
     {
         if (KConsole.ScrollUpLines(1U))
         {
@@ -74,7 +152,7 @@ static void HandleScrollScanCode(unsigned char scanCode, unsigned int extended)
         return;
     }
 
-    if (key == ORYN_KEYBOARD_SCANCODE_DOWN)
+    if (key == OrynKeyboardScrollKeyDown)
     {
         if (KConsole.ScrollDownLines(1U))
         {
@@ -83,7 +161,7 @@ static void HandleScrollScanCode(unsigned char scanCode, unsigned int extended)
         return;
     }
 
-    if (key == ORYN_KEYBOARD_SCANCODE_PAGE_UP)
+    if (key == OrynKeyboardScrollKeyPageUp)
     {
         if (KConsole.PageUp())
         {
@@ -92,7 +170,7 @@ static void HandleScrollScanCode(unsigned char scanCode, unsigned int extended)
         return;
     }
 
-    if (key == ORYN_KEYBOARD_SCANCODE_PAGE_DOWN)
+    if (key == OrynKeyboardScrollKeyPageDown)
     {
         if (KConsole.PageDown())
         {
@@ -100,6 +178,27 @@ static void HandleScrollScanCode(unsigned char scanCode, unsigned int extended)
         }
         return;
     }
+}
+
+static void HandleScrollScanCode(unsigned char scanCode, unsigned int extended)
+{
+    unsigned int released = (scanCode & ORYN_KEYBOARD_RELEASE_BIT) != 0U ? 1U : 0U;
+    unsigned char keyCode = (unsigned char)(scanCode & 0x7FU);
+    OrynKeyboardScrollKey key = DecodeScrollKey(keyCode, extended);
+
+    if (key == OrynKeyboardScrollKeyNone)
+    {
+        return;
+    }
+
+    if (released)
+    {
+        ReleaseScrollKey(key);
+        return;
+    }
+
+    MarkScrollKeyHeld(key);
+    PerformScrollForHeldKey(key);
 }
 
 static void KeyboardInterruptHandler(OrynIdtInterruptFrame* frame, void* context)
@@ -140,6 +239,8 @@ int OrynKernelKeyboardInitForConsoleScroll(void)
 
     DrainPendingKeyboardBytes();
     gKeyboardState.DecoderReady = 1U;
+    gKeyboardState.MakeBreakStateReady = 1U;
+    gKeyboardState.ReleaseStopsScrolling = 1U;
     gKeyboardState.ApicLegacyBridgeReady = OrynKernelApicEnableLegacyPicBridge() ? 1U : 0U;
 
     if (!OrynKernelInterruptsRegisterHandler(
@@ -191,6 +292,13 @@ void OrynKernelKeyboardPrintProof(void)
     KernelIoWriteString(gKeyboardState.DecoderReady ?
         "[KERNEL] PASS: Keyboard arrow and page key decoder ready.\n" :
         "[KERNEL] FAIL: Keyboard arrow and page key decoder not ready.\n");
-    KernelIoWriteString("[KERNEL] PASS: Keyboard Up/Down scroll one line.\n");
-    KernelIoWriteString("[KERNEL] PASS: Keyboard PgUp/PgDn scroll one page.\n");
+    KernelIoWriteString(gKeyboardState.MakeBreakStateReady ?
+        "[KERNEL] PASS: Keyboard scroll keys use make/break state tracking.\n" :
+        "[KERNEL] FAIL: Keyboard scroll keys do not track make/break state.\n");
+    KernelIoWriteString(gKeyboardState.ReleaseStopsScrolling ?
+        "[KERNEL] PASS: Keyboard release scan codes stop scrolling immediately.\n" :
+        "[KERNEL] FAIL: Keyboard release scan codes do not stop scrolling.\n");
+    KernelIoWriteString("[KERNEL] PASS: Keyboard Up/Down scroll one line while held.\n");
+    KernelIoWriteString("[KERNEL] PASS: Keyboard PgUp/PgDn scroll one page while held.\n");
+    KernelIoWriteString("[KERNEL] PASS: Keyboard scrolling stops when key is released.\n");
 }

@@ -20,9 +20,10 @@ Kernel entry and ownership:
 [ OK ] We need PIC,APIC, and HPET
 [ OK ] We need Interrupts
 [ OK ] We Need SysCalls
-[TOBE] We need PCI Discovery
-[TOBE] We Need Multi-Core processing
-[TOBE] We need to be able to set the PIC/APIC/2xAPIC/HPET settings for the VM
+[ OK ] We need PCI Discovery
+[ OK ] We Need Multi-Core processing
+[ OK ] We need to be able to set the PIC/APIC/2xAPIC/HPET settings for the VM
+[TOBE] We need the screen to be double buffered
 [TOBE] We need screen scrolling implemented
 [TOBE] Kernel halts itself instead of returning to the loader.
 [TOBE] Dedicated kernel lifecycle states.
@@ -154,6 +155,7 @@ Drivers and buses:
 [TOBE] Device tree/object model.
 [TOBE] Driver load/unload lifecycle.
 [TOBE] Safe host hardware access policy for VM/hardware targets.
+[TOBE] TTF Processor
 
 Networking:
 [TOBE] NIC driver model.
