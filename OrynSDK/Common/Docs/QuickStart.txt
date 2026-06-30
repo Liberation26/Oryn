@@ -672,7 +672,7 @@ Expected proof lines include:
   [KERNEL] PASS: PCI Discovery complete.
 
 
-OrynWsl 0.5.36 multi-core processing
+OrynWsl 0.5.37 multi-core processing
 ------------------------------------
 Kernel-5 now boots QEMU with four virtual CPUs:
 
@@ -691,8 +691,12 @@ Expected SMP proof markers include:
   PASS: SMP application processors entered kernel AP loop.
   PASS: Multi-Core processing initialized.
 
-0.5.36 boot-proof cascade repair
+0.5.37 boot-proof cascade repair
 ----------------------------------
 Kernel-5 now prints entry and BootInfo proof markers before the hardware proof chain.
 The interrupt proof is staged from PIC IRQ0 upward, with PIC proof printed before APIC handoff and APIC timer proof printed after Local APIC/APIC2 setup.
 SMP startup now runs after virtual memory activation, and the AP trampoline uses the copied low-memory base for 64-bit data loads.
+
+0.5.37 SMP fault fix:
+  [KERNEL] PASS: SMP ACPI topology cached before virtual memory switch.
+  [KERNEL] SMP: using cached ACPI MADT topology.

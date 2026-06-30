@@ -25,6 +25,8 @@ typedef struct OrynKernelSmpState
     unsigned int AcpiChecksumOk;
     unsigned int MadtFound;
     unsigned int MadtLocalApicAddressValid;
+    unsigned int DiscoveryComplete;
+    unsigned int AcpiReadBeforeVirtualMemory;
     unsigned int LocalApicEntryCount;
     unsigned int EnabledCpuCount;
     unsigned int BootstrapApicId;
@@ -45,6 +47,7 @@ typedef struct OrynKernelSmpState
     OrynKernelSmpCpu Cpus[ORYN_SMP_MAX_CPUS];
 } OrynKernelSmpState;
 
+int OrynKernelSmpDiscover(const OrynBootInfo* bootInfo);
 int OrynKernelSmpInit(const OrynBootInfo* bootInfo);
 const OrynKernelSmpState* OrynKernelSmpGetState(void);
 void OrynKernelSmpPrintProof(void);

@@ -198,6 +198,7 @@ void KernelStart(const OrynBootInfo* bootInfo)
     RunDescriptorAndSysCallProofs();
     RunInterruptAndTimerProofs(kernelBootInfo);
     RunPciProof(kernelBootInfo);
+    (void)OrynKernelSmpDiscover(kernelBootInfo);
 
     if (bootStatus.IsValid)
     {

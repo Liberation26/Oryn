@@ -253,6 +253,21 @@ static void ParseMadt(const OrynAcpiMadtHeader* madt)
     }
 }
 
+static void FinalizeCpuDiscovery(void)
+{
+    if (gSmpState.LocalApicEntryCount == 0U)
+    {
+        AddCpu(0U, gSmpState.BootstrapApicId, 1U);
+    }
+
+    if (gSmpState.EnabledCpuCount > 0U)
+    {
+        gSmpState.ApplicationProcessorCount = gSmpState.EnabledCpuCount - 1U;
+    }
+
+    gSmpState.DiscoveryComplete = 1U;
+}
+
 static void DiscoverCpus(const OrynBootInfo* bootInfo)
 {
     const OrynAcpiRsdp20* rsdp;
@@ -260,6 +275,7 @@ static void DiscoverCpus(const OrynBootInfo* bootInfo)
 
     if (bootInfo == 0 || !KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_RSDP) || bootInfo->Rsdp == 0ULL)
     {
+        FinalizeCpuDiscovery();
         return;
     }
 
@@ -268,6 +284,7 @@ static void DiscoverCpus(const OrynBootInfo* bootInfo)
     gSmpState.AcpiChecksumOk = ValidateRsdp(rsdp) ? 1U : 0U;
     if (!gSmpState.AcpiChecksumOk)
     {
+        FinalizeCpuDiscovery();
         return;
     }
 
@@ -276,6 +293,20 @@ static void DiscoverCpus(const OrynBootInfo* bootInfo)
     {
         ParseMadt(madt);
     }
+
+    FinalizeCpuDiscovery();
+}
+
+int OrynKernelSmpDiscover(const OrynBootInfo* bootInfo)
+{
+    KernelIoWriteString("[KERNEL] SMP: multi-core processing discovery starting.\n");
+    ClearState();
+    gSmpState.Initialized = 1U;
+    gSmpState.BootstrapApicId = OrynKernelApicGetState()->LocalApicId;
+    gSmpState.AcpiReadBeforeVirtualMemory = 1U;
+    DiscoverCpus(bootInfo);
+    KernelIoWriteString("[KERNEL] PASS: SMP ACPI topology cached before virtual memory switch.\n");
+    return gSmpState.DiscoveryComplete ? 1 : 0;
 }
 
 static unsigned long long ReadCr3(void)
@@ -418,23 +449,19 @@ void OrynKernelSmpApEntry(unsigned int localApicId)
 
 int OrynKernelSmpInit(const OrynBootInfo* bootInfo)
 {
-    KernelIoWriteString("[KERNEL] SMP: multi-core processing discovery starting.\n");
-    ClearState();
+    if (!gSmpState.DiscoveryComplete)
+    {
+        (void)OrynKernelSmpDiscover(bootInfo);
+    }
+    else
+    {
+        KernelIoWriteString("[KERNEL] SMP: using cached ACPI MADT topology.\n");
+    }
+
     gSmpState.Initialized = 1U;
-    gSmpState.BootstrapApicId = OrynKernelApicGetState()->LocalApicId;
     gSmpState.CurrentCr3 = ReadCr3();
     gSmpState.Cr3Below4G = (gSmpState.CurrentCr3 < 0x100000000ULL) ? 1U : 0U;
     gSmpState.IpiPathReady = OrynKernelApicCanSendIpi();
-    DiscoverCpus(bootInfo);
-    if (gSmpState.LocalApicEntryCount == 0U)
-    {
-        AddCpu(0U, gSmpState.BootstrapApicId, 1U);
-    }
-
-    if (gSmpState.EnabledCpuCount > 0U)
-    {
-        gSmpState.ApplicationProcessorCount = gSmpState.EnabledCpuCount - 1U;
-    }
 
     if (PrepareTrampoline())
     {
@@ -457,6 +484,9 @@ void OrynKernelSmpPrintProof(void)
     KernelIoWriteString(gSmpState.AcpiChecksumOk ?
         "[KERNEL] PASS: SMP ACPI checksum validation passed.\n" :
         "[KERNEL] WARN: SMP ACPI checksum validation failed or was unavailable.\n");
+    KernelIoWriteString(gSmpState.AcpiReadBeforeVirtualMemory ?
+        "[KERNEL] PASS: SMP ACPI topology cached before virtual memory switch.\n" :
+        "[KERNEL] WARN: SMP ACPI topology was not cached before virtual memory switch.\n");
     KernelIoWriteString(gSmpState.MadtFound ?
         "[KERNEL] PASS: SMP ACPI MADT table discovered.\n" :
         "[KERNEL] WARN: SMP ACPI MADT table was not discovered.\n");

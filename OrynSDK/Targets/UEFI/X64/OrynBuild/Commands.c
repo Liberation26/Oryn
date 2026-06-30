@@ -96,6 +96,7 @@ static void WriteBootReport(
     int smp_rsdp = TextContains(debug_text, "[KERNEL] PASS: SMP ACPI RSDP input present.");
     int smp_checksum = TextContains(debug_text, "[KERNEL] PASS: SMP ACPI checksum validation passed.");
     int smp_madt = TextContains(debug_text, "[KERNEL] PASS: SMP ACPI MADT table discovered.");
+    int smp_cached = TextContains(debug_text, "[KERNEL] PASS: SMP ACPI topology cached before virtual memory switch.");
     int smp_topology = TextContains(debug_text, "[KERNEL] PASS: SMP multi-core CPU topology discovered.");
     int smp_trampoline = TextContains(debug_text, "[KERNEL] PASS: SMP AP startup trampoline prepared below 1MB.");
     int smp_cr3 = TextContains(debug_text, "[KERNEL] PASS: SMP startup CR3 is reachable by the AP trampoline.");
@@ -130,9 +131,9 @@ static void WriteBootReport(
         unknown_linux && unknown_ms && syscall_three && platform_syscalls && syscall_counts &&
         pci_started && pci_rsdp && pci_checksum && pci_mcfg && pci_ecam && pci_config &&
         pci_scan && pci_devices && pci_class && pci_complete && pci_english &&
-        smp_started && smp_rsdp && smp_checksum && smp_madt && smp_topology &&
+        smp_started && smp_rsdp && smp_checksum && smp_madt && smp_cached && smp_topology &&
         smp_trampoline && smp_cr3 && smp_ipi && smp_init_ipi && smp_startup_ipi &&
-        smp_aps_started && smp_complete && qemu_debug_colour && debug_exit;
+        smp_aps_started && smp_complete && qemu_debug_colour && virtual_memory_active && debug_exit;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -229,6 +230,7 @@ static void WriteBootReport(
     fprintf(file, "  SMP ACPI RSDP present: %s\n", PassFail(smp_rsdp));
     fprintf(file, "  SMP ACPI checksum validated: %s\n", PassFail(smp_checksum));
     fprintf(file, "  SMP ACPI MADT table discovered: %s\n", PassFail(smp_madt));
+    fprintf(file, "  SMP ACPI topology cached before VM: %s\n", PassFail(smp_cached));
     fprintf(file, "  SMP multi-core topology discovered: %s\n", PassFail(smp_topology));
     fprintf(file, "  SMP AP trampoline prepared: %s\n", PassFail(smp_trampoline));
     fprintf(file, "  SMP startup CR3 reachable: %s\n", PassFail(smp_cr3));
@@ -383,6 +385,8 @@ static void WriteBootReport(
             "The SMP ACPI table walk failed checksum validation." :
         !smp_madt ?
             "The ACPI MADT table was not discovered." :
+        !smp_cached ?
+            "SMP did not cache ACPI topology before the virtual-memory CR3 switch." :
         !smp_topology ?
             "SMP did not discover more than one enabled CPU. Check the QEMU -smp option." :
         !smp_trampoline ?
