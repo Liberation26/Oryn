@@ -503,13 +503,191 @@ BuildWindowsGitPathPrefix()
     [ "$First" -eq 0 ]
 }
 
+BuildWindowsGcmBridgeScript()
+{
+    BridgeDir="$HOME/.oryn"
+    BridgePath="$BridgeDir/git-credential-manager-wsl-bridge.sh"
+    mkdir -p "$BridgeDir" || return 1
+
+    cat > "$BridgePath" <<'EOF'
+#!/usr/bin/env bash
+set -u
+
+FindWindowsGitRoot()
+{
+    for Candidate in \
+        "/mnt/c/Program Files/Git" \
+        "/mnt/c/Program Files (x86)/Git"; do
+        [ -x "$Candidate/cmd/git.exe" ] || [ -x "$Candidate/bin/git.exe" ] || continue
+        printf '%s\n' "$Candidate"
+        return 0
+    done
+
+    return 1
+}
+
+FindWindowsGitCredentialManager()
+{
+    WinUser=""
+    if command -v cmd.exe >/dev/null 2>&1; then
+        WinUser="$(cmd.exe /C echo %USERNAME% 2>/dev/null | tr -d '\r' | tail -n 1)"
+    fi
+
+    for Candidate in \
+        "/mnt/c/Program Files/Git/mingw64/bin/git-credential-manager.exe" \
+        "/mnt/c/Program Files/Git/mingw64/libexec/git-core/git-credential-manager.exe" \
+        "/mnt/c/Program Files/Git/usr/bin/git-credential-manager.exe" \
+        "/mnt/c/Program Files (x86)/Git/mingw64/bin/git-credential-manager.exe" \
+        "/mnt/c/Program Files (x86)/Git/mingw64/libexec/git-core/git-credential-manager.exe" \
+        "/mnt/c/Program Files (x86)/Git Credential Manager/git-credential-manager.exe" \
+        "/mnt/c/Users/$WinUser/AppData/Local/Programs/Git Credential Manager/git-credential-manager.exe"; do
+        [ -n "$Candidate" ] || continue
+        [ -f "$Candidate" ] || continue
+        printf '%s\n' "$Candidate"
+        return 0
+    done
+
+    return 1
+}
+
+BuildWindowsGitPathPrefix()
+{
+    GitRoot="$(FindWindowsGitRoot 2>/dev/null || true)"
+    [ -n "$GitRoot" ] || return 1
+
+    First=1
+    for Candidate in \
+        "$GitRoot/cmd" \
+        "$GitRoot/bin" \
+        "$GitRoot/mingw64/bin" \
+        "$GitRoot/usr/bin" \
+        "$GitRoot/mingw64/libexec/git-core"; do
+        [ -d "$Candidate" ] || continue
+        if [ "$First" -eq 1 ]; then
+            printf '%s' "$Candidate"
+            First=0
+        else
+            printf ':%s' "$Candidate"
+        fi
+    done
+
+    [ "$First" -eq 0 ]
+}
+
+BuildWindowsGitCmdPathPrefix()
+{
+    GitPathPrefix="$1"
+    [ -n "$GitPathPrefix" ] || return 1
+
+    First=1
+    OldIFS="$IFS"
+    IFS=:
+    for Candidate in $GitPathPrefix; do
+        [ -n "$Candidate" ] || continue
+        if command -v wslpath >/dev/null 2>&1; then
+            WinCandidate="$(wslpath -w "$Candidate" 2>/dev/null || true)"
+        else
+            WinCandidate=""
+        fi
+        [ -n "$WinCandidate" ] || continue
+        if [ "$First" -eq 1 ]; then
+            printf '%s' "$WinCandidate"
+            First=0
+        else
+            printf ';%s' "$WinCandidate"
+        fi
+    done
+    IFS="$OldIFS"
+
+    [ "$First" -eq 0 ]
+}
+
+EnsureWindowsPathBridge()
+{
+    GitPathPrefix="$(BuildWindowsGitPathPrefix 2>/dev/null || true)"
+    [ -n "$GitPathPrefix" ] || return 0
+
+    export PATH="$GitPathPrefix:$PATH"
+
+    case ":${WSLENV:-}:" in
+        *":PATH/l:"*) ;;
+        *) export WSLENV="${WSLENV:+$WSLENV:}PATH/l" ;;
+    esac
+}
+
+RunThroughCmdFallback()
+{
+    GcmPath="$1"
+    shift || true
+
+    command -v cmd.exe >/dev/null 2>&1 || return 127
+    command -v wslpath >/dev/null 2>&1 || return 127
+
+    WinGcmPath="$(wslpath -w "$GcmPath" 2>/dev/null || true)"
+    [ -n "$WinGcmPath" ] || return 127
+
+    GitPathPrefix="$(BuildWindowsGitPathPrefix 2>/dev/null || true)"
+    WinGitPathPrefix="$(BuildWindowsGitCmdPathPrefix "$GitPathPrefix" 2>/dev/null || true)"
+    [ -n "$WinGitPathPrefix" ] || return 127
+
+    Args=""
+    for Arg in "$@"; do
+        case "$Arg" in
+            *[!A-Za-z0-9._-]*) return 127 ;;
+        esac
+        Args="$Args $Arg"
+    done
+
+    cmd.exe /Q /C "set \"PATH=$WinGitPathPrefix;%PATH%\" && \"$WinGcmPath\"$Args" < /dev/stdin
+}
+
+GcmPath="$(FindWindowsGitCredentialManager 2>/dev/null || true)"
+if [ -z "$GcmPath" ]; then
+    if command -v git-credential-manager >/dev/null 2>&1; then
+        exec git-credential-manager "$@"
+    fi
+
+    printf 'Oryn GCM bridge could not find git-credential-manager.exe.\n' >&2
+    exit 1
+fi
+
+EnsureWindowsPathBridge
+
+"$GcmPath" "$@"
+Status="$?"
+if [ "$Status" -eq 0 ]; then
+    exit 0
+fi
+
+# Some Windows GCM builds launched from WSL still see the un-translated Linux PATH.
+# Retry through cmd.exe with a native Windows PATH so GCM can locate git.exe.
+RunThroughCmdFallback "$GcmPath" "$@"
+FallbackStatus="$?"
+if [ "$FallbackStatus" -eq 0 ]; then
+    exit 0
+fi
+
+exit "$Status"
+EOF
+
+    chmod +x "$BridgePath" || return 1
+    printf '%s\n' "$BridgePath"
+    return 0
+}
+
 BuildWindowsGcmHelperCommand()
 {
+    BridgePath="$(BuildWindowsGcmBridgeScript 2>/dev/null || true)"
+    if [ -n "$BridgePath" ]; then
+        printf '%s\n' "$BridgePath"
+        return 0
+    fi
+
     WindowsGcm="$1"
     GitPathPrefix="$(BuildWindowsGitPathPrefix 2>/dev/null || true)"
 
     if [ -n "$GitPathPrefix" ]; then
-        printf '!f() { export PATH="%s:$PATH"; "%s" "$@"; }; f\n' "$GitPathPrefix" "$WindowsGcm"
+        printf '!f() { export PATH="%s:$PATH"; case ":${WSLENV:-}:" in *":PATH/l:"*) ;; *) export WSLENV="${WSLENV:+$WSLENV:}PATH/l" ;; esac; "%s" "$@"; }; f\n' "$GitPathPrefix" "$WindowsGcm"
     else
         printf '!f() { "%s" "$@"; }; f\n' "$WindowsGcm"
     fi
@@ -520,9 +698,11 @@ PrepareWindowsGitPathForGcm()
     GitPathPrefix="$(BuildWindowsGitPathPrefix 2>/dev/null || true)"
     [ -n "$GitPathPrefix" ] || return 0
 
-    case ":$PATH:" in
-        *":/mnt/c/Program Files/Git/cmd:"*) ;;
-        *) export PATH="$GitPathPrefix:$PATH" ;;
+    export PATH="$GitPathPrefix:$PATH"
+
+    case ":${WSLENV:-}:" in
+        *":PATH/l:"*) ;;
+        *) export WSLENV="${WSLENV:+$WSLENV:}PATH/l" ;;
     esac
 }
 
@@ -537,12 +717,22 @@ ConfigureGitCredentialManager()
 
     ExistingHelper="$(git config --global --get credential.helper 2>/dev/null || true)"
     case "$ExistingHelper" in
-        '!'*git-credential-manager*'export PATH='*)
-            Ok "Git Credential Manager is already configured with the Windows Git PATH bridge."
+        */.oryn/git-credential-manager-wsl-bridge.sh)
+            if [ -x "$ExistingHelper" ]; then
+                Ok "Git Credential Manager is already configured with the Oryn WSL bridge."
+                return 0
+            fi
+            Warn "Existing Oryn Git Credential Manager bridge is missing. Recreating it."
+            ;;
+        '!'*git-credential-manager*'WSLENV'*'PATH/l'*)
+            Ok "Git Credential Manager is already configured with WSL PATH translation."
             return 0
             ;;
+        '!'*git-credential-manager*'export PATH='*)
+            Warn "Existing Git Credential Manager helper lacks WSL PATH translation. Reconfiguring it."
+            ;;
         *git-credential-manager.exe*)
-            Warn "Existing Git Credential Manager helper does not add Windows git.exe to PATH. Reconfiguring it."
+            Warn "Existing Git Credential Manager helper may not expose Windows git.exe to GCM. Reconfiguring it."
             ;;
         *manager-core*)
             Ok "Git Credential Manager is already configured for WSL git."
@@ -554,8 +744,12 @@ ConfigureGitCredentialManager()
     if [ -n "$WindowsGcm" ]; then
         HelperCommand="$(BuildWindowsGcmHelperCommand "$WindowsGcm")"
         git config --global --replace-all credential.helper "$HelperCommand" || return 1
-        Ok "Configured WSL git to use Windows Git Credential Manager with Windows git.exe on PATH."
+        Ok "Configured WSL git to use the Oryn Git Credential Manager bridge."
         Info "GCM path: $WindowsGcm"
+        BridgePath="$(git config --global --get credential.helper 2>/dev/null || true)"
+        case "$BridgePath" in
+            */.oryn/git-credential-manager-wsl-bridge.sh) Info "Bridge script: $BridgePath" ;;
+        esac
         GitPathPrefix="$(BuildWindowsGitPathPrefix 2>/dev/null || true)"
         [ -z "$GitPathPrefix" ] || Info "Windows Git PATH bridge: $GitPathPrefix"
         return 0
