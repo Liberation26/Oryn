@@ -1,4 +1,5 @@
 #include "KernelDiagnosticsProofsInternal.h"
+#include "KernelScreenReport.h"
 
 static unsigned int OrynKernelDiagnosticsMaximumViewTop(const KConsoleMetrics* metrics)
 {
@@ -73,7 +74,7 @@ int OrynKernelDiagnosticsConsoleRunScrollProbe(void)
 
     if (!KConsole.IsAvailable() || KConsole.VisibleRows() == 0U || KConsole.VisibleColumns() == 0U)
     {
-        KernelIoWriteString("[KERNEL] FAIL: Kernel screen scrolling proof failed.\n");
+        OrynKernelScreenReportFail(0, "Kernel screen scrolling proof failed.");
         return 0;
     }
 
@@ -86,16 +87,16 @@ int OrynKernelDiagnosticsConsoleRunScrollProbe(void)
 
     if (!ok)
     {
-        KernelIoWriteString("[KERNEL] FAIL: Kernel screen scrolling proof failed.\n");
+        OrynKernelScreenReportFail(0, "Kernel screen scrolling proof failed.");
         return 0;
     }
 
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen scrollback buffer initialized.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen scrollback stores coloured cells.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen scroll up/down works.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen page up/down works.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen scroll-to-bottom works.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen scroll proof keeps visible output stable.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen scrolling implemented.\n");
+    OrynKernelScreenReportOk(0, "Kernel screen scrollback buffer initialized.");
+    OrynKernelScreenReportOk(0, "Kernel screen scrollback stores coloured cells.");
+    OrynKernelScreenReportOk(0, "Kernel screen scroll up/down works.");
+    OrynKernelScreenReportOk(0, "Kernel screen page up/down works.");
+    OrynKernelScreenReportOk(0, "Kernel screen scroll-to-bottom works.");
+    OrynKernelScreenReportOk(0, "Kernel screen scroll proof keeps visible output stable.");
+    OrynKernelScreenReportOk(0, "Kernel screen scrolling implemented.");
     return 1;
 }

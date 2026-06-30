@@ -1,12 +1,13 @@
 #include "KernelDiagnostics.h"
 #include "KernelDiagnosticsProofsInternal.h"
+#include "KernelScreenReport.h"
 
 static void OrynKernelDiagnosticsPrintBootInfoOwnership(const OrynBootInfo* kernelBootInfo)
 {
-    KernelIoWriteString("[KERNEL] PASS: Kernel entry received one plain OrynBootInfo pointer.\n");
+    OrynKernelScreenReportOk(0, "Kernel entry received one plain OrynBootInfo pointer.");
     if (KernelBootInfoIsKernelOwned(kernelBootInfo))
     {
-        KernelIoWriteString("[KERNEL] PASS: OrynBootInfo copied into kernel-owned storage.\n");
+        OrynKernelScreenReportOk(0, "OrynBootInfo copied into kernel-owned storage.");
         KernelIoWriteString("[KERNEL] Loader BootInfo pointer: ");
         KernelIoWriteHex64(KernelBootInfoSourceAddress());
         KernelIoWriteString("\n");
@@ -16,15 +17,15 @@ static void OrynKernelDiagnosticsPrintBootInfoOwnership(const OrynBootInfo* kern
     }
     else
     {
-        KernelIoWriteString("[KERNEL] FAIL: Kernel could not adopt OrynBootInfo.\n");
+        OrynKernelScreenReportFail(0, "Kernel could not adopt OrynBootInfo.");
     }
 }
 
 void OrynKernelDiagnosticsPrintEntryProofs(const OrynBootInfo* kernelBootInfo)
 {
     KernelIoWriteString("[KERNEL] Oryn Kernel-5 entered.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel entered successfully.\n");
-    KernelIoWriteString("[KERNEL] PASS: Serial/debug output path is working.\n");
+    OrynKernelScreenReportOk(0, "Kernel entered successfully.");
+    OrynKernelScreenReportOk(0, "Serial/debug output path is working.");
     OrynKernelDiagnosticsPrintBootInfoOwnership(kernelBootInfo);
     KernelBootInfoPrintSelection();
 }

@@ -1,4 +1,5 @@
 #include "KernelPciInternal.h"
+#include "KernelScreenReport.h"
 void RecordDevice(const OrynKernelPciDevice* pciDevice)
 {
     if (gPciState.DevicesRecorded < ORYN_PCI_MAX_RECORDED_DEVICES)
@@ -142,33 +143,33 @@ void PrintDeviceLine(const OrynKernelPciDevice* pciDevice)
 
 void OrynKernelPciPrintProof(void)
 {
-    KernelIoWriteString(gPciState.AcpiRsdpPresent ?
-        "[KERNEL] PASS: PCI ACPI RSDP input present.\n" :
-        "[KERNEL] WARN: PCI ACPI RSDP input missing.\n");
-    KernelIoWriteString(gPciState.AcpiChecksumOk ?
-        "[KERNEL] PASS: PCI ACPI checksum validation passed.\n" :
-        "[KERNEL] WARN: PCI ACPI checksum validation failed or unavailable.\n");
-    KernelIoWriteString(gPciState.McfgTableFound ?
-        "[KERNEL] PASS: PCI ACPI MCFG table discovered.\n" :
-        "[KERNEL] WARN: PCI ACPI MCFG table was not discovered.\n");
-    KernelIoWriteString(gPciState.McfgAllocationCount != 0U ?
-        "[KERNEL] PASS: PCIe ECAM descriptor captured.\n" :
-        "[KERNEL] WARN: PCIe ECAM descriptor unavailable.\n");
-    KernelIoWriteString(gPciState.ConfigMechanism1Available ?
-        "[KERNEL] PASS: PCI config mechanism #1 responded.\n" :
-        "[KERNEL] FAIL: PCI config mechanism #1 did not find a device.\n");
+    OrynKernelScreenReportOkOrWarn(gPciState.AcpiRsdpPresent,
+        "PCI ACPI RSDP input present.",
+        "PCI ACPI RSDP input missing.");
+    OrynKernelScreenReportOkOrWarn(gPciState.AcpiChecksumOk,
+        "PCI ACPI checksum validation passed.",
+        "PCI ACPI checksum validation failed or unavailable.");
+    OrynKernelScreenReportOkOrWarn(gPciState.McfgTableFound,
+        "PCI ACPI MCFG table discovered.",
+        "PCI ACPI MCFG table was not discovered.");
+    OrynKernelScreenReportOkOrWarn(gPciState.McfgAllocationCount != 0U,
+        "PCIe ECAM descriptor captured.",
+        "PCIe ECAM descriptor unavailable.");
+    OrynKernelScreenReportOkOrFail(gPciState.ConfigMechanism1Available,
+        "PCI config mechanism #1 responded.",
+        "PCI config mechanism #1 did not find a device.");
     KernelIoWriteString("[KERNEL] PCI buses scanned: ");
     KernelIoWriteDec64(gPciState.BusesScanned);
     KernelIoWriteString("\n");
     KernelIoWriteString("[KERNEL] PCI function slots scanned: ");
     KernelIoWriteDec64(gPciState.FunctionSlotsScanned);
     KernelIoWriteString("\n");
-    KernelIoWriteString(gPciState.BusesScanned == 256U ?
-        "[KERNEL] PASS: PCI bus/device/function scan completed.\n" :
-        "[KERNEL] FAIL: PCI bus/device/function scan incomplete.\n");
-    KernelIoWriteString(gPciState.DevicesFound != 0U ?
-        "[KERNEL] PASS: PCI devices discovered.\n" :
-        "[KERNEL] FAIL: PCI devices were not discovered.\n");
+    OrynKernelScreenReportOkOrFail(gPciState.BusesScanned == 256U,
+        "PCI bus/device/function scan completed.",
+        "PCI bus/device/function scan incomplete.");
+    OrynKernelScreenReportOkOrFail(gPciState.DevicesFound != 0U,
+        "PCI devices discovered.",
+        "PCI devices were not discovered.");
     KernelIoWriteString("[KERNEL] PCI devices discovered: ");
     KernelIoWriteDec64(gPciState.DevicesFound);
     KernelIoWriteString("\n");
@@ -181,9 +182,9 @@ void OrynKernelPciPrintProof(void)
     KernelIoWriteString("/");
     KernelIoWriteDec64(gPciState.DisplayControllersFound);
     KernelIoWriteString("\n");
-    KernelIoWriteString(gPciState.ClassDecodeReady ?
-        "[KERNEL] PASS: PCI class-code decoding ready.\n" :
-        "[KERNEL] FAIL: PCI class-code decoding unavailable.\n");
+    OrynKernelScreenReportOkOrFail(gPciState.ClassDecodeReady,
+        "PCI class-code decoding ready.",
+        "PCI class-code decoding unavailable.");
     KernelIoWriteString("[KERNEL] PCI recorded device entries: ");
     KernelIoWriteDec64(gPciState.DevicesRecorded);
     KernelIoWriteString(gPciState.DeviceListTruncated ? " truncated\n" : "\n");
@@ -192,11 +193,10 @@ void OrynKernelPciPrintProof(void)
     {
         PrintDeviceLine(&gPciState.Devices[index]);
     }
-    KernelIoWriteString(gPciState.ClassDecodeReady ?
-        "[KERNEL] PASS: PCI device output uses English labels.\n" :
-        "[KERNEL] FAIL: PCI device English output unavailable.\n");
-    KernelIoWriteString(gPciState.Initialized && gPciState.ConfigMechanism1Available &&
-        gPciState.DevicesFound != 0U && gPciState.ClassDecodeReady ?
-        "[KERNEL] PASS: PCI Discovery complete.\n" :
-        "[KERNEL] FAIL: PCI Discovery incomplete.\n");
+    OrynKernelScreenReportOkOrFail(gPciState.ClassDecodeReady,
+        "PCI device output uses English labels.",
+        "PCI device English output unavailable.");
+    OrynKernelScreenReportOkOrFail(gPciState.Initialized && gPciState.ConfigMechanism1Available && gPciState.DevicesFound != 0U && gPciState.ClassDecodeReady,
+        "PCI Discovery complete.",
+        "PCI Discovery incomplete.");
 }

@@ -1,5 +1,6 @@
 #include "KernelCpu.h"
 #include "KernelIo.h"
+#include "KernelScreenReport.h"
 
 #ifndef ORYN_VM_APIC
 #define ORYN_VM_APIC 1
@@ -87,15 +88,15 @@ static void PrintCpuLocalApicStatus(const OrynKernelCpuFeatures* features)
     int required = (ORYN_VM_APIC || ORYN_VM_APIC2 || ORYN_VM_SMP_CPUS > 1) ? 1 : 0;
     if (features->HasLocalApic)
     {
-        KernelIoWriteString("[KERNEL] PASS: CPU local APIC feature present.\n");
+        OrynKernelScreenReportOk(0, "CPU local APIC feature present.");
     }
     else if (required)
     {
-        KernelIoWriteString("[KERNEL] FAIL: CPU local APIC feature required but not reported.\n");
+        OrynKernelScreenReportFail(0, "CPU local APIC feature required but not reported.");
     }
     else
     {
-        KernelIoWriteString("[KERNEL] PASS: CPU local APIC feature not required by this profile.\n");
+        OrynKernelScreenReportOk(0, "CPU local APIC feature not required by this profile.");
     }
 }
 
@@ -103,15 +104,15 @@ static void PrintCpuApic2Status(const OrynKernelCpuFeatures* features)
 {
     if (features->HasX2Apic)
     {
-        KernelIoWriteString("[KERNEL] PASS: CPU APIC2/x2APIC feature present.\n");
+        OrynKernelScreenReportOk(0, "CPU APIC2/x2APIC feature present.");
     }
     else if (ORYN_VM_APIC2)
     {
-        KernelIoWriteString("[KERNEL] FAIL: CPU APIC2/x2APIC feature required but not reported.\n");
+        OrynKernelScreenReportFail(0, "CPU APIC2/x2APIC feature required but not reported.");
     }
     else
     {
-        KernelIoWriteString("[KERNEL] PASS: CPU APIC2/x2APIC feature not required by this profile.\n");
+        OrynKernelScreenReportOk(0, "CPU APIC2/x2APIC feature not required by this profile.");
     }
 }
 
@@ -119,11 +120,11 @@ static void PrintCpuTimerStatus(const OrynKernelCpuFeatures* features)
 {
     if (features->HasTscDeadline)
     {
-        KernelIoWriteString("[KERNEL] PASS: CPU TSC deadline timer feature present.\n");
+        OrynKernelScreenReportOk(0, "CPU TSC deadline timer feature present.");
     }
     else
     {
-        KernelIoWriteString("[KERNEL] PASS: CPU TSC deadline timer feature optional for this profile.\n");
+        OrynKernelScreenReportOk(0, "CPU TSC deadline timer feature optional for this profile.");
     }
 }
 

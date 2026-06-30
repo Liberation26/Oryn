@@ -205,6 +205,11 @@ void OrynKernelScreenReportInit(void)
     }
 }
 
+int OrynKernelScreenReportLineStatus(const char* line)
+{
+    return StatusForLine(line);
+}
+
 void OrynKernelScreenReportObserve(const char* line)
 {
     int status = StatusForLine(line);
@@ -304,6 +309,46 @@ void OrynKernelScreenReportWarn(const char* category, const char* message)
 void OrynKernelScreenReportFail(const char* category, const char* message)
 {
     EmitKernelStatus("FAIL", category, message);
+}
+
+void OrynKernelScreenReportOkOrFail(
+    int condition,
+    const char* okMessage,
+    const char* failMessage)
+{
+    if (condition)
+    {
+        OrynKernelScreenReportOk(0, okMessage);
+    }
+    else
+    {
+        OrynKernelScreenReportFail(0, failMessage);
+    }
+}
+
+void OrynKernelScreenReportOkOrWarn(
+    int condition,
+    const char* okMessage,
+    const char* warnMessage)
+{
+    if (condition)
+    {
+        OrynKernelScreenReportOk(0, okMessage);
+    }
+    else
+    {
+        OrynKernelScreenReportWarn(0, warnMessage);
+    }
+}
+
+void OrynKernelScreenReportBeginFail(void)
+{
+    KernelIoWriteString("[KERNEL] FAIL: ");
+}
+
+void OrynKernelScreenReportBeginWarn(void)
+{
+    KernelIoWriteString("[KERNEL] WARN: ");
 }
 
 void OrynKernelScreenReportPrint(void)

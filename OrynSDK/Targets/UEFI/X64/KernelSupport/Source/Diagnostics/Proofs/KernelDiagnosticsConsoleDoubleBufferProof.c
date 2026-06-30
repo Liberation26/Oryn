@@ -1,4 +1,5 @@
 #include "KernelDiagnosticsProofsInternal.h"
+#include "KernelScreenReport.h"
 
 static int OrynKernelDiagnosticsConsoleCanUseBackBuffer(void)
 {
@@ -36,8 +37,8 @@ int OrynKernelDiagnosticsConsoleRunDoubleBufferProbe(void)
         return 0;
     }
 
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen back buffer allocated.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen renders into back buffer first.\n");
+    OrynKernelScreenReportOk(0, "Kernel screen back buffer allocated.");
+    OrynKernelScreenReportOk(0, "Kernel screen renders into back buffer first.");
     return 1;
 }
 
@@ -78,9 +79,9 @@ int OrynKernelDiagnosticsConsoleRunLineBufferedProbe(void)
         return 0;
     }
 
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen defers visible flip while line is being written.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen flips after completed line.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen presents dirty completed line only.\n");
+    OrynKernelScreenReportOk(0, "Kernel screen defers visible flip while line is being written.");
+    OrynKernelScreenReportOk(0, "Kernel screen flips after completed line.");
+    OrynKernelScreenReportOk(0, "Kernel screen presents dirty completed line only.");
     return 1;
 }
 
@@ -131,10 +132,10 @@ int OrynKernelDiagnosticsConsoleRunFastRefreshProbe(void)
         return 0;
     }
 
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen uses fast scroll path after visible area is full.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen presents completed frame to visible output.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen visible presents are atomic.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen refresh is line/scroll optimized.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.\n");
+    OrynKernelScreenReportOk(0, "Kernel screen uses fast scroll path after visible area is full.");
+    OrynKernelScreenReportOk(0, "Kernel screen presents completed frame to visible output.");
+    OrynKernelScreenReportOk(0, "Kernel screen visible presents are atomic.");
+    OrynKernelScreenReportOk(0, "Kernel screen refresh is line/scroll optimized.");
+    OrynKernelScreenReportOk(0, "Kernel screen line-buffered double buffering implemented.");
     return 1;
 }

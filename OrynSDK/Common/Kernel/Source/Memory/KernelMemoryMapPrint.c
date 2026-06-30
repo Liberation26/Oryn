@@ -1,5 +1,6 @@
 #include "KernelMemoryMap.h"
 #include "KernelIo.h"
+#include "KernelScreenReport.h"
 
 static void WriteBytesAsMb(const char* label, unsigned long long bytes)
 {
@@ -40,7 +41,7 @@ void OrynMemoryMapPrintSummary(const OrynKernelMemoryMap* memoryMap)
 
     if (memoryMap->Truncated)
     {
-        KernelIoWriteString("[KERNEL] WARN: Memory map was truncated to kernel static capacity.\n");
+        OrynKernelScreenReportWarn(0, "Memory map was truncated to kernel static capacity.");
     }
 
     KernelIoWriteString("[KERNEL] Memory summary:\n");

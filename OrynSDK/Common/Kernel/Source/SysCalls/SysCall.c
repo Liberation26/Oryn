@@ -3,6 +3,7 @@
 #include "MSSysCall.h"
 #include "KernelIo.h"
 #include "OrynString.h"
+#include "KernelScreenReport.h"
 
 static OrynSysCallState gSysCallState;
 
@@ -277,12 +278,12 @@ int OrynSysCallRunInternalProof(void)
 
 void OrynSysCallPrintProof(void)
 {
-    KernelIoWriteString(gSysCallState.Initialized ?
-        "[KERNEL] PASS: SysCall core initialized.\n" :
-        "[KERNEL] FAIL: SysCall core not initialized.\n");
-    KernelIoWriteString(gSysCallState.PacketSize == sizeof(OrynSysCallPacket) ?
-        "[KERNEL] PASS: SysCall message packet ABI ready.\n" :
-        "[KERNEL] FAIL: SysCall message packet ABI size mismatch.\n");
+    OrynKernelScreenReportOkOrFail(gSysCallState.Initialized,
+        "SysCall core initialized.",
+        "SysCall core not initialized.");
+    OrynKernelScreenReportOkOrFail(gSysCallState.PacketSize == sizeof(OrynSysCallPacket),
+        "SysCall message packet ABI ready.",
+        "SysCall message packet ABI size mismatch.");
     KernelIoWriteString("[KERNEL] LinuxSysCall.h listed syscall count: ");
     KernelIoWriteDec64(LinuxSysCallListedCount());
     KernelIoWriteString("\n");
@@ -295,31 +296,28 @@ void OrynSysCallPrintProof(void)
     KernelIoWriteString("[KERNEL] MSSysCall.h translated syscall count: ");
     KernelIoWriteDec64(MSSysCallTranslatedCount());
     KernelIoWriteString("\n");
-    KernelIoWriteString(
-        LinuxSysCallListedCount() == ORYN_LINUX_SYSCALL_LISTED_COUNT &&
-        MSSysCallListedCount() == ORYN_MS_SYSCALL_LISTED_COUNT ?
-        "[KERNEL] PASS: SysCall header counts listed.\n" :
-        "[KERNEL] FAIL: SysCall header counts missing.\n");
+    OrynKernelScreenReportOkOrFail(LinuxSysCallListedCount() == ORYN_LINUX_SYSCALL_LISTED_COUNT && MSSysCallListedCount() == ORYN_MS_SYSCALL_LISTED_COUNT,
+        "SysCall header counts listed.",
+        "SysCall header counts missing.");
 }
 
 void OrynSysCallPrintRuntimeProof(void)
 {
-    KernelIoWriteString(gSysCallState.GetProofPassed ?
-        "[KERNEL] PASS: SysCallGet packet handled.\n" :
-        "[KERNEL] FAIL: SysCallGet packet was not handled.\n");
-    KernelIoWriteString(gSysCallState.SetProofPassed ?
-        "[KERNEL] PASS: SysCallSet packet handled.\n" :
-        "[KERNEL] FAIL: SysCallSet packet was not handled.\n");
-    KernelIoWriteString(gSysCallState.EventProofPassed ?
-        "[KERNEL] PASS: SysCallEvent packet handled.\n" :
-        "[KERNEL] FAIL: SysCallEvent packet was not handled.\n");
-    KernelIoWriteString(gSysCallState.UnknownProofPassed && gSysCallState.UnknownPackets != 0ULL ?
-        "[KERNEL] PASS: Unknown syscall debug logging path executed.\n" :
-        "[KERNEL] FAIL: Unknown syscall debug logging path did not execute.\n");
-    KernelIoWriteString(
-        gSysCallState.GetProofPassed && gSysCallState.SetProofPassed && gSysCallState.EventProofPassed ?
-        "[KERNEL] PASS: SysCalls use Get/Set/Event message packets.\n" :
-        "[KERNEL] FAIL: SysCalls did not prove Get/Set/Event packets.\n");
+    OrynKernelScreenReportOkOrFail(gSysCallState.GetProofPassed,
+        "SysCallGet packet handled.",
+        "SysCallGet packet was not handled.");
+    OrynKernelScreenReportOkOrFail(gSysCallState.SetProofPassed,
+        "SysCallSet packet handled.",
+        "SysCallSet packet was not handled.");
+    OrynKernelScreenReportOkOrFail(gSysCallState.EventProofPassed,
+        "SysCallEvent packet handled.",
+        "SysCallEvent packet was not handled.");
+    OrynKernelScreenReportOkOrFail(gSysCallState.UnknownProofPassed && gSysCallState.UnknownPackets != 0ULL,
+        "Unknown syscall debug logging path executed.",
+        "Unknown syscall debug logging path did not execute.");
+    OrynKernelScreenReportOkOrFail(gSysCallState.GetProofPassed && gSysCallState.SetProofPassed && gSysCallState.EventProofPassed,
+        "SysCalls use Get/Set/Event message packets.",
+        "SysCalls did not prove Get/Set/Event packets.");
     KernelIoWriteString("[KERNEL] SysCall total packets: ");
     KernelIoWriteDec64(gSysCallState.TotalPackets);
     KernelIoWriteString("\n");

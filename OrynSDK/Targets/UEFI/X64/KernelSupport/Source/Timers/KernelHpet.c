@@ -1,6 +1,7 @@
 #include "KernelHpet.h"
 #include "KernelBootInfo.h"
 #include "KernelIo.h"
+#include "KernelScreenReport.h"
 
 #define ORYN_ACPI_SIG_RSDT 0x54445352U
 #define ORYN_ACPI_SIG_XSDT 0x54445358U
@@ -261,18 +262,18 @@ const OrynKernelHpetState* OrynKernelHpetGetState(void)
 
 void OrynKernelHpetPrintProof(void)
 {
-    KernelIoWriteString(gHpetState.RsdpPresent ?
-        "[KERNEL] PASS: HPET ACPI RSDP input present.\n" :
-        "[KERNEL] WARN: HPET ACPI RSDP input missing.\n");
-    KernelIoWriteString(gHpetState.AcpiChecksumOk ?
-        "[KERNEL] PASS: HPET ACPI checksum validation passed.\n" :
-        "[KERNEL] WARN: HPET ACPI checksum validation failed or was unavailable.\n");
-    KernelIoWriteString(gHpetState.HpetTableFound ?
-        "[KERNEL] PASS: HPET ACPI table discovered.\n" :
-        "[KERNEL] WARN: HPET ACPI table was not discovered.\n");
-    KernelIoWriteString(gHpetState.Enabled ?
-        "[KERNEL] PASS: HPET main counter enabled.\n" :
-        "[KERNEL] WARN: HPET main counter not enabled.\n");
+    OrynKernelScreenReportOkOrWarn(gHpetState.RsdpPresent,
+        "HPET ACPI RSDP input present.",
+        "HPET ACPI RSDP input missing.");
+    OrynKernelScreenReportOkOrWarn(gHpetState.AcpiChecksumOk,
+        "HPET ACPI checksum validation passed.",
+        "HPET ACPI checksum validation failed or was unavailable.");
+    OrynKernelScreenReportOkOrWarn(gHpetState.HpetTableFound,
+        "HPET ACPI table discovered.",
+        "HPET ACPI table was not discovered.");
+    OrynKernelScreenReportOkOrWarn(gHpetState.Enabled,
+        "HPET main counter enabled.",
+        "HPET main counter not enabled.");
     KernelIoWriteString("[KERNEL] HPET MMIO base: ");
     KernelIoWriteHex64(gHpetState.BaseAddress);
     KernelIoWriteString("\n");
@@ -281,7 +282,7 @@ void OrynKernelHpetPrintProof(void)
     KernelIoWriteString(" / ");
     KernelIoWriteDec64(gHpetState.CounterPeriodFemtoSeconds);
     KernelIoWriteString("\n");
-    KernelIoWriteString(gHpetState.CounterAdvanced ?
-        "[KERNEL] PASS: HPET counter advanced in probe.\n" :
-        "[KERNEL] WARN: HPET counter did not advance in probe.\n");
+    OrynKernelScreenReportOkOrWarn(gHpetState.CounterAdvanced,
+        "HPET counter advanced in probe.",
+        "HPET counter did not advance in probe.");
 }

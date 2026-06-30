@@ -1,5 +1,6 @@
 #include "KernelGdt.h"
 #include "KernelIo.h"
+#include "KernelScreenReport.h"
 
 #define ORYN_GDT_ASSERT(name, condition) typedef char name[(condition) ? 1 : -1]
 #define ORYN_GDT_ACCESS_CODE 0x9AU
@@ -211,11 +212,11 @@ void OrynKernelGdtPrintProof(void)
 {
     if (gGdtState.Verified)
     {
-        KernelIoWriteString("[KERNEL] PASS: GDT installed.\n");
+        OrynKernelScreenReportOk(0, "GDT installed.");
     }
     else
     {
-        KernelIoWriteString("[KERNEL] FAIL: GDT install verification failed.\n");
+        OrynKernelScreenReportFail(0, "GDT install verification failed.");
     }
 
     KernelIoWriteString("[KERNEL] GDT entries: ");
@@ -236,9 +237,9 @@ void OrynKernelGdtPrintProof(void)
     KernelIoWriteString("[KERNEL] TSS selector: ");
     KernelIoWriteHex64(gGdtState.TaskRegister);
     KernelIoWriteString("\n");
-    KernelIoWriteString(gGdtState.TssLoaded ?
-        "[KERNEL] PASS: TSS loaded.\n" :
-        "[KERNEL] FAIL: TSS not loaded.\n");
+    OrynKernelScreenReportOkOrFail(gGdtState.TssLoaded,
+        "TSS loaded.",
+        "TSS not loaded.");
     KernelIoWriteString("[KERNEL] Exception IST stack top: ");
     KernelIoWriteHex64(gGdtState.ExceptionIstTop);
     KernelIoWriteString("\n");

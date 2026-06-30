@@ -5,6 +5,7 @@
 #include "KernelIo.h"
 #include "KernelPic.h"
 #include "KernelPortIo.h"
+#include "KernelScreenReport.h"
 
 #define ORYN_KEYBOARD_DATA_PORT 0x60U
 #define ORYN_KEYBOARD_STATUS_PORT 0x64U
@@ -274,31 +275,31 @@ void OrynKernelKeyboardEnableInteractiveInterrupts(void)
 
 void OrynKernelKeyboardPrintProof(void)
 {
-    KernelIoWriteString(gKeyboardState.Initialized ?
-        "[KERNEL] PASS: Keyboard interrupt scrolling initialized.\n" :
-        "[KERNEL] FAIL: Keyboard interrupt scrolling was not initialized.\n");
-    KernelIoWriteString(gKeyboardState.HandlerRegistered ?
-        "[KERNEL] PASS: PS/2 keyboard IRQ1 handler registered.\n" :
-        "[KERNEL] FAIL: PS/2 keyboard IRQ1 handler was not registered.\n");
-    KernelIoWriteString(gKeyboardState.UsesInterrupts ?
-        "[KERNEL] PASS: Keyboard scrolling uses IRQ1 interrupts.\n" :
-        "[KERNEL] FAIL: Keyboard scrolling is not interrupt-driven.\n");
-    KernelIoWriteString(gKeyboardState.PicIrq1Unmasked ?
-        "[KERNEL] PASS: PIC IRQ1 unmasked for keyboard input.\n" :
-        "[KERNEL] FAIL: PIC IRQ1 was not unmasked for keyboard input.\n");
-    KernelIoWriteString(gKeyboardState.ApicLegacyBridgeReady ?
-        "[KERNEL] PASS: APIC legacy PIC bridge ready for keyboard IRQ1.\n" :
-        "[KERNEL] WARN: APIC legacy PIC bridge was not configured for keyboard IRQ1.\n");
-    KernelIoWriteString(gKeyboardState.DecoderReady ?
-        "[KERNEL] PASS: Keyboard arrow and page key decoder ready.\n" :
-        "[KERNEL] FAIL: Keyboard arrow and page key decoder not ready.\n");
-    KernelIoWriteString(gKeyboardState.MakeBreakStateReady ?
-        "[KERNEL] PASS: Keyboard scroll keys use make/break state tracking.\n" :
-        "[KERNEL] FAIL: Keyboard scroll keys do not track make/break state.\n");
-    KernelIoWriteString(gKeyboardState.ReleaseStopsScrolling ?
-        "[KERNEL] PASS: Keyboard release scan codes stop scrolling immediately.\n" :
-        "[KERNEL] FAIL: Keyboard release scan codes do not stop scrolling.\n");
-    KernelIoWriteString("[KERNEL] PASS: Keyboard Up/Down scroll one line while held.\n");
-    KernelIoWriteString("[KERNEL] PASS: Keyboard PgUp/PgDn scroll one page while held.\n");
-    KernelIoWriteString("[KERNEL] PASS: Keyboard scrolling stops when key is released.\n");
+    OrynKernelScreenReportOkOrFail(gKeyboardState.Initialized,
+        "Keyboard interrupt scrolling initialized.",
+        "Keyboard interrupt scrolling was not initialized.");
+    OrynKernelScreenReportOkOrFail(gKeyboardState.HandlerRegistered,
+        "PS/2 keyboard IRQ1 handler registered.",
+        "PS/2 keyboard IRQ1 handler was not registered.");
+    OrynKernelScreenReportOkOrFail(gKeyboardState.UsesInterrupts,
+        "Keyboard scrolling uses IRQ1 interrupts.",
+        "Keyboard scrolling is not interrupt-driven.");
+    OrynKernelScreenReportOkOrFail(gKeyboardState.PicIrq1Unmasked,
+        "PIC IRQ1 unmasked for keyboard input.",
+        "PIC IRQ1 was not unmasked for keyboard input.");
+    OrynKernelScreenReportOkOrWarn(gKeyboardState.ApicLegacyBridgeReady,
+        "APIC legacy PIC bridge ready for keyboard IRQ1.",
+        "APIC legacy PIC bridge was not configured for keyboard IRQ1.");
+    OrynKernelScreenReportOkOrFail(gKeyboardState.DecoderReady,
+        "Keyboard arrow and page key decoder ready.",
+        "Keyboard arrow and page key decoder not ready.");
+    OrynKernelScreenReportOkOrFail(gKeyboardState.MakeBreakStateReady,
+        "Keyboard scroll keys use make/break state tracking.",
+        "Keyboard scroll keys do not track make/break state.");
+    OrynKernelScreenReportOkOrFail(gKeyboardState.ReleaseStopsScrolling,
+        "Keyboard release scan codes stop scrolling immediately.",
+        "Keyboard release scan codes do not stop scrolling.");
+    OrynKernelScreenReportOk(0, "Keyboard Up/Down scroll one line while held.");
+    OrynKernelScreenReportOk(0, "Keyboard PgUp/PgDn scroll one page while held.");
+    OrynKernelScreenReportOk(0, "Keyboard scrolling stops when key is released.");
 }

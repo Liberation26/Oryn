@@ -1,5 +1,6 @@
 #include "KernelLifecycle.h"
 #include "KernelIo.h"
+#include "KernelScreenReport.h"
 
 #define ORYN_LIFECYCLE_MAX_TRANSITIONS 32
 
@@ -159,7 +160,8 @@ static void PrintTransitionLine(OrynKernelLifecycleState from, OrynKernelLifecyc
 
 static void PrintInvalidTransitionLine(OrynKernelLifecycleState from, OrynKernelLifecycleState to)
 {
-    KernelIoWriteString("[KERNEL] FAIL: Lifecycle rejected transition ");
+    OrynKernelScreenReportBeginFail();
+    KernelIoWriteString("Lifecycle rejected transition ");
     KernelIoWriteString(OrynKernelLifecycleStateName(from));
     KernelIoWriteString(" -> ");
     KernelIoWriteString(OrynKernelLifecycleStateName(to));
@@ -190,7 +192,7 @@ void OrynKernelLifecycleInit(void)
         gTransitionFrom[index] = OrynKernelLifecycleCold;
         gTransitionTo[index] = OrynKernelLifecycleCold;
     }
-    KernelIoWriteString("[KERNEL] PASS: Kernel lifecycle state machine initialized.\n");
+    OrynKernelScreenReportOk(0, "Kernel lifecycle state machine initialized.");
 }
 
 OrynKernelLifecycleState OrynKernelLifecycleGetState(void)
@@ -223,7 +225,8 @@ int OrynKernelLifecycleTransition(OrynKernelLifecycleState nextState)
 void OrynKernelLifecycleMarkPanic(const char* reason)
 {
     (void)OrynKernelLifecycleTransition(OrynKernelLifecyclePanic);
-    KernelIoWriteString("[KERNEL] FAIL: Kernel lifecycle panic: ");
+    OrynKernelScreenReportBeginFail();
+    KernelIoWriteString("Kernel lifecycle panic: ");
     KernelIoWriteString(reason == 0 ? "unspecified" : reason);
     KernelIoWriteString("\n");
 }
@@ -284,10 +287,10 @@ void OrynKernelLifecyclePrintProof(void)
         gLifecycle.HasHalting && gLifecycle.HasHalted &&
         gLifecycle.InvalidTransitionCount == 0ULL)
     {
-        KernelIoWriteString("[KERNEL] PASS: Kernel lifecycle state machine proof complete.\n");
+        OrynKernelScreenReportOk(0, "Kernel lifecycle state machine proof complete.");
     }
     else
     {
-        KernelIoWriteString("[KERNEL] FAIL: Kernel lifecycle state machine proof incomplete.\n");
+        OrynKernelScreenReportFail(0, "Kernel lifecycle state machine proof incomplete.");
     }
 }

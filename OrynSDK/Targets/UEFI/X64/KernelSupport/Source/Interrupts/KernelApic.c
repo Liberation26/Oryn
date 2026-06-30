@@ -2,6 +2,7 @@
 #include "KernelCpu.h"
 #include "KernelIo.h"
 #include "KernelMsr.h"
+#include "KernelScreenReport.h"
 
 #define ORYN_MSR_APIC_BASE 0x1BU
 #define ORYN_MSR_X2APIC_ID 0x802U
@@ -344,15 +345,15 @@ int OrynKernelApicEnableLegacyPicBridge(void)
 
 void OrynKernelApicPrintProof(void)
 {
-    KernelIoWriteString(gApicState.CpuHasApic ?
-        "[KERNEL] PASS: APIC CPU feature available.\n" :
-        "[KERNEL] FAIL: APIC CPU feature unavailable.\n");
-    KernelIoWriteString(gApicState.Apic2Enabled ?
-        "[KERNEL] PASS: APIC2/x2APIC mode enabled.\n" :
-        "[KERNEL] WARN: APIC2/x2APIC mode not enabled; using xAPIC if available.\n");
-    KernelIoWriteString(gApicState.SoftwareEnabled ?
-        "[KERNEL] PASS: Local APIC software enable bit set.\n" :
-        "[KERNEL] FAIL: Local APIC software enable bit not set.\n");
+    OrynKernelScreenReportOkOrFail(gApicState.CpuHasApic,
+        "APIC CPU feature available.",
+        "APIC CPU feature unavailable.");
+    OrynKernelScreenReportOkOrWarn(gApicState.Apic2Enabled,
+        "APIC2/x2APIC mode enabled.",
+        "APIC2/x2APIC mode not enabled; using xAPIC if available.");
+    OrynKernelScreenReportOkOrFail(gApicState.SoftwareEnabled,
+        "Local APIC software enable bit set.",
+        "Local APIC software enable bit not set.");
     KernelIoWriteString("[KERNEL] Local APIC physical base: ");
     KernelIoWriteHex64(gApicState.LocalApicPhysicalBase);
     KernelIoWriteString("\n");
@@ -363,7 +364,7 @@ void OrynKernelApicPrintProof(void)
     KernelIoWriteString(" / ");
     KernelIoWriteHex64(gApicState.MaxLvt);
     KernelIoWriteString("\n");
-    KernelIoWriteString(gApicState.TimerCountMoved ?
-        "[KERNEL] PASS: APIC timer counter moved in masked probe.\n" :
-        "[KERNEL] WARN: APIC timer counter did not move in masked probe.\n");
+    OrynKernelScreenReportOkOrWarn(gApicState.TimerCountMoved,
+        "APIC timer counter moved in masked probe.",
+        "APIC timer counter did not move in masked probe.");
 }

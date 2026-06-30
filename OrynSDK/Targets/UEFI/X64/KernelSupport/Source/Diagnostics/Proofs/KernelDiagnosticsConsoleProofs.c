@@ -1,12 +1,13 @@
 #include "KernelDiagnosticsProofsInternal.h"
+#include "KernelScreenReport.h"
 
 static void OrynKernelDiagnosticsPrintConsoleHeader(void)
 {
     KernelIoWriteString("[KERNEL] Oryn Kernel-5 booted.\n");
     KernelIoWriteString("[KERNEL] Target: uefi-x64\n");
     KernelIoWriteString("[KERNEL] Toolchain: clang + lld\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel console initialized.\n");
-    KernelIoWriteString("[KERNEL] PASS: Console runtime separated from diagnostics proof flow.\n");
+    OrynKernelScreenReportOk(0, "Kernel console initialized.");
+    OrynKernelScreenReportOk(0, "Console runtime separated from diagnostics proof flow.");
     KernelIoWriteString(KConsole.IsTtfActive() ?
         "[KERNEL] TTF renderer: active\n" :
         "[KERNEL] TTF renderer: fallback bitmap glyphs\n");
@@ -26,11 +27,11 @@ void OrynKernelDiagnosticsRunConsoleProofs(const OrynBootInfo* kernelBootInfo)
         OrynKernelDiagnosticsConsoleRunLineBufferedProbe() &&
         OrynKernelDiagnosticsConsoleRunFastRefreshProbe())
     {
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen double buffering implemented.\n");
+        OrynKernelScreenReportOk(0, "Kernel screen double buffering implemented.");
     }
     else
     {
-        KernelIoWriteString("[KERNEL] FAIL: Kernel screen double buffering proof failed.\n");
+        OrynKernelScreenReportFail(0, "Kernel screen double buffering proof failed.");
     }
 
     (void)OrynKernelDiagnosticsRunKeyboardScrollProof();

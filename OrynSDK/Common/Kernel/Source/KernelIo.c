@@ -99,23 +99,43 @@ static KernelIoLineStyle LineStyleForText(const char* text)
     style.AnsiColour = "";
     style.ConsoleColour = KCONSOLE_COLOUR_DEFAULT;
 
-    if (StartsWith(text, "[KERNEL] PASS") || StartsWith(text, "[KERNEL] OK") ||
-        StartsWith(text, "[PASS]") || StartsWith(text, "[ OK ]") || StartsWith(text, "[OK]"))
+    int reportStatus = OrynKernelScreenReportLineStatus(text);
+    if (reportStatus == 1)
     {
         style.AnsiColour = OUTPUT_COLOR_PASS;
         style.ConsoleColour = KCONSOLE_COLOUR_PASS;
         return style;
     }
 
-    if (StartsWith(text, "[KERNEL] FAIL") || StartsWith(text, "[KERNEL] EXCEPTION") ||
-        StartsWith(text, "[FAIL]"))
+    if (reportStatus == 3)
     {
         style.AnsiColour = OUTPUT_COLOR_FAIL;
         style.ConsoleColour = KCONSOLE_COLOUR_FAIL;
         return style;
     }
 
-    if (StartsWith(text, "[KERNEL] WARN") || StartsWith(text, "[WARN]"))
+    if (reportStatus == 2)
+    {
+        style.AnsiColour = OUTPUT_COLOR_WARN;
+        style.ConsoleColour = KCONSOLE_COLOUR_WARN;
+        return style;
+    }
+
+    if (StartsWith(text, "[PASS]") || StartsWith(text, "[ OK ]") || StartsWith(text, "[OK]"))
+    {
+        style.AnsiColour = OUTPUT_COLOR_PASS;
+        style.ConsoleColour = KCONSOLE_COLOUR_PASS;
+        return style;
+    }
+
+    if (StartsWith(text, "[FAIL]"))
+    {
+        style.AnsiColour = OUTPUT_COLOR_FAIL;
+        style.ConsoleColour = KCONSOLE_COLOUR_FAIL;
+        return style;
+    }
+
+    if (StartsWith(text, "[WARN]"))
     {
         style.AnsiColour = OUTPUT_COLOR_WARN;
         style.ConsoleColour = KCONSOLE_COLOUR_WARN;

@@ -1,6 +1,7 @@
 #include "KernelBootInfo.h"
 #include "KernelIo.h"
 #include "OrynBootInfoSelection.h"
+#include "KernelScreenReport.h"
 
 static void WriteBootInfoField(const char* label, unsigned long long value)
 {
@@ -18,7 +19,7 @@ static void WriteBootInfoDecimalField(const char* label, unsigned long long valu
 
 static void WriteValidationFail(const char* message, OrynKernelBootInfoStatus* status)
 {
-    KernelIoWriteString("[KERNEL] FAIL: ");
+    OrynKernelScreenReportBeginFail();
     KernelIoWriteString(message);
     KernelIoWriteString("\n");
     status->IsValid = 0;
@@ -33,7 +34,8 @@ static void CheckDisabledFlag(
 {
     if (!wanted && KernelBootInfoHasFlag(bootInfo, flag))
     {
-        KernelIoWriteString("[KERNEL] FAIL: BootInfo supplied disabled field: ");
+        OrynKernelScreenReportBeginFail();
+        KernelIoWriteString("BootInfo supplied disabled field: ");
         KernelIoWriteString(name);
         KernelIoWriteString("\n");
         status->IsValid = 0;
@@ -49,7 +51,8 @@ static void CheckExpectedFlag(
 {
     if (wanted && !KernelBootInfoHasFlag(bootInfo, flag))
     {
-        KernelIoWriteString("[KERNEL] WARN: Requested BootInfo item was not supplied: ");
+        OrynKernelScreenReportBeginWarn();
+        KernelIoWriteString("Requested BootInfo item was not supplied: ");
         KernelIoWriteString(name);
         KernelIoWriteString("\n");
         status->WarningCount += 1;
@@ -368,7 +371,7 @@ static int ValidateHandoffChecksum(const OrynBootInfo* bootInfo, OrynKernelBootI
         return 0;
     }
 
-    KernelIoWriteString("[KERNEL] PASS: BootInfo checksum OK: loader handoff data verified.\n");
+    OrynKernelScreenReportOk(0, "BootInfo checksum OK: loader handoff data verified.");
     return 1;
 }
 
@@ -415,7 +418,7 @@ OrynKernelBootInfoStatus KernelBootInfoValidate(const OrynBootInfo* bootInfo)
 
     if (bootInfo->Size > ORYN_BOOTINFO_ABI_CURRENT_SIZE)
     {
-        KernelIoWriteString("[KERNEL] WARN: BootInfo ABI size is newer than this kernel; known fields will be used.\n");
+        OrynKernelScreenReportWarn(0, "BootInfo ABI size is newer than this kernel; known fields will be used.");
         status.WarningCount += 1;
     }
 
@@ -426,7 +429,7 @@ OrynKernelBootInfoStatus KernelBootInfoValidate(const OrynBootInfo* bootInfo)
         return status;
     }
 
-    KernelIoWriteString("[KERNEL] PASS: BootInfo ABI compatible.\n");
+    OrynKernelScreenReportOk(0, "BootInfo ABI compatible.");
 
     if (!ValidateHandoffChecksum(bootInfo, &status))
     {
@@ -465,10 +468,10 @@ OrynKernelBootInfoStatus KernelBootInfoValidate(const OrynBootInfo* bootInfo)
 
     if (status.IsValid)
     {
-        KernelIoWriteString("[KERNEL] PASS: Boot configuration block received.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel command line received.\n");
-        KernelIoWriteString("[KERNEL] PASS: BootInfo received.\n");
-        KernelIoWriteString("[KERNEL] PASS: BootInfo valid.\n");
+        OrynKernelScreenReportOk(0, "Boot configuration block received.");
+        OrynKernelScreenReportOk(0, "Kernel command line received.");
+        OrynKernelScreenReportOk(0, "BootInfo received.");
+        OrynKernelScreenReportOk(0, "BootInfo valid.");
     }
 
     return status;

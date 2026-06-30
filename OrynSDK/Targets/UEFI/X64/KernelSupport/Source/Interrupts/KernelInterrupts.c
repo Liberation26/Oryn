@@ -4,6 +4,7 @@
 #include "KernelPanic.h"
 #include "KernelPic.h"
 #include "KernelPortIo.h"
+#include "KernelScreenReport.h"
 
 #define ORYN_PIT_CHANNEL0 0x40U
 #define ORYN_PIT_COMMAND 0x43U
@@ -316,53 +317,52 @@ int OrynKernelInterruptsRunApicTimerProof(void)
 
 void OrynKernelInterruptsPrintProof(void)
 {
-    KernelIoWriteString(gInterruptState.Initialized ?
-        "[KERNEL] PASS: Interrupt dispatcher initialized.\n" :
-        "[KERNEL] FAIL: Interrupt dispatcher not initialized.\n");
-    KernelIoWriteString(gInterruptState.HandlerSlots == ORYN_INTERRUPT_VECTOR_COUNT ?
-        "[KERNEL] PASS: Interrupt handler table ready for 256 vectors.\n" :
-        "[KERNEL] FAIL: Interrupt handler table size invalid.\n");
+    OrynKernelScreenReportOkOrFail(gInterruptState.Initialized,
+        "Interrupt dispatcher initialized.",
+        "Interrupt dispatcher not initialized.");
+    OrynKernelScreenReportOkOrFail(gInterruptState.HandlerSlots == ORYN_INTERRUPT_VECTOR_COUNT,
+        "Interrupt handler table ready for 256 vectors.",
+        "Interrupt handler table size invalid.");
     KernelIoWriteString("[KERNEL] Interrupt registered handlers: ");
     KernelIoWriteDec64(gInterruptState.RegisteredHandlers);
     KernelIoWriteString("\n");
-    KernelIoWriteString(OrynKernelInterruptsAreEnabled() ?
-        "[KERNEL] WARN: CPU interrupts are currently enabled.\n" :
-        "[KERNEL] PASS: CPU interrupts are currently disabled for controlled boot.\n");
+    OrynKernelScreenReportOkOrWarn(!(OrynKernelInterruptsAreEnabled()),
+        "CPU interrupts are currently disabled for controlled boot.",
+        "CPU interrupts are currently enabled.");
 }
 
 void OrynKernelInterruptsPrintPicRuntimeProof(void)
 {
-    KernelIoWriteString(gInterruptState.PicTimerProofPassed ?
-        "[KERNEL] PASS: PIC IRQ0 interrupt fired through IDT dispatch.\n" :
-        "[KERNEL] FAIL: PIC IRQ0 interrupt did not fire through IDT dispatch.\n");
-    KernelIoWriteString(gInterruptState.PicTimerAfter > gInterruptState.PicTimerBefore ?
-        "[KERNEL] PASS: PIC IRQ0 handler counter updated.\n" :
-        "[KERNEL] FAIL: PIC IRQ0 handler counter did not update.\n");
-    KernelIoWriteString(gInterruptState.PicEoiCount != 0ULL ?
-        "[KERNEL] PASS: PIC EOI path executed.\n" :
-        "[KERNEL] FAIL: PIC EOI path did not execute.\n");
+    OrynKernelScreenReportOkOrFail(gInterruptState.PicTimerProofPassed,
+        "PIC IRQ0 interrupt fired through IDT dispatch.",
+        "PIC IRQ0 interrupt did not fire through IDT dispatch.");
+    OrynKernelScreenReportOkOrFail(gInterruptState.PicTimerAfter > gInterruptState.PicTimerBefore,
+        "PIC IRQ0 handler counter updated.",
+        "PIC IRQ0 handler counter did not update.");
+    OrynKernelScreenReportOkOrFail(gInterruptState.PicEoiCount != 0ULL,
+        "PIC EOI path executed.",
+        "PIC EOI path did not execute.");
 }
 
 void OrynKernelInterruptsPrintApicRuntimeProof(void)
 {
-    KernelIoWriteString(gInterruptState.ApicTimerProofPassed ?
-        "[KERNEL] PASS: APIC timer interrupt fired through IDT dispatch.\n" :
-        "[KERNEL] FAIL: APIC timer interrupt did not fire through IDT dispatch.\n");
-    KernelIoWriteString(gInterruptState.ApicTimerAfter > gInterruptState.ApicTimerBefore ?
-        "[KERNEL] PASS: APIC timer IRQ counter updated by interrupt dispatch.\n" :
-        "[KERNEL] FAIL: APIC timer IRQ counter did not update.\n");
-    KernelIoWriteString(gInterruptState.ApicEoiCount != 0ULL ?
-        "[KERNEL] PASS: APIC EOI path executed.\n" :
-        "[KERNEL] FAIL: APIC EOI path did not execute.\n");
+    OrynKernelScreenReportOkOrFail(gInterruptState.ApicTimerProofPassed,
+        "APIC timer interrupt fired through IDT dispatch.",
+        "APIC timer interrupt did not fire through IDT dispatch.");
+    OrynKernelScreenReportOkOrFail(gInterruptState.ApicTimerAfter > gInterruptState.ApicTimerBefore,
+        "APIC timer IRQ counter updated by interrupt dispatch.",
+        "APIC timer IRQ counter did not update.");
+    OrynKernelScreenReportOkOrFail(gInterruptState.ApicEoiCount != 0ULL,
+        "APIC EOI path executed.",
+        "APIC EOI path did not execute.");
 }
 
 void OrynKernelInterruptsPrintRuntimeProof(void)
 {
     OrynKernelInterruptsPrintApicRuntimeProof();
-    KernelIoWriteString(
-        gInterruptState.PicTimerProofPassed && gInterruptState.ApicTimerProofPassed ?
-        "[KERNEL] PASS: Interrupts work from PIC upward through APIC/APIC2.\n" :
-        "[KERNEL] FAIL: Interrupt chain from PIC upward is incomplete.\n");
+    OrynKernelScreenReportOkOrFail(gInterruptState.PicTimerProofPassed && gInterruptState.ApicTimerProofPassed,
+        "Interrupts work from PIC upward through APIC/APIC2.",
+        "Interrupt chain from PIC upward is incomplete.");
     KernelIoWriteString("[KERNEL] Interrupt total dispatches: ");
     KernelIoWriteDec64(gInterruptState.TotalDispatches);
     KernelIoWriteString("\n");

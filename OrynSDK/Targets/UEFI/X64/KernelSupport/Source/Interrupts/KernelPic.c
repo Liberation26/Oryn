@@ -1,6 +1,7 @@
 #include "KernelPic.h"
 #include "KernelIo.h"
 #include "KernelPortIo.h"
+#include "KernelScreenReport.h"
 
 #define ORYN_PIC1_COMMAND 0x20U
 #define ORYN_PIC1_DATA 0x21U
@@ -116,15 +117,15 @@ void OrynKernelPicSendEoi(unsigned int irq)
 
 void OrynKernelPicPrintProof(void)
 {
-    KernelIoWriteString(gPicState.Initialized ?
-        "[KERNEL] PASS: PIC initialized.\n" :
-        "[KERNEL] FAIL: PIC was not initialized.\n");
-    KernelIoWriteString(gPicState.Remapped ?
-        "[KERNEL] PASS: PIC remapped to vectors 0x20-0x2F.\n" :
-        "[KERNEL] FAIL: PIC remap did not complete.\n");
-    KernelIoWriteString(gPicState.Disabled ?
-        "[KERNEL] PASS: PIC masked/disabled for APIC handoff.\n" :
-        "[KERNEL] WARN: PIC is not fully masked.\n");
+    OrynKernelScreenReportOkOrFail(gPicState.Initialized,
+        "PIC initialized.",
+        "PIC was not initialized.");
+    OrynKernelScreenReportOkOrFail(gPicState.Remapped,
+        "PIC remapped to vectors 0x20-0x2F.",
+        "PIC remap did not complete.");
+    OrynKernelScreenReportOkOrWarn(gPicState.Disabled,
+        "PIC masked/disabled for APIC handoff.",
+        "PIC is not fully masked.");
     KernelIoWriteString("[KERNEL] PIC original masks master/slave: ");
     KernelIoWriteHex64(gPicState.OriginalMasterMask);
     KernelIoWriteString(" / ");

@@ -1,4 +1,5 @@
 #include "KernelDiagnosticsProofsInternal.h"
+#include "KernelScreenReport.h"
 
 static OrynKernelMemoryMap gKernelMemoryMap;
 static OrynKernelPhysicalMemory gPhysicalMemory;
@@ -69,7 +70,7 @@ static void OrynKernelDiagnosticsRunVirtualMemoryProof(const OrynBootInfo* kerne
     {
         OrynVirtualMemoryPrintProof(&gVirtualMemory);
         KernelIoWriteString("[KERNEL] Virtual memory: failed\n");
-        KernelIoWriteString("[KERNEL] WARN: SMP AP startup skipped because virtual memory did not activate.\n");
+        OrynKernelScreenReportWarn(0, "SMP AP startup skipped because virtual memory did not activate.");
     }
 }
 

@@ -2,6 +2,7 @@
 #include "KernelGdt.h"
 #include "KernelIo.h"
 #include "KernelInterrupts.h"
+#include "KernelScreenReport.h"
 
 #define ORYN_IDT_PRESENT 0x80U
 #define ORYN_IDT_TYPE_INTERRUPT 0x0EU
@@ -221,11 +222,11 @@ void OrynKernelIdtPrintProof(void)
 {
     if (gIdtState.Verified)
     {
-        KernelIoWriteString("[KERNEL] PASS: IDT installed.\n");
+        OrynKernelScreenReportOk(0, "IDT installed.");
     }
     else
     {
-        KernelIoWriteString("[KERNEL] FAIL: IDT install verification failed.\n");
+        OrynKernelScreenReportFail(0, "IDT install verification failed.");
     }
 
     KernelIoWriteString("[KERNEL] IDT entries: ");

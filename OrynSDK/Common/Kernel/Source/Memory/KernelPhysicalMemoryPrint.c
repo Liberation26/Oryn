@@ -1,5 +1,6 @@
 #include "KernelPhysicalMemory.h"
 #include "KernelIo.h"
+#include "KernelScreenReport.h"
 
 static void WritePageCount(const char* label, unsigned int pages)
 {
@@ -43,11 +44,11 @@ void OrynPhysicalMemoryPrintSummary(const OrynKernelPhysicalMemory* allocator)
 
     if (allocator->UntrackedUsablePages != 0U)
     {
-        KernelIoWriteString("[KERNEL] WARN: Physical allocator static capacity was reached.\n");
+        OrynKernelScreenReportWarn(0, "Physical allocator static capacity was reached.");
     }
     else
     {
-        KernelIoWriteString("[KERNEL] PASS: Physical allocator tracking capacity is sufficient.\n");
+        OrynKernelScreenReportOk(0, "Physical allocator tracking capacity is sufficient.");
     }
 }
 

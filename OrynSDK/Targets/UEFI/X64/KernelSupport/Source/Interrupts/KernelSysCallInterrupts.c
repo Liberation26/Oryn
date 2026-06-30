@@ -4,6 +4,7 @@
 #include "KernelIo.h"
 #include "LinuxSysCall.h"
 #include "MSSysCall.h"
+#include "KernelScreenReport.h"
 
 static OrynKernelSysCallInterruptState gSysCallInterruptState;
 
@@ -170,33 +171,32 @@ int OrynKernelSysCallInterruptsRunProof(void)
 
 void OrynKernelSysCallInterruptsPrintProof(void)
 {
-    KernelIoWriteString(gSysCallInterruptState.Initialized ?
-        "[KERNEL] PASS: SysCall interrupt receiver initialized.\n" :
-        "[KERNEL] FAIL: SysCall interrupt receiver not initialized.\n");
-    KernelIoWriteString(gSysCallInterruptState.LinuxVectorRegistered ?
-        "[KERNEL] PASS: LinuxSysCall translator registered.\n" :
-        "[KERNEL] FAIL: LinuxSysCall translator was not registered.\n");
-    KernelIoWriteString(gSysCallInterruptState.MsVectorRegistered ?
-        "[KERNEL] PASS: MSSysCall translator registered.\n" :
-        "[KERNEL] FAIL: MSSysCall translator was not registered.\n");
+    OrynKernelScreenReportOkOrFail(gSysCallInterruptState.Initialized,
+        "SysCall interrupt receiver initialized.",
+        "SysCall interrupt receiver not initialized.");
+    OrynKernelScreenReportOkOrFail(gSysCallInterruptState.LinuxVectorRegistered,
+        "LinuxSysCall translator registered.",
+        "LinuxSysCall translator was not registered.");
+    OrynKernelScreenReportOkOrFail(gSysCallInterruptState.MsVectorRegistered,
+        "MSSysCall translator registered.",
+        "MSSysCall translator was not registered.");
 }
 
 void OrynKernelSysCallInterruptsPrintRuntimeProof(void)
 {
-    KernelIoWriteString(gSysCallInterruptState.LinuxProofPassed ?
-        "[KERNEL] PASS: Linux syscall vector 0x80 received and translated.\n" :
-        "[KERNEL] FAIL: Linux syscall vector 0x80 was not translated.\n");
-    KernelIoWriteString(gSysCallInterruptState.MsProofPassed ?
-        "[KERNEL] PASS: MS syscall vector 0x81 received and translated.\n" :
-        "[KERNEL] FAIL: MS syscall vector 0x81 was not translated.\n");
-    KernelIoWriteString(gSysCallInterruptState.UnknownLinuxProofPassed ?
-        "[KERNEL] PASS: Unknown Linux syscall was reported as debug.\n" :
-        "[KERNEL] FAIL: Unknown Linux syscall was not reported.\n");
-    KernelIoWriteString(gSysCallInterruptState.UnknownMsProofPassed ?
-        "[KERNEL] PASS: Unknown MS syscall was reported as debug.\n" :
-        "[KERNEL] FAIL: Unknown MS syscall was not reported.\n");
-    KernelIoWriteString(
-        gSysCallInterruptState.LinuxProofPassed && gSysCallInterruptState.MsProofPassed ?
-        "[KERNEL] PASS: Platform syscalls translate into Get/Set/Event packets.\n" :
-        "[KERNEL] FAIL: Platform syscall translation proof incomplete.\n");
+    OrynKernelScreenReportOkOrFail(gSysCallInterruptState.LinuxProofPassed,
+        "Linux syscall vector 0x80 received and translated.",
+        "Linux syscall vector 0x80 was not translated.");
+    OrynKernelScreenReportOkOrFail(gSysCallInterruptState.MsProofPassed,
+        "MS syscall vector 0x81 received and translated.",
+        "MS syscall vector 0x81 was not translated.");
+    OrynKernelScreenReportOkOrFail(gSysCallInterruptState.UnknownLinuxProofPassed,
+        "Unknown Linux syscall was reported as debug.",
+        "Unknown Linux syscall was not reported.");
+    OrynKernelScreenReportOkOrFail(gSysCallInterruptState.UnknownMsProofPassed,
+        "Unknown MS syscall was reported as debug.",
+        "Unknown MS syscall was not reported.");
+    OrynKernelScreenReportOkOrFail(gSysCallInterruptState.LinuxProofPassed && gSysCallInterruptState.MsProofPassed,
+        "Platform syscalls translate into Get/Set/Event packets.",
+        "Platform syscall translation proof incomplete.");
 }

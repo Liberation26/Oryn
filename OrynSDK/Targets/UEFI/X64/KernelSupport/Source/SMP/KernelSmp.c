@@ -2,6 +2,7 @@
 #include "KernelApic.h"
 #include "KernelBootInfo.h"
 #include "KernelIo.h"
+#include "KernelScreenReport.h"
 
 #define ORYN_ACPI_SIG_RSDT 0x54445352U
 #define ORYN_ACPI_SIG_XSDT 0x54445358U
@@ -312,7 +313,7 @@ int OrynKernelSmpDiscover(const OrynBootInfo* bootInfo)
     gSmpState.AcpiReadBeforeVirtualMemory = 1U;
     DiscoverCpus(bootInfo);
     OrynKernelSmpPrintDiscoveryProof((const OrynKernelSmpState*)&gSmpState);
-    KernelIoWriteString("[KERNEL] PASS: SMP ACPI topology cached before virtual memory switch.\n");
+    OrynKernelScreenReportOk(0, "SMP ACPI topology cached before virtual memory switch.");
     return gSmpState.DiscoveryComplete ? 1 : 0;
 }
 
@@ -475,7 +476,7 @@ int OrynKernelSmpInit(const OrynBootInfo* bootInfo)
     gSmpState.CurrentCr3 = ReadCr3();
     gSmpState.Cr3Below4G = (gSmpState.CurrentCr3 < 0x100000000ULL) ? 1U : 0U;
     gSmpState.IpiPathReady = OrynKernelApicCanSendIpi();
-    KernelIoWriteString("[KERNEL] PASS: SMP AP startup moved before PCI/HPET/console/memory proof.\n");
+    OrynKernelScreenReportOk(0, "SMP AP startup moved before PCI/HPET/console/memory proof.");
 
     if (PrepareTrampoline())
     {

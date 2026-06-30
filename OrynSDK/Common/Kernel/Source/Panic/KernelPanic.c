@@ -98,7 +98,7 @@ void OrynKernelPanicInit(const OrynBootInfo* bootInfo)
 {
     ClearReport();
     gPanicReport.BootInfo = bootInfo;
-    KernelIoWriteString("[KERNEL] PASS: Kernel-owned panic report path initialized.\n");
+    OrynKernelScreenReportOk(0, "Kernel-owned panic report path initialized.");
 }
 
 void OrynKernelPanicBegin(
@@ -167,8 +167,8 @@ void OrynKernelPanicWriteReport(void)
 
     gPanicReport.LifecycleState = OrynKernelLifecycleGetState();
     KernelIoWriteString("[KERNEL] PANIC REPORT BEGIN\n");
-    KernelIoWriteString("[KERNEL] FAIL: Kernel-owned panic path active.\n");
-    KernelIoWriteString("[KERNEL] PASS: Panic report is stored in kernel-owned memory.\n");
+    OrynKernelScreenReportFail(0, "Kernel-owned panic path active.");
+    OrynKernelScreenReportOk(0, "Panic report is stored in kernel-owned memory.");
     WriteDecField("sequence", gPanicReport.Sequence);
     WriteTextField("reason", gPanicReport.Reason);
     WriteTextField("detail", gPanicReport.Detail);
@@ -181,13 +181,18 @@ void OrynKernelPanicWriteReport(void)
     WriteHexField("rflags", gPanicReport.Rflags);
     WriteHexField("cr2", gPanicReport.Cr2);
     WriteHexField("bootinfo", (unsigned long long)gPanicReport.BootInfo);
-    KernelIoWriteString(KConsole.IsAvailable() ?
-        "[KERNEL] PASS: Kernel panic screen rendered by kernel console.\n" :
-        "[KERNEL] WARN: Kernel panic screen unavailable; serial/debug report remains active.\n");
-    KernelIoWriteString("[KERNEL] PASS: Kernel panic report written to serial and debugcon.\n");
-    KernelIoWriteString(gPanicReport.HaltedByKernel ?
-        "[KERNEL] PASS: Kernel panic halt path is kernel-owned.\n" :
-        "[KERNEL] INFO: Kernel panic halt path pending.\n");
+    OrynKernelScreenReportOkOrWarn(KConsole.IsAvailable(),
+        "Kernel panic screen rendered by kernel console.",
+        "Kernel panic screen unavailable; serial/debug report remains active.");
+    OrynKernelScreenReportOk(0, "Kernel panic report written to serial and debugcon.");
+    if (gPanicReport.HaltedByKernel)
+    {
+        OrynKernelScreenReportOk(0, "Kernel panic halt path is kernel-owned.");
+    }
+    else
+    {
+        KernelIoWriteString("[KERNEL] INFO: Kernel panic halt path pending.\n");
+    }
     KernelIoWriteString("[KERNEL] PANIC REPORT END\n");
     gPanicReport.ReportWritten = 1;
 }
@@ -203,7 +208,7 @@ void OrynKernelPanicHalt(void)
 #if !ORYN_VM_INTERACTIVE_DISPLAY
     KernelIoExitQemuFailure();
 #else
-    KernelIoWriteString("[KERNEL] PASS: Interactive panic screen held open by kernel halt loop.\n");
+    OrynKernelScreenReportOk(0, "Interactive panic screen held open by kernel halt loop.");
 #endif
     for (;;)
     {

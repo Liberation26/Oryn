@@ -1,4 +1,5 @@
 #include "KernelDiagnosticsProofsInternal.h"
+#include "KernelScreenReport.h"
 
 static void OrynKernelDiagnosticsRunEarlySmpProof(const OrynBootInfo* kernelBootInfo)
 {
@@ -68,11 +69,11 @@ static void OrynKernelDiagnosticsRunActiveTimerProof(void)
     OrynKernelInterruptsPrintApicRuntimeProof();
 #endif
 #else
-    KernelIoWriteString("[KERNEL] PASS: VMSettings interrupt/timer profile applied.\n");
+    OrynKernelScreenReportOk(0, "VMSettings interrupt/timer profile applied.");
 #endif
 
 #if (ORYN_VM_APIC || ORYN_VM_APIC2) && (!ORYN_VM_PIC || !ORYN_VM_HPET || !ORYN_VM_APIC2 || !ORYN_VM_APIC)
-    KernelIoWriteString("[KERNEL] PASS: VMSettings interrupt/timer profile applied.\n");
+    OrynKernelScreenReportOk(0, "VMSettings interrupt/timer profile applied.");
 #endif
 }
 
