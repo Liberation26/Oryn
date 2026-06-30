@@ -7,12 +7,16 @@ Boot and handoff:
 [ OK ] Kernel-side raw GOP dependency removed.
 [ OK ] BootInfo has a stable versioned ABI contract and compatibility checks.
        BootInfo ABI compatible
-[TOBE] Loader-to-kernel handoff validation checksum.
+[ OK ] Loader-to-kernel handoff validation checksum.
        BootInfo checksum OK: loader handoff data verified
-[TOBE] Kernel ELF/native image loading separate from the EFI loader application.
-[TOBE] Kernel ELF image is named from the user kernel/OS name.
+[ OK ] Kernel ELF/native image loading separate from the EFI loader application.
+[ OK ] Kernel ELF image is named from the user kernel/OS name.
 [TOBE] Higher-half or chosen virtual address kernel layout.
 [TOBE] Kernel command line and boot configuration block.
+{TOBE} We need IDT
+[TOBE] We need GDT
+[TOBE] We need Interrupts
+[TOBE] We Need SysCalls
 
 Kernel entry and ownership:
 [TOBE] KernelMain is minimal.

@@ -24,6 +24,7 @@ typedef struct OrynKernelVirtualMemory
     unsigned int MapFailure;
     unsigned int TablesAllocated;
     unsigned long long CurrentCr3;
+    unsigned long long CurrentStackPointer;
     unsigned long long NewPml4;
     unsigned long long KernelMapStart;
     unsigned long long KernelMapEnd;
@@ -35,6 +36,8 @@ typedef struct OrynKernelVirtualMemory
     unsigned long long BootInfoMapEnd;
     unsigned long long MemoryMapMapStart;
     unsigned long long MemoryMapMapEnd;
+    unsigned long long StackMapStart;
+    unsigned long long StackMapEnd;
     unsigned long long FramebufferMapStart;
     unsigned long long FramebufferMapEnd;
     unsigned long long DefaultScreenMapStart;

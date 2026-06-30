@@ -10,8 +10,65 @@ static OrynKernelMemoryMap gKernelMemoryMap;
 static OrynKernelPhysicalMemory gPhysicalMemory;
 static OrynKernelVirtualMemory gVirtualMemory;
 
+static void KernelDisableInterrupts(void)
+{
+    __asm__ volatile ("cli" ::: "memory");
+}
+
+static void ReserveRangeIfPresent(
+    OrynKernelPhysicalMemory* physicalMemory,
+    unsigned long long start,
+    unsigned long long bytes)
+{
+    if (start != 0ULL && bytes != 0ULL)
+    {
+        (void)OrynPhysicalMemoryReserveRange(physicalMemory, start, bytes);
+    }
+}
+
+static void ReserveBootHandoffRanges(
+    const OrynBootInfo* bootInfo,
+    OrynKernelPhysicalMemory* physicalMemory)
+{
+    if (bootInfo == 0 || physicalMemory == 0)
+    {
+        return;
+    }
+
+    ReserveRangeIfPresent(physicalMemory, (unsigned long long)bootInfo, sizeof(*bootInfo));
+    ReserveRangeIfPresent(physicalMemory, KernelBootInfoSourceAddress(), sizeof(*bootInfo));
+
+    if (KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_KERNEL_RANGE))
+    {
+        ReserveRangeIfPresent(physicalMemory, bootInfo->KernelPhysicalBase, bootInfo->KernelSize);
+    }
+
+    if (KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_MEMORY_MAP) &&
+        bootInfo->MemoryMapEntrySize != 0ULL)
+    {
+        ReserveRangeIfPresent(
+            physicalMemory,
+            bootInfo->MemoryMap,
+            bootInfo->MemoryMapEntryCount * bootInfo->MemoryMapEntrySize);
+    }
+
+    if (KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_FONT))
+    {
+        ReserveRangeIfPresent(physicalMemory, bootInfo->FontBase, bootInfo->FontSize);
+    }
+
+    if (KernelBootInfoHasFlag(bootInfo, ORYN_BOOTINFO_FLAG_FRAMEBUFFER))
+    {
+        ReserveRangeIfPresent(
+            physicalMemory,
+            bootInfo->Framebuffer.Base,
+            bootInfo->Framebuffer.Size);
+    }
+}
+
 void KernelStart(const OrynBootInfo* bootInfo)
 {
+    KernelDisableInterrupts();
     const OrynBootInfo* kernelBootInfo = KernelBootInfoAdopt(bootInfo);
 
     KernelIoInit();
@@ -50,6 +107,7 @@ void KernelStart(const OrynBootInfo* bootInfo)
             OrynMemoryMapPrintSummary(&gKernelMemoryMap);
             if (OrynPhysicalMemoryInit(&gKernelMemoryMap, &gPhysicalMemory))
             {
+                ReserveBootHandoffRanges(kernelBootInfo, &gPhysicalMemory);
                 OrynPhysicalMemoryPrintSummary(&gPhysicalMemory);
                 OrynPhysicalMemoryRunSelfTest(&gPhysicalMemory);
                 KernelIoWriteString("[KERNEL] Virtual memory: starting\n");

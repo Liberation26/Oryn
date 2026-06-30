@@ -22,6 +22,10 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
     KernelIoWriteHex64(virtualMemory->CurrentCr3);
     KernelIoWriteString("\n");
 
+    KernelIoWriteString("[KERNEL] Current stack pointer: ");
+    KernelIoWriteHex64(virtualMemory->CurrentStackPointer);
+    KernelIoWriteString("\n");
+
     KernelIoWriteString("[KERNEL] New PML4: ");
     KernelIoWriteHex64(virtualMemory->NewPml4);
     KernelIoWriteString("\n");
@@ -49,6 +53,10 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
     WriteRange("[KERNEL] Identity mapped memory map: ",
         virtualMemory->MemoryMapMapStart,
         virtualMemory->MemoryMapMapEnd);
+
+    WriteRange("[KERNEL] Identity mapped current stack: ",
+        virtualMemory->StackMapStart,
+        virtualMemory->StackMapEnd);
 
     KernelIoWriteString("[KERNEL] Framebuffer mapping: ");
     if (virtualMemory->FramebufferSelected)

@@ -31,6 +31,7 @@ void OrynPhysicalMemoryPrintSummary(const OrynKernelPhysicalMemory* allocator)
     WritePageCount("[KERNEL] Tracked free pages: ", allocator->FreePageCount);
     WritePageCount("[KERNEL] Used pages: ", allocator->UsedPageCount);
     WritePageCount("[KERNEL] Low pages held back: ", allocator->ReservedLowPages);
+    WritePageCount("[KERNEL] Reserved handoff/kernel pages: ", allocator->ReservedPages);
     WritePageCount("[KERNEL] Untracked usable pages: ", allocator->UntrackedUsablePages);
 
     KernelIoWriteString("[KERNEL] Lowest tracked free page: ");
@@ -57,6 +58,7 @@ void OrynPhysicalMemoryPrintFinalState(const OrynKernelPhysicalMemory* allocator
     KernelIoWriteString("[KERNEL] Physical memory allocator final state:\n");
     WritePageCount("  Tracked free pages: ", allocator->FreePageCount);
     WritePageCount("  Used pages: ", allocator->UsedPageCount);
+    WritePageCount("  Reserved handoff/kernel pages: ", allocator->ReservedPages);
     KernelIoWriteString("  Lowest tracked free page: ");
     KernelIoWriteHex64(allocator->LowestFreeAddress);
     KernelIoWriteString("\n");

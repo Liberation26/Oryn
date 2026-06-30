@@ -116,6 +116,31 @@ int OrynPhysicalMemoryInit(const OrynKernelMemoryMap* memoryMap, OrynKernelPhysi
     return allocator->Initialized ? 1 : 0;
 }
 
+unsigned long long OrynPhysicalMemoryAllocatePageBelow(
+    OrynKernelPhysicalMemory* allocator,
+    unsigned long long exclusiveLimit)
+{
+    if (allocator == 0 || allocator->Initialized == 0U || allocator->FreePageCount == 0U)
+    {
+        return ORYN_PHYSICAL_ALLOC_FAIL;
+    }
+
+    for (unsigned int index = allocator->FreePageCount; index > 0U; --index)
+    {
+        unsigned int pageIndex = index - 1U;
+        unsigned long long page = allocator->FreePages[pageIndex];
+        if (page < exclusiveLimit)
+        {
+            allocator->FreePageCount -= 1U;
+            allocator->FreePages[pageIndex] = allocator->FreePages[allocator->FreePageCount];
+            allocator->UsedPageCount += 1U;
+            return page;
+        }
+    }
+
+    return ORYN_PHYSICAL_ALLOC_FAIL;
+}
+
 unsigned long long OrynPhysicalMemoryAllocatePage(OrynKernelPhysicalMemory* allocator)
 {
     if (allocator == 0 || allocator->Initialized == 0U || allocator->FreePageCount == 0U)
@@ -126,6 +151,38 @@ unsigned long long OrynPhysicalMemoryAllocatePage(OrynKernelPhysicalMemory* allo
     allocator->FreePageCount -= 1U;
     allocator->UsedPageCount += 1U;
     return allocator->FreePages[allocator->FreePageCount];
+}
+
+unsigned int OrynPhysicalMemoryReserveRange(
+    OrynKernelPhysicalMemory* allocator,
+    unsigned long long physicalStart,
+    unsigned long long byteCount)
+{
+    unsigned int removed = 0U;
+
+    if (allocator == 0 || allocator->Initialized == 0U || byteCount == 0ULL)
+    {
+        return 0U;
+    }
+
+    unsigned long long first = AlignDown(physicalStart);
+    unsigned long long end = AlignUp(physicalStart + byteCount);
+    for (unsigned int index = 0U; index < allocator->FreePageCount;)
+    {
+        unsigned long long page = allocator->FreePages[index];
+        if (page >= first && page < end)
+        {
+            allocator->FreePageCount -= 1U;
+            allocator->FreePages[index] = allocator->FreePages[allocator->FreePageCount];
+            allocator->ReservedPages += 1U;
+            removed += 1U;
+            continue;
+        }
+
+        ++index;
+    }
+
+    return removed;
 }
 
 int OrynPhysicalMemoryFreePage(OrynKernelPhysicalMemory* allocator, unsigned long long physicalAddress)

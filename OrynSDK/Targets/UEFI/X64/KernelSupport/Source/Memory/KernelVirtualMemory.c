@@ -1,11 +1,13 @@
 #include "KernelVirtualMemory.h"
 #include "KernelBootInfo.h"
+#include "KernelIo.h"
 
 #define ORYN_PAGE_PRESENT 0x001ULL
 #define ORYN_PAGE_WRITABLE 0x002ULL
 #define ORYN_PAGE_FLAGS (ORYN_PAGE_PRESENT | ORYN_PAGE_WRITABLE)
 #define ORYN_PAGE_ADDRESS_MASK 0x000FFFFFFFFFF000ULL
 #define ORYN_LOW_IDENTITY_BYTES (64ULL * 1024ULL * 1024ULL)
+#define ORYN_EARLY_STACK_BYTES (1024ULL * 1024ULL)
 #define ORYN_VGA_TEXT_BASE 0x00000000000B8000ULL
 #define ORYN_VGA_TEXT_BYTES 0x8000ULL
 
@@ -42,6 +44,13 @@ unsigned long long OrynVirtualMemoryReadCr3(void)
     return value;
 }
 
+static unsigned long long OrynVirtualMemoryReadRsp(void)
+{
+    unsigned long long value;
+    __asm__ volatile ("mov %%rsp, %0" : "=r"(value));
+    return value;
+}
+
 static void OrynVirtualMemoryWriteCr3(unsigned long long value)
 {
     __asm__ volatile ("mov %0, %%cr3" :: "r"(value) : "memory");
@@ -51,7 +60,9 @@ static OrynPageTableEntry* AllocateTable(
     OrynKernelPhysicalMemory* physicalMemory,
     OrynKernelVirtualMemory* virtualMemory)
 {
-    unsigned long long physicalAddress = OrynPhysicalMemoryAllocatePage(physicalMemory);
+    unsigned long long physicalAddress = OrynPhysicalMemoryAllocatePageBelow(
+        physicalMemory,
+        ORYN_PHYSICAL_EARLY_DIRECT_MAP_LIMIT);
     if (physicalAddress == ORYN_PHYSICAL_ALLOC_FAIL)
     {
         virtualMemory->MapFailure = 1U;
@@ -185,21 +196,6 @@ static int MapVirtualRangeToPhysical(
     return 1;
 }
 
-static int ShouldIdentityMapEntry(const OrynKernelMemoryEntry* entry)
-{
-    if (entry->Type == OrynKernelMemoryBad)
-    {
-        return 0;
-    }
-
-    if (entry->Type == OrynKernelMemoryMmio)
-    {
-        return 0;
-    }
-
-    return 1;
-}
-
 static int BootInfoHasUsableFramebufferFields(const OrynBootInfo* bootInfo)
 {
     if (bootInfo == 0)
@@ -218,28 +214,24 @@ static int BootInfoHasUsableFramebufferFields(const OrynBootInfo* bootInfo)
     return 1;
 }
 
-static int MapMemoryMapEntries(
+static int MapCurrentStackRange(
     OrynPageTableEntry* pml4,
-    const OrynKernelMemoryMap* memoryMap,
     OrynKernelPhysicalMemory* physicalMemory,
     OrynKernelVirtualMemory* virtualMemory)
 {
-    for (unsigned int index = 0; index < memoryMap->EntryCount; ++index)
-    {
-        const OrynKernelMemoryEntry* entry = &memoryMap->Entries[index];
-        unsigned long long bytes = entry->PageCount * ORYN_VIRTUAL_PAGE_SIZE;
-        if (!ShouldIdentityMapEntry(entry))
-        {
-            continue;
-        }
+    unsigned long long stackPointer = OrynVirtualMemoryReadRsp();
+    unsigned long long halfWindow = ORYN_EARLY_STACK_BYTES / 2ULL;
+    unsigned long long start = stackPointer > halfWindow ? stackPointer - halfWindow : 0ULL;
 
-        if (!MapRange(pml4, entry->PhysicalStart, bytes, physicalMemory, virtualMemory))
-        {
-            return 0;
-        }
-    }
-
-    return 1;
+    virtualMemory->CurrentStackPointer = stackPointer;
+    virtualMemory->StackMapStart = AlignDown(start);
+    virtualMemory->StackMapEnd = AlignUp(stackPointer + halfWindow);
+    return MapRange(
+        pml4,
+        virtualMemory->StackMapStart,
+        virtualMemory->StackMapEnd - virtualMemory->StackMapStart,
+        physicalMemory,
+        virtualMemory);
 }
 
 static int MapKernelRange(
@@ -414,6 +406,7 @@ int OrynVirtualMemoryInit(
 
     ClearVirtualMemory(virtualMemory);
     virtualMemory->CurrentCr3 = OrynVirtualMemoryReadCr3();
+    KernelIoWriteString("[KERNEL] Virtual memory: current CR3 captured\n");
 
     if (bootInfo == 0 || memoryMap == 0 || physicalMemory == 0 || physicalMemory->Initialized == 0U)
     {
@@ -428,8 +421,9 @@ int OrynVirtualMemoryInit(
     }
 
     virtualMemory->NewPml4 = (unsigned long long)pml4;
+    KernelIoWriteString("[KERNEL] Virtual memory: new PML4 allocated below early direct-map limit\n");
     if (!MapRange(pml4, 0ULL, ORYN_LOW_IDENTITY_BYTES, physicalMemory, virtualMemory) ||
-        !MapMemoryMapEntries(pml4, memoryMap, physicalMemory, virtualMemory) ||
+        !MapCurrentStackRange(pml4, physicalMemory, virtualMemory) ||
         !MapVgaTextRange(pml4, physicalMemory, virtualMemory) ||
         !MapKernelRange(pml4, bootInfo, physicalMemory, virtualMemory) ||
         !MapKernelVirtualRange(pml4, bootInfo, physicalMemory, virtualMemory) ||
@@ -441,7 +435,9 @@ int OrynVirtualMemoryInit(
         return 0;
     }
 
+    KernelIoWriteString("[KERNEL] Virtual memory: required ranges mapped\n");
     OrynVirtualMemoryWriteCr3(virtualMemory->NewPml4);
+    KernelIoWriteString("[KERNEL] Virtual memory: CR3 switched to kernel-owned PML4\n");
     virtualMemory->Active = 1U;
     virtualMemory->Initialized = 1U;
     return 1;
