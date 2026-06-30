@@ -254,6 +254,9 @@ static void WriteBootReport(
     int screen_back_buffer = TextContains(debug_text, "[KERNEL] PASS: Kernel screen back buffer allocated.");
     int screen_renders_back = TextContains(debug_text, "[KERNEL] PASS: Kernel screen renders into back buffer first.");
     int screen_present = TextContains(debug_text, "[KERNEL] PASS: Kernel screen presents completed frame to visible output.");
+    int screen_deferred_flip = TextContains(debug_text, "[KERNEL] PASS: Kernel screen defers visible flip while line is being written.");
+    int screen_line_flip = TextContains(debug_text, "[KERNEL] PASS: Kernel screen flips after completed line.");
+    int screen_line_buffered = TextContains(debug_text, "[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.");
     int screen_double_buffer = TextContains(debug_text, "[KERNEL] PASS: Kernel screen double buffering implemented.");
     int qemu_preboot_failure = (!command_ok) && !loader_started && DebugTextIsEmpty(debug_text);
 
@@ -303,6 +306,7 @@ static void WriteBootReport(
         smp_ok && qemu_debug_colour && kernel_console && screen_scrollback &&
         screen_coloured_cells && screen_scroll_lines && screen_page_scroll &&
         screen_bottom && screen_scrolling && screen_back_buffer && screen_renders_back &&
+        screen_deferred_flip && screen_line_flip && screen_line_buffered &&
         screen_present && screen_double_buffer && virtual_memory_active && debug_exit;
 
     FILE* file = fopen(report_path, "wb");
@@ -456,6 +460,9 @@ static void WriteBootReport(
     fprintf(file, "  Kernel screen scrolling implemented: %s\n", PassFail(screen_scrolling));
     fprintf(file, "  Kernel screen back buffer allocated: %s\n", PassFail(screen_back_buffer));
     fprintf(file, "  Kernel screen renders into back buffer first: %s\n", PassFail(screen_renders_back));
+    fprintf(file, "  Kernel screen defers flip while line is being written: %s\n", PassFail(screen_deferred_flip));
+    fprintf(file, "  Kernel screen flips after completed line: %s\n", PassFail(screen_line_flip));
+    fprintf(file, "  Kernel screen line-buffered double buffering implemented: %s\n", PassFail(screen_line_buffered));
     fprintf(file, "  Kernel screen presents completed frame: %s\n", PassFail(screen_present));
     fprintf(file, "  Kernel screen double buffering implemented: %s\n", PassFail(screen_double_buffer));
     fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
@@ -643,6 +650,12 @@ static void WriteBootReport(
             "The kernel screen back buffer was not allocated." :
         !screen_renders_back ?
             "The kernel screen did not render into the back buffer first." :
+        !screen_deferred_flip ?
+            "The kernel screen still flipped while a line was being written." :
+        !screen_line_flip ?
+            "The kernel screen did not flip after a completed line." :
+        !screen_line_buffered ?
+            "Kernel screen line-buffered double buffering did not complete." :
         !screen_present ?
             "The kernel screen did not present completed frames to visible output." :
         !screen_double_buffer ?
@@ -1021,6 +1034,7 @@ int OrynRunQemu(const OrynProject* project)
         TextContains(debug_text, "\033[32m[KERNEL] PASS") &&
         TextContains(debug_text, "\033[0m") &&
         !TextContains(debug_text, "[KERNEL] EXCEPTION:") &&
+        TextContains(debug_text, "[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.") &&
         TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success") && command_ok;
 
     if (boot_pass)

@@ -157,11 +157,14 @@ static void RunKernelScreenDoubleBufferProof(void)
     KernelIoWriteDec64(KConsole.PresentCount());
     KernelIoWriteString("\n");
 
-    if (KConsole.IsDoubleBuffered() && KConsoleRunDoubleBufferProof())
+    if (KConsole.IsDoubleBuffered() && KConsoleRunDoubleBufferProof() && KConsoleRunLineBufferedFlipProof())
     {
         KernelIoWriteString("[KERNEL] PASS: Kernel screen back buffer allocated.\n");
         KernelIoWriteString("[KERNEL] PASS: Kernel screen renders into back buffer first.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen defers visible flip while line is being written.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen flips after completed line.\n");
         KernelIoWriteString("[KERNEL] PASS: Kernel screen presents completed frame to visible output.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.\n");
         KernelIoWriteString("[KERNEL] PASS: Kernel screen double buffering implemented.\n");
     }
     else

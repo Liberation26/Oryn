@@ -1,4 +1,4 @@
-OrynWsl 0.5.42 Quick Start
+OrynWsl 0.5.43 Quick Start
 
 This package is a WSL-native Oryn SDK baseline.
 
@@ -778,3 +778,14 @@ Boot proof markers:
 [KERNEL] PASS: Kernel screen renders into back buffer first.
 [KERNEL] PASS: Kernel screen presents completed frame to visible output.
 [KERNEL] PASS: Kernel screen double buffering implemented.
+
+
+OrynWsl 0.5.43 Kernel screen line-buffered flip
+
+The kernel console still uses a framebuffer/VGA double buffer, but normal printable characters now update only the back buffer. The visible buffer is presented after a whole line is committed by newline or automatic wrap, and still presents immediately for clear, scroll, page-scroll, scroll-to-bottom, and full redraw operations.
+
+Expected proof markers:
+
+[KERNEL] PASS: Kernel screen defers visible flip while line is being written.
+[KERNEL] PASS: Kernel screen flips after completed line.
+[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.

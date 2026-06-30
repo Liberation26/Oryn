@@ -232,3 +232,8 @@ The UEFI x64 SMP support owns early ACPI MADT topology proof markers. These mark
 0.5.42 Kernel screen double-buffer ownership
 
 Double buffering is owned by the common kernel console. The target supplies framebuffer or VGA access, while the common console owns the framebuffer pixel back buffer, VGA shadow buffer, present/blit path, and proof markers. Output code writes logical characters into scrollback cells; visible redraws render to the back buffer first, then present the completed frame to the visible framebuffer or VGA text memory.
+
+
+0.5.43 Kernel screen line-buffered double-buffer presentation
+
+Common/Kernel/Source/Console/KernelConsole.c now keeps per-character rendering inside the back buffer and delays the visible present until a completed line, automatic line wrap, scroll operation, clear, or explicit full redraw. This prevents the VM screen from visibly flipping after each character while preserving the completed-frame presentation model.

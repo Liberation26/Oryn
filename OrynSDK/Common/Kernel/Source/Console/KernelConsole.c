@@ -112,6 +112,7 @@ typedef struct KConsoleState
     unsigned long long FramebufferBackBufferSize;
     int DoubleBuffered;
     unsigned int PresentCount;
+    unsigned int LinePresentCount;
     unsigned int Width;
     unsigned int Height;
     unsigned int Pitch;
@@ -154,6 +155,7 @@ static void KConsoleUseVgaTextFallback(void)
     gConsole.FramebufferBackBufferSize = 0ULL;
     gConsole.DoubleBuffered = 1;
     gConsole.PresentCount = 0U;
+    gConsole.LinePresentCount = 0U;
     gConsole.Width = KCONSOLE_VGA_WIDTH;
     gConsole.Height = KCONSOLE_VGA_HEIGHT;
     gConsole.Pitch = KCONSOLE_VGA_WIDTH;
@@ -668,6 +670,7 @@ static void KConsoleAppendNewLine(void)
     {
         gConsole.ViewTopLine = KConsoleMaximumViewTop();
         KConsoleRenderVisible();
+        gConsole.LinePresentCount += 1U;
     }
 }
 
@@ -692,7 +695,6 @@ static void KConsoleStorePrintable(char value)
     {
         KConsoleRenderCell(gConsole.CurrentLine - gConsole.ViewTopLine, gConsole.CurrentColumn);
         KConsoleDrawScrollbar();
-        KConsolePresent();
     }
 
     gConsole.CurrentColumn += 1U;
@@ -746,6 +748,7 @@ void KConsoleInit(const OrynBootInfo* bootInfo)
         gConsole.FramebufferBackBufferSize = gConsole.FramebufferBackBufferPixels * 4ULL;
         gConsole.DoubleBuffered = gConsole.FramebufferBackBufferPixels <= (unsigned long long)KCONSOLE_BACKBUFFER_PIXELS ? 1 : 0;
         gConsole.PresentCount = 0U;
+        gConsole.LinePresentCount = 0U;
         gConsole.CursorX = KCONSOLE_MARGIN_X;
         gConsole.CursorY = KCONSOLE_MARGIN_Y;
         gConsole.Mode = KCONSOLE_MODE_FRAMEBUFFER;
@@ -935,6 +938,36 @@ int KConsoleRunDoubleBufferProof(void)
     before = gConsole.PresentCount;
     KConsoleRenderVisible();
     return gConsole.PresentCount > before;
+}
+
+int KConsoleRunLineBufferedFlipProof(void)
+{
+    unsigned int before;
+    unsigned int afterCharacters;
+    unsigned int afterLine;
+    unsigned int originalColour = gConsole.ForegroundColour;
+    unsigned char originalVga = gConsole.VgaAttribute;
+
+    if (!gConsole.Available || !gConsole.DoubleBuffered || KConsoleBackBufferBytes() == 0ULL)
+    {
+        return 0;
+    }
+
+    KConsoleScrollToBottom();
+    KConsoleWriteChar('\n');
+    before = gConsole.PresentCount;
+
+    KConsoleSetForegroundColour(KCONSOLE_COLOUR_STEP);
+    KConsoleWriteChar('L');
+    KConsoleWriteChar('B');
+    afterCharacters = gConsole.PresentCount;
+    KConsoleWriteChar('\n');
+    afterLine = gConsole.PresentCount;
+
+    gConsole.ForegroundColour = originalColour;
+    gConsole.VgaAttribute = originalVga;
+
+    return afterCharacters == before && afterLine > afterCharacters;
 }
 
 int KConsoleRunScrollProof(void)
