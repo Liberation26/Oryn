@@ -17,6 +17,15 @@ typedef struct Fat32ProofDeviceContext
 
 static Fat32ProofDeviceContext gFat32ProofContext;
 
+static void Fat32ProofStatus(const char* state, const char* text)
+{
+    KernelIoWriteString("[KERNEL] ");
+    KernelIoWriteString(state);
+    KernelIoWriteString(": ");
+    KernelIoWriteString(text);
+    KernelIoWriteString("\n");
+}
+
 static int Fat32ProofRead(OrynKernelBlockDevice* device, uint32_t lba, uint32_t sector_count, void* buffer)
 {
     Fat32ProofDeviceContext* context = (Fat32ProofDeviceContext*)device->Context;
@@ -65,6 +74,12 @@ static void Fat32ProofDeviceInit(void)
     gFat32ProofDevice.Write = Fat32ProofWrite;
 }
 
+static int Fat32ProofStep(int passed, const char* ok_text, const char* fail_text)
+{
+    Fat32ProofStatus(passed ? "OK" : "FAIL", passed ? ok_text : fail_text);
+    return passed;
+}
+
 void OrynKernelDiagnosticsRunFat32VfsProof(void)
 {
     const char* text = "Oryn FAT32 kernel file read write proof.";
@@ -74,57 +89,46 @@ void OrynKernelDiagnosticsRunFat32VfsProof(void)
     OrynFat32FileInfo entries[8];
     uint32_t entry_count = 0;
 
-    KernelIoWriteString("[KERNEL] FAT32/VFS: starting kernel-side proof.\n");
+    Fat32ProofStatus("OK", "FAT32/VFS kernel-side proof started.");
     Fat32ProofDeviceInit();
 
-    if (OrynFat32FormatMemoryImage(gFat32ProofImage, FAT32_PROOF_SECTORS, "ORYNROOT   "))
-    {
-        KernelIoWriteString("[KERNEL] PASS: FAT32 formatter created a valid test volume.\n");
-    }
-    if (OrynFat32Mount(&gFat32ProofVolume, &gFat32ProofDevice))
-    {
-        KernelIoWriteString("[KERNEL] PASS: FAT32 boot sector mounted and validated.\n");
-    }
-    if (gFat32ProofVolume.Info.RootCluster == 2U && gFat32ProofVolume.Info.FatCount == 2U)
-    {
-        KernelIoWriteString("[KERNEL] PASS: FAT32 BPB, FSInfo, FAT and root cluster metadata decoded.\n");
-    }
+    if (!Fat32ProofStep(OrynFat32FormatMemoryImage(gFat32ProofImage, FAT32_PROOF_SECTORS, "ORYNROOT   "),
+        "FAT32 formatter created a valid test volume.",
+        "FAT32 formatter could not create a valid test volume.")) return;
+    if (!Fat32ProofStep(OrynFat32Mount(&gFat32ProofVolume, &gFat32ProofDevice),
+        "FAT32 boot sector mounted and validated.",
+        "FAT32 boot sector mount or validation failed.")) return;
+    if (!Fat32ProofStep(gFat32ProofVolume.Info.RootCluster == 2U && gFat32ProofVolume.Info.FatCount == 2U,
+        "FAT32 BPB, FSInfo, FAT and root cluster metadata decoded.",
+        "FAT32 BPB, FSInfo, FAT or root cluster metadata decode failed.")) return;
 
     OrynVfsInit();
-    if (OrynVfsMountFat32("/", &gFat32ProofVolume))
-    {
-        KernelIoWriteString("[KERNEL] PASS: VFS mounted FAT32 volume as root.\n");
-    }
-    if (OrynVfsCreateDirectory("/SYSTEM"))
-    {
-        KernelIoWriteString("[KERNEL] PASS: FAT32 directory create works.\n");
-    }
-    if (OrynFat32CreateFile(&gFat32ProofVolume, "/SYSTEM/HELLO.TXT", text, (uint32_t)OrynStrlen(text)))
-    {
-        KernelIoWriteString("[KERNEL] PASS: FAT32 file create allocates directory entry and cluster chain.\n");
-    }
-    if (OrynVfsReadFile("/SYSTEM/HELLO.TXT", read_buffer, sizeof(read_buffer), &bytes_read) &&
-        Fat32ProofTextMatches(read_buffer, text, bytes_read))
-    {
-        KernelIoWriteString("[KERNEL] PASS: FAT32 file read follows cluster chain through VFS.\n");
-    }
-    if (OrynVfsStatPath("/SYSTEM/HELLO.TXT", &stat) && stat.Type == OrynVfsNodeFile)
-    {
-        KernelIoWriteString("[KERNEL] PASS: VFS stat returns file type, size, and first cluster.\n");
-    }
-    if (OrynVfsWriteFile("/SYSTEM/HELLO.TXT", "updated", 7U) &&
-        OrynVfsReadFile("/SYSTEM/HELLO.TXT", read_buffer, sizeof(read_buffer), &bytes_read) &&
-        bytes_read == 7U)
-    {
-        KernelIoWriteString("[KERNEL] PASS: FAT32 file overwrite updates size and data.\n");
-    }
-    if (OrynVfsListDirectory("/SYSTEM", entries, 8U, &entry_count) && entry_count >= 1U)
-    {
-        KernelIoWriteString("[KERNEL] PASS: FAT32 directory enumeration works through VFS.\n");
-    }
-    if (OrynVfsDelete("/SYSTEM/HELLO.TXT") && !OrynVfsStatPath("/SYSTEM/HELLO.TXT", &stat))
-    {
-        KernelIoWriteString("[KERNEL] PASS: FAT32 delete frees directory entry and cluster chain.\n");
-    }
-    KernelIoWriteString("[KERNEL] PASS: Kernel-side FAT32/VFS implementation proof complete.\n");
+    if (!Fat32ProofStep(OrynVfsMountFat32("/", &gFat32ProofVolume),
+        "VFS mounted FAT32 volume as root.",
+        "VFS could not mount FAT32 volume as root.")) return;
+    if (!Fat32ProofStep(OrynVfsCreateDirectory("/SYSTEM"),
+        "FAT32 directory create works.",
+        "FAT32 directory create failed.")) return;
+    if (!Fat32ProofStep(OrynFat32CreateFile(&gFat32ProofVolume, "/SYSTEM/HELLO.TXT", text, (uint32_t)OrynStrlen(text)),
+        "FAT32 file create allocates directory entry and cluster chain.",
+        "FAT32 file create did not allocate directory entry and cluster chain.")) return;
+    if (!Fat32ProofStep(OrynVfsReadFile("/SYSTEM/HELLO.TXT", read_buffer, sizeof(read_buffer), &bytes_read) &&
+        Fat32ProofTextMatches(read_buffer, text, bytes_read),
+        "FAT32 file read follows cluster chain through VFS.",
+        "FAT32 file read through VFS did not return expected bytes.")) return;
+    if (!Fat32ProofStep(OrynVfsStatPath("/SYSTEM/HELLO.TXT", &stat) && stat.Type == OrynVfsNodeFile,
+        "VFS stat returns file type, size, and first cluster.",
+        "VFS stat failed for FAT32 file.")) return;
+    if (!Fat32ProofStep(OrynVfsWriteFile("/SYSTEM/HELLO.TXT", "updated", 7U) &&
+        OrynVfsReadFile("/SYSTEM/HELLO.TXT", read_buffer, sizeof(read_buffer), &bytes_read) && bytes_read == 7U,
+        "FAT32 file overwrite updates size and data.",
+        "FAT32 overwrite did not update file size and data.")) return;
+    if (!Fat32ProofStep(OrynVfsListDirectory("/SYSTEM", entries, 8U, &entry_count) && entry_count >= 1U,
+        "FAT32 directory enumeration works through VFS.",
+        "FAT32 directory enumeration through VFS failed.")) return;
+    if (!Fat32ProofStep(OrynVfsDelete("/SYSTEM/HELLO.TXT") && !OrynVfsStatPath("/SYSTEM/HELLO.TXT", &stat),
+        "FAT32 delete frees directory entry and cluster chain.",
+        "FAT32 delete did not free directory entry and cluster chain.")) return;
+
+    Fat32ProofStatus("OK", "Kernel-side FAT32/VFS implementation proof complete.");
 }
