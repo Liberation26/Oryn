@@ -232,7 +232,7 @@ static void RunInterruptAndTimerProofs(const OrynBootInfo* kernelBootInfo)
     KernelIoWriteString("[KERNEL] INFO: PIC IRQ0 proof skipped by VMSettings.\n");
 #endif
 
-#if ORYN_VM_APIC
+#if ORYN_VM_APIC || ORYN_VM_APIC2
 #if ORYN_VM_APIC2
     (void)OrynKernelApicInit(1);
 #else
@@ -244,10 +244,10 @@ static void RunInterruptAndTimerProofs(const OrynBootInfo* kernelBootInfo)
     KernelIoWriteString("[KERNEL] INFO: APIC proofs skipped by VMSettings.\n");
 #endif
 
-#if ORYN_VM_SMP_CPUS > 1 && ORYN_VM_APIC
+#if ORYN_VM_SMP_CPUS > 1 && (ORYN_VM_APIC || ORYN_VM_APIC2)
     RunEarlySmpProof(kernelBootInfo);
 #else
-    KernelIoWriteString("[KERNEL] INFO: SMP discovery skipped by VMSettings.\n");
+    KernelIoWriteString("[KERNEL] INFO: SMP AP startup skipped by VMSettings.\n");
 #endif
 
 #if ORYN_VM_HPET
@@ -258,14 +258,18 @@ static void RunInterruptAndTimerProofs(const OrynBootInfo* kernelBootInfo)
     KernelIoWriteString("[KERNEL] INFO: HPET proof skipped by VMSettings.\n");
 #endif
 
-#if ORYN_VM_APIC
+#if ORYN_VM_APIC || ORYN_VM_APIC2
     (void)OrynKernelInterruptsRunApicTimerProof();
+#if ORYN_VM_PIC
     OrynKernelInterruptsPrintRuntimeProof();
+#else
+    OrynKernelInterruptsPrintApicRuntimeProof();
+#endif
 #else
     KernelIoWriteString("[KERNEL] PASS: VMSettings interrupt/timer profile applied.\n");
 #endif
 
-#if ORYN_VM_APIC && (!ORYN_VM_PIC || !ORYN_VM_HPET || !ORYN_VM_APIC2)
+#if (ORYN_VM_APIC || ORYN_VM_APIC2) && (!ORYN_VM_PIC || !ORYN_VM_HPET || !ORYN_VM_APIC2 || !ORYN_VM_APIC)
     KernelIoWriteString("[KERNEL] PASS: VMSettings interrupt/timer profile applied.\n");
 #endif
 }
@@ -278,7 +282,7 @@ static void RunPciProof(const OrynBootInfo* kernelBootInfo)
 
 static void RunEarlySmpProof(const OrynBootInfo* kernelBootInfo)
 {
-#if ORYN_VM_SMP_CPUS > 1 && ORYN_VM_APIC
+#if ORYN_VM_SMP_CPUS > 1 && (ORYN_VM_APIC || ORYN_VM_APIC2)
     KernelIoWriteString("[KERNEL] SMP: starting early after APIC/APIC2 enable.\n");
     (void)OrynKernelSmpInit(kernelBootInfo);
     OrynKernelSmpPrintProof();

@@ -295,19 +295,22 @@ static void WriteBootReport(
 
     int want_pic = ProjectBoolEnabled(project->run_pic, 1);
     int want_apic = ProjectBoolEnabled(project->run_apic, 1);
-    int want_apic2 = ProjectBoolEnabled(project->run_apic2, 1) && want_apic;
+    int want_apic2 = ProjectBoolEnabled(project->run_apic2, 1);
+    int want_local_apic = want_apic || want_apic2;
     int want_hpet = ProjectBoolEnabled(project->run_hpet, 1);
     unsigned int wanted_cpu_count = ProjectCpuCount(project);
-    int want_smp = (wanted_cpu_count > 1U) && want_apic;
+    int want_smp = (wanted_cpu_count > 1U) && want_local_apic;
     int pic_skipped = TextContains(debug_text, "[KERNEL] INFO: PIC IRQ0 proof skipped by VMSettings.");
     int apic_skipped = TextContains(debug_text, "[KERNEL] INFO: APIC proofs skipped by VMSettings.");
     int apic2_skipped = TextContains(debug_text, "[KERNEL] INFO: APIC2/x2APIC disabled by VMSettings.");
     int hpet_skipped = TextContains(debug_text, "[KERNEL] INFO: HPET proof skipped by VMSettings.");
-    int smp_skipped = TextContains(debug_text, "[KERNEL] INFO: SMP AP startup skipped by VMSettings.");
+    int smp_skipped = TextContains(debug_text, "[KERNEL] INFO: SMP AP startup skipped by VMSettings.") ||
+        TextContains(debug_text, "[KERNEL] INFO: SMP discovery skipped by VMSettings.");
 
+    int cpu_local_apic_ok = want_local_apic ? cpu_local_apic : 1;
     int pic_ok = want_pic ? (pic_initialized && pic_remapped && pic_irq0 && pic_irq0_count && pic_eoi && pic_masked) : pic_skipped;
-    int apic_ok = want_apic ? (apic_available && local_apic_enabled && apic_timer_probe && apic_timer_interrupt && apic_irq_counters && apic_eoi) : apic_skipped;
-    int apic2_ok = want_apic2 ? (cpu_apic2 && apic2_enabled) : (apic2_skipped || !want_apic);
+    int apic_ok = want_local_apic ? (apic_available && local_apic_enabled && apic_timer_probe && apic_timer_interrupt && apic_irq_counters && apic_eoi) : apic_skipped;
+    int apic2_ok = want_apic2 ? (cpu_apic2 && apic2_enabled) : (apic2_skipped || !want_local_apic);
     int hpet_ok = want_hpet ? (hpet_rsdp && hpet_checksum && hpet_table && hpet_enabled && hpet_counter) : hpet_skipped;
     int interrupt_chain_ok = TextContains(debug_text, "[KERNEL] PASS: Interrupts work from PIC upward through APIC/APIC2.") ||
         TextContains(debug_text, "[KERNEL] PASS: VMSettings interrupt/timer profile applied.");
@@ -330,7 +333,7 @@ static void WriteBootReport(
         gdt_installing && gdt_installed && gdt_entries && tss_loaded &&
         idt_installing && idt_installed && idt_entries &&
         interrupt_dispatcher && interrupt_handlers && interrupt_controlled && !cpu_exception &&
-        cpu_local_apic && pic_ok && apic_ok && apic2_ok && hpet_ok &&
+        cpu_local_apic_ok && pic_ok && apic_ok && apic2_ok && hpet_ok &&
         interrupt_chain_ok && syscall_core &&
         syscall_packet && syscall_get && syscall_set && syscall_event && syscall_unknown &&
         linux_translator && ms_translator && linux_vector && ms_vector &&
@@ -430,7 +433,7 @@ static void WriteBootReport(
     fprintf(file, "  Interrupt handler table ready: %s\n", PassFail(interrupt_handlers));
     fprintf(file, "  CPU interrupts controlled during boot: %s\n", PassFail(interrupt_controlled));
     fprintf(file, "  Kernel had no trapped CPU exception: %s\n", PassFail(!cpu_exception));
-    fprintf(file, "  CPU local APIC feature present: %s\n", PassFail(cpu_local_apic));
+    fprintf(file, "  CPU local APIC feature present: %s\n", PassFail(cpu_local_apic_ok));
     fprintf(file, "  CPU APIC2/x2APIC feature present: %s\n", PassFail(want_apic2 ? cpu_apic2 : 1));
     fprintf(file, "  PIC initialized: %s\n", PassFail(want_pic ? pic_initialized : pic_skipped));
     fprintf(file, "  PIC remapped to 0x20-0x2F: %s\n", PassFail(want_pic ? pic_remapped : pic_skipped));
@@ -438,18 +441,18 @@ static void WriteBootReport(
     fprintf(file, "  PIC IRQ0 counter updated: %s\n", PassFail(want_pic ? pic_irq0_count : pic_skipped));
     fprintf(file, "  PIC EOI path executed: %s\n", PassFail(want_pic ? pic_eoi : pic_skipped));
     fprintf(file, "  PIC masked for APIC handoff: %s\n", PassFail(want_pic ? pic_masked : pic_skipped));
-    fprintf(file, "  APIC CPU feature available: %s\n", PassFail(want_apic ? apic_available : apic_skipped));
+    fprintf(file, "  APIC CPU feature available: %s\n", PassFail(want_local_apic ? apic_available : apic_skipped));
     fprintf(file, "  APIC2/x2APIC mode enabled: %s\n", PassFail(want_apic2 ? apic2_enabled : 1));
-    fprintf(file, "  Local APIC software enabled: %s\n", PassFail(want_apic ? local_apic_enabled : apic_skipped));
-    fprintf(file, "  APIC timer masked probe counted down: %s\n", PassFail(want_apic ? apic_timer_probe : apic_skipped));
+    fprintf(file, "  Local APIC software enabled: %s\n", PassFail(want_local_apic ? local_apic_enabled : apic_skipped));
+    fprintf(file, "  APIC timer masked probe counted down: %s\n", PassFail(want_local_apic ? apic_timer_probe : apic_skipped));
     fprintf(file, "  HPET RSDP input present: %s\n", PassFail(want_hpet ? hpet_rsdp : hpet_skipped));
     fprintf(file, "  HPET ACPI checksum validated: %s\n", PassFail(want_hpet ? hpet_checksum : hpet_skipped));
     fprintf(file, "  HPET table discovered: %s\n", PassFail(want_hpet ? hpet_table : hpet_skipped));
     fprintf(file, "  HPET main counter enabled: %s\n", PassFail(want_hpet ? hpet_enabled : hpet_skipped));
     fprintf(file, "  HPET counter advanced: %s\n", PassFail(want_hpet ? hpet_counter : hpet_skipped));
-    fprintf(file, "  APIC timer interrupt fired: %s\n", PassFail(want_apic ? apic_timer_interrupt : apic_skipped));
-    fprintf(file, "  APIC timer IRQ counter updated: %s\n", PassFail(want_apic ? apic_irq_counters : apic_skipped));
-    fprintf(file, "  APIC EOI path executed: %s\n", PassFail(want_apic ? apic_eoi : apic_skipped));
+    fprintf(file, "  APIC timer interrupt fired: %s\n", PassFail(want_local_apic ? apic_timer_interrupt : apic_skipped));
+    fprintf(file, "  APIC timer IRQ counter updated: %s\n", PassFail(want_local_apic ? apic_irq_counters : apic_skipped));
+    fprintf(file, "  APIC EOI path executed: %s\n", PassFail(want_local_apic ? apic_eoi : apic_skipped));
     fprintf(file, "  Interrupt chain PIC upward complete: %s\n", PassFail(interrupt_chain_ok));
     fprintf(file, "  SysCall core initialized: %s\n", PassFail(syscall_core));
     fprintf(file, "  SysCall message packet ABI ready: %s\n", PassFail(syscall_packet));
@@ -1010,7 +1013,8 @@ int OrynRunQemu(const OrynProject* project)
 
     int vm_pic = ProjectBoolEnabled(project->run_pic, 1);
     int vm_apic = ProjectBoolEnabled(project->run_apic, 1);
-    int vm_apic2 = ProjectBoolEnabled(project->run_apic2, 1) && vm_apic;
+    int vm_apic2 = ProjectBoolEnabled(project->run_apic2, 1);
+    int qemu_local_apic = vm_apic || vm_apic2;
     int vm_hpet = ProjectBoolEnabled(project->run_hpet, 1);
     unsigned int vm_smp_count = ProjectCpuCount(project);
     const char* qemu_cpu_model = ResolveQemuCpuModel(project->run_cpu);
@@ -1073,7 +1077,7 @@ int OrynRunQemu(const OrynProject* project)
     snprintf(machine_argument, sizeof(machine_argument), "q35,hpet=%s", vm_hpet ? "on" : "off");
     snprintf(cpu_argument, sizeof(cpu_argument), "%s,%sapic,%sx2apic",
         qemu_cpu_model,
-        vm_apic ? "+" : "-",
+        qemu_local_apic ? "+" : "-",
         vm_apic2 ? "+" : "-");
 
     char debug_exit_argument[96];
@@ -1136,12 +1140,12 @@ int OrynRunQemu(const OrynProject* project)
         TextContains(debug_text, "[KERNEL] PASS: IDT installed.") &&
         TextContains(debug_text, "[KERNEL] PASS: Interrupt dispatcher initialized.") &&
         (ProjectBoolEnabled(project->run_pic, 1) ? TextContains(debug_text, "[KERNEL] PASS: PIC IRQ0 interrupt fired through IDT dispatch.") : TextContains(debug_text, "[KERNEL] INFO: PIC IRQ0 proof skipped by VMSettings.")) &&
-        ((ProjectBoolEnabled(project->run_apic2, 1) && ProjectBoolEnabled(project->run_apic, 1)) ? TextContains(debug_text, "[KERNEL] PASS: CPU APIC2/x2APIC feature present.") : 1) &&
+        (ProjectBoolEnabled(project->run_apic2, 1) ? TextContains(debug_text, "[KERNEL] PASS: CPU APIC2/x2APIC feature present.") : 1) &&
         (ProjectBoolEnabled(project->run_pic, 1) ? TextContains(debug_text, "[KERNEL] PASS: PIC masked/disabled for APIC handoff.") : 1) &&
-        ((ProjectBoolEnabled(project->run_apic2, 1) && ProjectBoolEnabled(project->run_apic, 1)) ? TextContains(debug_text, "[KERNEL] PASS: APIC2/x2APIC mode enabled.") : 1) &&
-        (ProjectBoolEnabled(project->run_apic, 1) ? TextContains(debug_text, "[KERNEL] PASS: APIC timer counter moved in masked probe.") : TextContains(debug_text, "[KERNEL] INFO: APIC proofs skipped by VMSettings.")) &&
+        (ProjectBoolEnabled(project->run_apic2, 1) ? TextContains(debug_text, "[KERNEL] PASS: APIC2/x2APIC mode enabled.") : 1) &&
+        ((ProjectBoolEnabled(project->run_apic, 1) || ProjectBoolEnabled(project->run_apic2, 1)) ? TextContains(debug_text, "[KERNEL] PASS: APIC timer counter moved in masked probe.") : TextContains(debug_text, "[KERNEL] INFO: APIC proofs skipped by VMSettings.")) &&
         (ProjectBoolEnabled(project->run_hpet, 1) ? TextContains(debug_text, "[KERNEL] PASS: HPET counter advanced in probe.") : TextContains(debug_text, "[KERNEL] INFO: HPET proof skipped by VMSettings.")) &&
-        (ProjectBoolEnabled(project->run_apic, 1) ? TextContains(debug_text, "[KERNEL] PASS: APIC timer interrupt fired through IDT dispatch.") : 1) &&
+        ((ProjectBoolEnabled(project->run_apic, 1) || ProjectBoolEnabled(project->run_apic2, 1)) ? TextContains(debug_text, "[KERNEL] PASS: APIC timer interrupt fired through IDT dispatch.") : 1) &&
         (TextContains(debug_text, "[KERNEL] PASS: Interrupts work from PIC upward through APIC/APIC2.") ||
             TextContains(debug_text, "[KERNEL] PASS: VMSettings interrupt/timer profile applied.")) &&
         TextContains(debug_text, "[KERNEL] PASS: SysCalls use Get/Set/Event message packets.") &&
@@ -1156,11 +1160,12 @@ int OrynRunQemu(const OrynProject* project)
         TextContains(debug_text, "[KERNEL] PASS: PCI class-code decoding ready.") &&
         TextContains(debug_text, "[KERNEL] PASS: PCI device output uses English labels.") &&
         TextContains(debug_text, "[KERNEL] PASS: PCI Discovery complete.") &&
-        ((ProjectCpuCount(project) > 1U && ProjectBoolEnabled(project->run_apic, 1)) ?
+        ((ProjectCpuCount(project) > 1U && (ProjectBoolEnabled(project->run_apic, 1) || ProjectBoolEnabled(project->run_apic2, 1))) ?
             (TextContains(debug_text, "[KERNEL] PASS: SMP multi-core CPU topology discovered.") &&
              TextContains(debug_text, "[KERNEL] PASS: SMP application processors entered kernel AP loop.") &&
              TextContains(debug_text, "[KERNEL] PASS: Multi-Core processing initialized.")) :
-            TextContains(debug_text, "[KERNEL] INFO: SMP AP startup skipped by VMSettings.")) &&
+            (TextContains(debug_text, "[KERNEL] INFO: SMP AP startup skipped by VMSettings.") ||
+             TextContains(debug_text, "[KERNEL] INFO: SMP discovery skipped by VMSettings."))) &&
         TextContains(debug_text, "\033[32m[KERNEL] PASS") &&
         TextContains(debug_text, "\033[0m") &&
         !TextContains(debug_text, "[KERNEL] EXCEPTION:") &&

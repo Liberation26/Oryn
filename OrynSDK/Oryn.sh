@@ -381,15 +381,10 @@ RunVMSettingsQuestionnaire()
         NewAPIC="off"
     fi
 
-    if [ "$NewAPIC" = "on" ]; then
-        if AskYesNoShell "Expose and prefer APIC2/x2APIC?" "$(case "$CurrentAPIC2" in no|No|NO|off|Off|OFF|false|False|FALSE|0) echo 0 ;; *) echo 1 ;; esac)"; then
-            NewAPIC2="on"
-        else
-            NewAPIC2="off"
-        fi
+    if AskYesNoShell "Expose and test APIC2/x2APIC as its own profile?" "$(case "$CurrentAPIC2" in no|No|NO|off|Off|OFF|false|False|FALSE|0) echo 0 ;; *) echo 1 ;; esac)"; then
+        NewAPIC2="on"
     else
         NewAPIC2="off"
-        Warn "APIC2/x2APIC requires APIC, so APIC2 was saved as off."
     fi
 
     if AskYesNoShell "Expose and test HPET?" "$(case "$CurrentHPET" in no|No|NO|off|Off|OFF|false|False|FALSE|0) echo 0 ;; *) echo 1 ;; esac)"; then
@@ -398,8 +393,8 @@ RunVMSettingsQuestionnaire()
         NewHPET="off"
     fi
 
-    if [ "$NewSMP" -gt 1 ] && [ "$NewAPIC" != "on" ]; then
-        Warn "Multi-core AP startup needs Local APIC. Saving SMP=1 because APIC is off."
+    if [ "$NewSMP" -gt 1 ] && [ "$NewAPIC" != "on" ] && [ "$NewAPIC2" != "on" ]; then
+        Warn "Multi-core AP startup needs APIC or APIC2/x2APIC. Saving SMP=1 because both are off."
         NewSMP=1
     fi
 
@@ -950,7 +945,7 @@ case "$Command" in
         exec "$OrynBin" "$Command" "$@"
         ;;
 
-    build|image|run|clean)
+    build|image|run|matrix|clean)
         if [ "$#" -eq 0 ]; then
             if [ ! -f "$DefaultProject" ]; then
                 Fail "Default Kernel-5 project was not found: $DefaultProject"
@@ -1076,6 +1071,7 @@ case "$Command" in
         printf '  ./Oryn.sh build [project] Build project, defaulting to Kernel-5\n'
         printf '  ./Oryn.sh image [project] Build image, defaulting to Kernel-5\n'
         printf '  ./Oryn.sh run [project]   Run project, defaulting to Kernel-5\n'
+        printf '  ./Oryn.sh matrix [project] Build every PIC/APIC/APIC2/HPET kernel separately and test headless QEMU\n'
         printf '  ./Oryn.sh OSName [project]   Ask kernel/OS name first, then Headless, then BootInfo\n'
         printf '  ./Oryn.sh VMSettings [project] Ask and save VM format, CPU, memory, PIC/APIC/APIC2/HPET settings\n'
         printf '  ./Oryn.sh Headless [project] Ask whether the VM is headless, save Display, then ask BootInfo\n'
