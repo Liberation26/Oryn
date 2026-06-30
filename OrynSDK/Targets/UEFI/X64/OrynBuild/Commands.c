@@ -82,6 +82,15 @@ static const char* OnOffText(int value)
     return value ? "on" : "off";
 }
 
+static int IsInteractiveDisplayMode(const char* display_mode)
+{
+    if (display_mode == 0 || display_mode[0] == 0)
+    {
+        return 0;
+    }
+
+    return !TextEqualsIgnoreCaseCommand(display_mode, "none");
+}
 
 static const char* ResolveQemuCpuModel(const char* configured_cpu)
 {
@@ -259,6 +268,10 @@ static void WriteBootReport(
     int screen_line_buffered = TextContains(debug_text, "[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.");
     int screen_double_buffer = TextContains(debug_text, "[KERNEL] PASS: Kernel screen double buffering implemented.");
     int qemu_preboot_failure = (!command_ok) && !loader_started && DebugTextIsEmpty(debug_text);
+    const char* report_display_mode = ResolveQemuDisplayMode(project);
+    int interactive_display = IsInteractiveDisplayMode(report_display_mode);
+    int interactive_hold = TextContains(debug_text, "[KERNEL] PASS: Interactive QEMU display mode keeps VM open for scroll testing.");
+    int qemu_completion_ok = command_ok && (interactive_display || exit_code == 0 || exit_code == 33);
 
     int want_pic = ProjectBoolEnabled(project->run_pic, 1);
     int want_apic = ProjectBoolEnabled(project->run_apic, 1);
@@ -289,7 +302,8 @@ static void WriteBootReport(
     int virtual_memory_active = TextContains(debug_text, "[KERNEL] Virtual memory: active");
     int system_halted = TextContains(debug_text, "[KERNEL] System halted by Kernel-5");
     int debug_exit = TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success");
-    int boot_pass = command_ok && (exit_code == 0 || exit_code == 33) && loader_started &&
+    int qemu_exit_or_hold = interactive_display ? interactive_hold : debug_exit;
+    int boot_pass = qemu_completion_ok && loader_started &&
         kernel_loaded && entry_printed && virtual_map_prepared && virtual_map_active &&
         bootinfo_created && boot_config_prepared && bootinfo_memory_map && boot_services_exited && kernel_jump &&
         kernel_entered && serial_ok && bootinfo_received && kernel_boot_config && kernel_command_line &&
@@ -307,7 +321,7 @@ static void WriteBootReport(
         screen_coloured_cells && screen_scroll_lines && screen_page_scroll &&
         screen_bottom && screen_scrolling && screen_back_buffer && screen_renders_back &&
         screen_deferred_flip && screen_line_flip && screen_line_buffered &&
-        screen_present && screen_double_buffer && virtual_memory_active && debug_exit;
+        screen_present && screen_double_buffer && virtual_memory_active && qemu_exit_or_hold;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -322,6 +336,8 @@ static void WriteBootReport(
     fprintf(file, "Target: %s\n", project->target);
     fprintf(file, "Toolchain: %s\n", project->toolchain);
     fprintf(file, "VM: %s\n", project->run_vm);
+    fprintf(file, "VM Display: %s\n", report_display_mode);
+    fprintf(file, "VM Interactive display hold: %s\n", interactive_display ? "yes" : "no");
     fprintf(file, "VM Memory: %s\n", project->run_memory);
     fprintf(file, "VM CPU: %s\n", project->run_cpu);
     if (resolved_cpu != 0 && QemuCpuWasTranslated(project->run_cpu, resolved_cpu))
@@ -471,7 +487,20 @@ static void WriteBootReport(
     fprintf(file, "  Kernel virtual memory CR3 switch completed: %s\n", PassFail(virtual_memory_switched_cr3));
     fprintf(file, "  Kernel virtual memory active proof printed: %s\n", PassFail(virtual_memory_active));
     fprintf(file, "  Kernel reached halt path: %s\n", PassFail(system_halted));
-    fprintf(file, "  Kernel requested QEMU debug-exit: %s\n", PassFail(debug_exit));
+    if (interactive_display)
+    {
+        fprintf(file, "  Interactive display keeps QEMU open for scroll testing: %s\n", PassFail(interactive_hold));
+        fprintf(file, "  Kernel requested QEMU debug-exit: SKIPPED - interactive display mode\n");
+    }
+    else
+    {
+        fprintf(file, "  Interactive display keeps QEMU open for scroll testing: SKIPPED - headless run\n");
+        fprintf(file, "  Kernel requested QEMU debug-exit: %s\n", PassFail(debug_exit));
+    }
+
+    const char* final_halt_hint = interactive_display ?
+        "The kernel halted but did not print the interactive display hold marker." :
+        "The kernel halted but did not request QEMU debug-exit success.";
 
     fprintf(file, "\nFailure hint:\n  %s\n\n",
         boot_pass ?
@@ -670,7 +699,9 @@ static void WriteBootReport(
             "The kernel stopped during the CR3 switch to the kernel-owned PML4." :
         !system_halted ?
             "The kernel passed the CR3 switch but did not reach its halt path." :
-            "The kernel halted but did not request QEMU debug-exit success.");
+        !qemu_exit_or_hold ?
+            final_halt_hint :
+            "No kernel-side failure detected by the boot-proof markers.");
 
     fprintf(file, "Paths:\n");
     fprintf(file, "  QEMU: %s\n", qemu_path);
@@ -871,6 +902,7 @@ int OrynRunQemu(const OrynProject* project)
         OrynLogWarn("Use Display=none for headless or Display=sdl for a QEMU window.");
         return 0;
     }
+    int interactive_display = IsInteractiveDisplayMode(display_mode);
 
     if (!TextEqualsIgnoreCaseCommand(project->run_vm, "QEMU"))
     {
@@ -912,6 +944,10 @@ int OrynRunQemu(const OrynProject* project)
     char smp_text[32];
     snprintf(smp_text, sizeof(smp_text), "%u", vm_smp_count);
     OrynLogKeyValue("Display", display_mode);
+    if (interactive_display)
+    {
+        OrynLogInfo("Interactive display mode: QEMU will stay open for manual screen scrolling tests until you close the QEMU window.");
+    }
     OrynLogKeyValue("SMP CPUs", smp_text);
     OrynLogKeyValue("Memory", project->run_memory);
     OrynLogKeyValue("CPU requested", project->run_cpu);
@@ -959,11 +995,22 @@ int OrynRunQemu(const OrynProject* project)
         vm_apic ? "+" : "-",
         vm_apic2 ? "+" : "-");
 
+    char debug_exit_argument[96];
+    if (interactive_display)
+    {
+        debug_exit_argument[0] = 0;
+    }
+    else
+    {
+        snprintf(debug_exit_argument, sizeof(debug_exit_argument),
+            "-device isa-debug-exit,iobase=0xf4,iosize=0x04 ");
+    }
+
     char command[ORYN_MAX_PATH * 8];
     snprintf(command, sizeof(command),
         "%s -machine %s -cpu %s -smp %u -m %s -drive %s -no-reboot -display %s "
         "-monitor none -serial stdio -debugcon %s -global isa-debugcon.iobase=0xe9 "
-        "-device isa-debug-exit,iobase=0xf4,iosize=0x04 -drive %s",
+        "%s-drive %s",
         qemu_quoted,
         machine_argument,
         cpu_argument,
@@ -972,6 +1019,7 @@ int OrynRunQemu(const OrynProject* project)
         firmware_quoted,
         display_mode,
         debug_quoted,
+        debug_exit_argument,
         drive_quoted);
 
     int exit_code = -1;
@@ -1035,12 +1083,16 @@ int OrynRunQemu(const OrynProject* project)
         TextContains(debug_text, "\033[0m") &&
         !TextContains(debug_text, "[KERNEL] EXCEPTION:") &&
         TextContains(debug_text, "[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.") &&
-        TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success") && command_ok;
+        (interactive_display ?
+            TextContains(debug_text, "[KERNEL] PASS: Interactive QEMU display mode keeps VM open for scroll testing.") :
+            TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success")) && command_ok;
 
     if (boot_pass)
     {
         free(debug_text);
-        OrynLogOk("Boot proof passed. Kernel output was captured and QEMU exited cleanly.");
+        OrynLogOk(interactive_display ?
+            "Boot proof passed after QEMU window was closed. Interactive screen scrolling test mode was active." :
+            "Boot proof passed. Kernel output was captured and QEMU exited cleanly.");
         return 1;
     }
 

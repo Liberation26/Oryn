@@ -37,6 +37,10 @@
 #define ORYN_VM_SMP_CPUS 1
 #endif
 
+#ifndef ORYN_VM_INTERACTIVE_DISPLAY
+#define ORYN_VM_INTERACTIVE_DISPLAY 0
+#endif
+
 static OrynKernelMemoryMap gKernelMemoryMap;
 static OrynKernelPhysicalMemory gPhysicalMemory;
 static OrynKernelVirtualMemory gVirtualMemory;
@@ -336,7 +340,12 @@ void KernelStart(const OrynBootInfo* bootInfo)
     }
 
     KernelIoWriteString("[KERNEL] System halted by Kernel-5.\n");
+#if ORYN_VM_INTERACTIVE_DISPLAY
+    KernelIoWriteString("[KERNEL] PASS: Interactive QEMU display mode keeps VM open for scroll testing.\n");
+    KernelIoWriteString("[KERNEL] INFO: Close the QEMU window after manual scroll testing is complete.\n");
+#else
     KernelIoExitQemuSuccess();
+#endif
 
     for (;;)
     {

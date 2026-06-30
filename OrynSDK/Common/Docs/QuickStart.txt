@@ -1,4 +1,4 @@
-OrynWsl 0.5.43 Quick Start
+OrynWsl 0.5.44 Quick Start
 
 This package is a WSL-native Oryn SDK baseline.
 
@@ -789,3 +789,26 @@ Expected proof markers:
 [KERNEL] PASS: Kernel screen defers visible flip while line is being written.
 [KERNEL] PASS: Kernel screen flips after completed line.
 [KERNEL] PASS: Kernel screen line-buffered double buffering implemented.
+
+
+OrynWsl 0.5.44 Interactive QEMU scroll testing
+-----------------------------------------------
+When [Run] Display is set to sdl/windowed instead of none, Oryn now treats the run as an interactive screen-test session.
+
+In interactive display mode:
+  - QEMU is launched without the isa-debug-exit device.
+  - The kernel does not request QEMU debug-exit at the end of boot.
+  - The VM remains open in the QEMU window so the kernel screen and scrollback can be tested manually.
+  - Close the QEMU window when testing is complete; Oryn then copies Debug.log and writes BootReport.txt.
+
+In headless mode:
+  - Display=none still uses isa-debug-exit.
+  - The kernel requests debug-exit success.
+  - Automated BootReport pass/fail behaviour remains unchanged.
+
+Use:
+  ./Oryn.sh VMSettings
+
+Then answer No to the headless/display question, or set:
+  [Run]
+  Display=sdl
