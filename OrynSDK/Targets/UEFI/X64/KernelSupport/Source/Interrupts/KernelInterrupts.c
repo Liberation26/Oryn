@@ -1,10 +1,10 @@
 #include "KernelInterrupts.h"
 #include "KernelApic.h"
 #include "KernelIo.h"
+#include "KernelPanic.h"
 #include "KernelPic.h"
 #include "KernelPortIo.h"
 
-#define ORYN_QEMU_EXIT_PORT 0xF4U
 #define ORYN_PIT_CHANNEL0 0x40U
 #define ORYN_PIT_COMMAND 0x43U
 #define ORYN_PIT_MODE0_LOHI 0x30U
@@ -29,11 +29,6 @@ static void ClearBytes(void* target, unsigned long long count)
     {
         bytes[index] = 0U;
     }
-}
-
-static void Out32(unsigned short port, unsigned int value)
-{
-    __asm__ volatile ("outl %0, %1" : : "a"(value), "Nd"(port));
 }
 
 static unsigned long long ReadRflags(void)
@@ -70,45 +65,6 @@ static const char* ExceptionName(unsigned long long vector)
     }
 
     return "Interrupt";
-}
-
-static void HaltAfterException(void)
-{
-    KernelIoWriteString("[KERNEL] FAIL: CPU exception trapped by interrupt dispatcher.\n");
-    Out32(ORYN_QEMU_EXIT_PORT, 0x11U);
-    for (;;)
-    {
-        __asm__ volatile ("cli");
-        __asm__ volatile ("hlt");
-    }
-}
-
-static void PrintExceptionReport(OrynIdtInterruptFrame* frame)
-{
-    KernelIoWriteString("[KERNEL] EXCEPTION: ");
-    KernelIoWriteString(ExceptionName(frame->Vector));
-    KernelIoWriteString(" vector ");
-    KernelIoWriteDec64(frame->Vector);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Exception error code: ");
-    KernelIoWriteHex64(frame->ErrorCode);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Exception RIP: ");
-    KernelIoWriteHex64(frame->Rip);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Exception CS: ");
-    KernelIoWriteHex64(frame->Cs);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Exception RFLAGS: ");
-    KernelIoWriteHex64(frame->Rflags);
-    KernelIoWriteString("\n");
-    if (frame->Vector == 14ULL)
-    {
-        gInterruptState.LastCr2 = ReadCr2();
-        KernelIoWriteString("[KERNEL] Page fault CR2: ");
-        KernelIoWriteHex64(gInterruptState.LastCr2);
-        KernelIoWriteString("\n");
-    }
 }
 
 static void SendInterruptEoi(unsigned int vector)
@@ -234,9 +190,22 @@ void OrynKernelInterruptsDispatch(OrynIdtInterruptFrame* frame)
 
     if (vector < ORYN_INTERRUPT_EXCEPTION_COUNT)
     {
+        unsigned long long cr2 = 0ULL;
         gInterruptState.ExceptionDispatches += 1ULL;
-        PrintExceptionReport(frame);
-        HaltAfterException();
+        if (vector == 14U)
+        {
+            cr2 = ReadCr2();
+            gInterruptState.LastCr2 = cr2;
+        }
+
+        OrynKernelPanicRaiseException(
+            ExceptionName(frame->Vector),
+            frame->Vector,
+            frame->ErrorCode,
+            frame->Rip,
+            frame->Cs,
+            frame->Rflags,
+            cr2);
     }
 
     gInterruptState.HardwareDispatches += 1ULL;

@@ -3,6 +3,7 @@
 #include "KernelConsole.h"
 #include "KernelIo.h"
 #include "KernelLifecycle.h"
+#include "KernelPanic.h"
 #include "KernelCpu.h"
 #include "KernelGdt.h"
 #include "KernelIdt.h"
@@ -338,6 +339,7 @@ void KernelStart(const OrynBootInfo* bootInfo)
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleEntered);
     const OrynBootInfo* kernelBootInfo = KernelBootInfoAdopt(bootInfo);
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleBootInfoAdopted);
+    OrynKernelPanicInit(kernelBootInfo);
 
     KernelIoWriteString("[KERNEL] Oryn Kernel-5 entered.\n");
     KernelIoWriteString("[KERNEL] PASS: Kernel entered successfully.\n");
@@ -373,21 +375,23 @@ void KernelStart(const OrynBootInfo* bootInfo)
     else
     {
         KernelIoWriteString("[KERNEL] BootInfo invalid. Memory services are disabled.\n");
-        OrynKernelLifecycleMarkPanic("BootInfo validation failed");
+        OrynKernelPanicBegin(
+            "BootInfo validation failed",
+            "Kernel-owned panic report path handles invalid handoff data",
+            0xB0070001ULL);
     }
 
-    if (OrynKernelLifecycleGetState() != OrynKernelLifecyclePanic)
+    if (OrynKernelPanicIsActive())
     {
-        (void)OrynKernelLifecycleTransition(OrynKernelLifecycleRunning);
+        KernelIoWriteString("[KERNEL] System halted by Kernel-5.\n");
+        OrynKernelPanicHalt();
     }
+
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleRunning);
 
     KernelIoWriteString("[KERNEL] System halted by Kernel-5.\n");
 #if ORYN_VM_INTERACTIVE_DISPLAY
-    int kernelPanic = OrynKernelLifecycleGetState() == OrynKernelLifecyclePanic;
-    if (!kernelPanic)
-    {
-        (void)OrynKernelLifecycleTransition(OrynKernelLifecycleInteractiveHalt);
-    }
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleInteractiveHalt);
     OrynKernelKeyboardEnableInteractiveInterrupts();
     int keyboardInterruptsReady = OrynKernelInterruptsAreEnabled() ? 1 : 0;
     OrynKernelInterruptsDisable();
@@ -405,18 +409,10 @@ void KernelStart(const OrynBootInfo* bootInfo)
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalted);
     OrynKernelLifecyclePrintProof();
 #else
-    int kernelPanic = OrynKernelLifecycleGetState() == OrynKernelLifecyclePanic;
-    if (!kernelPanic)
-    {
-        (void)OrynKernelLifecycleTransition(OrynKernelLifecycleDebugExitRequested);
-    }
+    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleDebugExitRequested);
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalting);
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalted);
     OrynKernelLifecyclePrintProof();
-    if (kernelPanic)
-    {
-        KernelIoExitQemuFailure();
-    }
     KernelIoExitQemuSuccess();
 #endif
 
