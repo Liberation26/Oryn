@@ -430,11 +430,6 @@ PushChanges()
     return 0
 }
 
-EscapeCredentialHelperPath()
-{
-    printf '%s' "$1" | sed 's/\\/\\\\/g; s/ /\\ /g; s/(/\\(/g; s/)/\\)/g'
-}
-
 WindowsUserName()
 {
     if command -v cmd.exe >/dev/null 2>&1; then
@@ -450,6 +445,19 @@ WindowsUserName()
     return 1
 }
 
+FindWindowsGitRoot()
+{
+    for Candidate in \
+        "/mnt/c/Program Files/Git" \
+        "/mnt/c/Program Files (x86)/Git"; do
+        [ -x "$Candidate/cmd/git.exe" ] || [ -x "$Candidate/bin/git.exe" ] || continue
+        printf '%s\n' "$Candidate"
+        return 0
+    done
+
+    return 1
+}
+
 FindWindowsGitCredentialManager()
 {
     WinUser="$(WindowsUserName 2>/dev/null || true)"
@@ -458,6 +466,8 @@ FindWindowsGitCredentialManager()
         "/mnt/c/Program Files/Git/mingw64/bin/git-credential-manager.exe" \
         "/mnt/c/Program Files/Git/mingw64/libexec/git-core/git-credential-manager.exe" \
         "/mnt/c/Program Files/Git/usr/bin/git-credential-manager.exe" \
+        "/mnt/c/Program Files (x86)/Git/mingw64/bin/git-credential-manager.exe" \
+        "/mnt/c/Program Files (x86)/Git/mingw64/libexec/git-core/git-credential-manager.exe" \
         "/mnt/c/Program Files (x86)/Git Credential Manager/git-credential-manager.exe" \
         "/mnt/c/Users/$WinUser/AppData/Local/Programs/Git Credential Manager/git-credential-manager.exe"; do
         [ -n "$Candidate" ] || continue
@@ -469,6 +479,53 @@ FindWindowsGitCredentialManager()
     return 1
 }
 
+BuildWindowsGitPathPrefix()
+{
+    GitRoot="$(FindWindowsGitRoot 2>/dev/null || true)"
+    [ -n "$GitRoot" ] || return 1
+
+    First=1
+    for Candidate in \
+        "$GitRoot/cmd" \
+        "$GitRoot/bin" \
+        "$GitRoot/mingw64/bin" \
+        "$GitRoot/usr/bin" \
+        "$GitRoot/mingw64/libexec/git-core"; do
+        [ -d "$Candidate" ] || continue
+        if [ "$First" -eq 1 ]; then
+            printf '%s' "$Candidate"
+            First=0
+        else
+            printf ':%s' "$Candidate"
+        fi
+    done
+
+    [ "$First" -eq 0 ]
+}
+
+BuildWindowsGcmHelperCommand()
+{
+    WindowsGcm="$1"
+    GitPathPrefix="$(BuildWindowsGitPathPrefix 2>/dev/null || true)"
+
+    if [ -n "$GitPathPrefix" ]; then
+        printf '!f() { export PATH="%s:$PATH"; "%s" "$@"; }; f\n' "$GitPathPrefix" "$WindowsGcm"
+    else
+        printf '!f() { "%s" "$@"; }; f\n' "$WindowsGcm"
+    fi
+}
+
+PrepareWindowsGitPathForGcm()
+{
+    GitPathPrefix="$(BuildWindowsGitPathPrefix 2>/dev/null || true)"
+    [ -n "$GitPathPrefix" ] || return 0
+
+    case ":$PATH:" in
+        *":/mnt/c/Program Files/Git/cmd:"*) ;;
+        *) export PATH="$GitPathPrefix:$PATH" ;;
+    esac
+}
+
 ConfigureGitCredentialManager()
 {
     if [ "$AutoSetupGcm" -ne 1 ]; then
@@ -476,9 +533,18 @@ ConfigureGitCredentialManager()
         return 0
     fi
 
+    PrepareWindowsGitPathForGcm
+
     ExistingHelper="$(git config --global --get credential.helper 2>/dev/null || true)"
     case "$ExistingHelper" in
-        *git-credential-manager*|*manager-core*)
+        '!'*git-credential-manager*'export PATH='*)
+            Ok "Git Credential Manager is already configured with the Windows Git PATH bridge."
+            return 0
+            ;;
+        *git-credential-manager.exe*)
+            Warn "Existing Git Credential Manager helper does not add Windows git.exe to PATH. Reconfiguring it."
+            ;;
+        *manager-core*)
             Ok "Git Credential Manager is already configured for WSL git."
             return 0
             ;;
@@ -486,10 +552,12 @@ ConfigureGitCredentialManager()
 
     WindowsGcm="$(FindWindowsGitCredentialManager 2>/dev/null || true)"
     if [ -n "$WindowsGcm" ]; then
-        EscapedHelper="$(EscapeCredentialHelperPath "$WindowsGcm")"
-        git config --global credential.helper "$EscapedHelper" || return 1
-        Ok "Configured WSL git to use Windows Git Credential Manager."
+        HelperCommand="$(BuildWindowsGcmHelperCommand "$WindowsGcm")"
+        git config --global --replace-all credential.helper "$HelperCommand" || return 1
+        Ok "Configured WSL git to use Windows Git Credential Manager with Windows git.exe on PATH."
         Info "GCM path: $WindowsGcm"
+        GitPathPrefix="$(BuildWindowsGitPathPrefix 2>/dev/null || true)"
+        [ -z "$GitPathPrefix" ] || Info "Windows Git PATH bridge: $GitPathPrefix"
         return 0
     fi
 
