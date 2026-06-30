@@ -141,3 +141,17 @@ The UEFI x64 target owns the interrupt-vector receive bridge only:
   Targets/UEFI/X64/KernelSupport/Source/Interrupts/KernelSysCallInterrupts.c
 
 IDT vectors 0x80 and 0x81 are marked callable from user privilege later, while the current Kernel-5 proof invokes them from kernel mode to validate translation and debug logging before a process/userland layer exists.
+
+0.5.32 SysCall count ownership
+-------------------------------
+Common/Kernel/Include/LinuxSysCall.h owns:
+
+  ORYN_LINUX_SYSCALL_LISTED_COUNT = 11
+  ORYN_LINUX_SYSCALL_TRANSLATED_COUNT = 4
+
+Common/Kernel/Include/MSSysCall.h owns:
+
+  ORYN_MS_SYSCALL_LISTED_COUNT = 6
+  ORYN_MS_SYSCALL_TRANSLATED_COUNT = 4
+
+These constants are intentionally kept with the platform compatibility headers so BootReport and kernel diagnostics can prove what each header currently covers.

@@ -599,3 +599,27 @@ Expected proof lines include:
   [KERNEL] PASS: Unknown syscall debug logging path executed.
   [KERNEL] PASS: SysCalls use Get/Set/Event message packets.
   [KERNEL] PASS: Platform syscalls translate into Get/Set/Event packets.
+
+0.5.32 SysCall header count markers
+-----------------------------------
+LinuxSysCall.h and MSSysCall.h now list the total compatibility syscall numbers owned by each header.
+
+Current listed totals:
+
+  LinuxSysCall.h: 11 syscall numbers listed
+  MSSysCall.h: 6 syscall numbers listed
+
+Current direct translator totals:
+
+  LinuxSysCall.h / LinuxSysCall.c: 4 syscall numbers directly translated
+  MSSysCall.h / MSSysCall.c: 4 syscall numbers directly translated
+
+The remaining listed compatibility numbers still take the unknown-debug path until their exact Oryn Get/Set/Event packet mapping is implemented.
+
+Expected proof lines include:
+
+  [KERNEL] LinuxSysCall.h listed syscall count: 11
+  [KERNEL] LinuxSysCall.h translated syscall count: 4
+  [KERNEL] MSSysCall.h listed syscall count: 6
+  [KERNEL] MSSysCall.h translated syscall count: 4
+  [KERNEL] PASS: SysCall header counts listed.

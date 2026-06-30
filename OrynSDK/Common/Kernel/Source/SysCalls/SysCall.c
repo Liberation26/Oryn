@@ -1,4 +1,6 @@
 #include "SysCall.h"
+#include "LinuxSysCall.h"
+#include "MSSysCall.h"
 #include "KernelIo.h"
 #include "OrynString.h"
 
@@ -140,7 +142,7 @@ int64_t SysCallGet(OrynSysCallPacket* packet)
     {
         packet->Results[0] = 0ULL;
         packet->Results[1] = 5ULL;
-        packet->Results[2] = 31ULL;
+        packet->Results[2] = 32ULL;
         return Complete(packet, ORYN_SYSCALL_STATUS_OK);
     }
 
@@ -281,6 +283,23 @@ void OrynSysCallPrintProof(void)
     KernelIoWriteString(gSysCallState.PacketSize == sizeof(OrynSysCallPacket) ?
         "[KERNEL] PASS: SysCall message packet ABI ready.\n" :
         "[KERNEL] FAIL: SysCall message packet ABI size mismatch.\n");
+    KernelIoWriteString("[KERNEL] LinuxSysCall.h listed syscall count: ");
+    KernelIoWriteDec64(LinuxSysCallListedCount());
+    KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] LinuxSysCall.h translated syscall count: ");
+    KernelIoWriteDec64(LinuxSysCallTranslatedCount());
+    KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] MSSysCall.h listed syscall count: ");
+    KernelIoWriteDec64(MSSysCallListedCount());
+    KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] MSSysCall.h translated syscall count: ");
+    KernelIoWriteDec64(MSSysCallTranslatedCount());
+    KernelIoWriteString("\n");
+    KernelIoWriteString(
+        LinuxSysCallListedCount() == ORYN_LINUX_SYSCALL_LISTED_COUNT &&
+        MSSysCallListedCount() == ORYN_MS_SYSCALL_LISTED_COUNT ?
+        "[KERNEL] PASS: SysCall header counts listed.\n" :
+        "[KERNEL] FAIL: SysCall header counts missing.\n");
 }
 
 void OrynSysCallPrintRuntimeProof(void)

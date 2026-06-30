@@ -10,6 +10,20 @@
 #define ORYN_MS_SYSCALL_NT_CLOSE_COMPAT 0x000FULL
 #define ORYN_MS_SYSCALL_NT_QUERY_INFORMATION_PROCESS_COMPAT 0x0022ULL
 
+#define ORYN_MS_SYSCALL_LISTED_COUNT 6ULL
+#define ORYN_MS_SYSCALL_TRANSLATED_COUNT 4ULL
+#define ORYN_MS_SYSCALL_UNKNOWN_DEBUG_COUNT     (ORYN_MS_SYSCALL_LISTED_COUNT - ORYN_MS_SYSCALL_TRANSLATED_COUNT)
+
+static inline uint64_t MSSysCallListedCount(void)
+{
+    return ORYN_MS_SYSCALL_LISTED_COUNT;
+}
+
+static inline uint64_t MSSysCallTranslatedCount(void)
+{
+    return ORYN_MS_SYSCALL_TRANSLATED_COUNT;
+}
+
 int MSSysCallTranslate(
     uint64_t number,
     uint64_t arg0,

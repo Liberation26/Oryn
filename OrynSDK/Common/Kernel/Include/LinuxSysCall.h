@@ -15,6 +15,20 @@
 #define ORYN_LINUX_SYSCALL_EXIT 60ULL
 #define ORYN_LINUX_SYSCALL_EXIT_GROUP 231ULL
 
+#define ORYN_LINUX_SYSCALL_LISTED_COUNT 11ULL
+#define ORYN_LINUX_SYSCALL_TRANSLATED_COUNT 4ULL
+#define ORYN_LINUX_SYSCALL_UNKNOWN_DEBUG_COUNT     (ORYN_LINUX_SYSCALL_LISTED_COUNT - ORYN_LINUX_SYSCALL_TRANSLATED_COUNT)
+
+static inline uint64_t LinuxSysCallListedCount(void)
+{
+    return ORYN_LINUX_SYSCALL_LISTED_COUNT;
+}
+
+static inline uint64_t LinuxSysCallTranslatedCount(void)
+{
+    return ORYN_LINUX_SYSCALL_TRANSLATED_COUNT;
+}
+
 int LinuxSysCallTranslate(
     uint64_t number,
     uint64_t arg0,

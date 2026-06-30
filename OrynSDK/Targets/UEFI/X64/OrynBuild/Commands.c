@@ -79,6 +79,7 @@ static void WriteBootReport(
     int unknown_ms = TextContains(debug_text, "[KERNEL] PASS: Unknown MS syscall was reported as debug.");
     int syscall_three = TextContains(debug_text, "[KERNEL] PASS: SysCalls use Get/Set/Event message packets.");
     int platform_syscalls = TextContains(debug_text, "[KERNEL] PASS: Platform syscalls translate into Get/Set/Event packets.");
+    int syscall_counts = TextContains(debug_text, "[KERNEL] PASS: SysCall header counts listed.");
     int virtual_memory_started = TextContains(debug_text, "[KERNEL] Virtual memory: starting");
     int virtual_memory_required_mapped = TextContains(debug_text, "[KERNEL] Virtual memory: required ranges mapped");
     int virtual_memory_switching_cr3 = TextContains(debug_text, "[KERNEL] Virtual memory: switching CR3 to kernel-owned PML4");
@@ -100,7 +101,7 @@ static void WriteBootReport(
         apic_irq_counters && apic_eoi && interrupt_chain && syscall_core &&
         syscall_packet && syscall_get && syscall_set && syscall_event && syscall_unknown &&
         linux_translator && ms_translator && linux_vector && ms_vector &&
-        unknown_linux && unknown_ms && syscall_three && platform_syscalls && debug_exit;
+        unknown_linux && unknown_ms && syscall_three && platform_syscalls && syscall_counts && debug_exit;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -181,6 +182,7 @@ static void WriteBootReport(
     fprintf(file, "  Unknown MS syscall debug report: %s\n", PassFail(unknown_ms));
     fprintf(file, "  Internal SysCalls use Get/Set/Event packets: %s\n", PassFail(syscall_three));
     fprintf(file, "  Platform syscalls translate to Get/Set/Event: %s\n", PassFail(platform_syscalls));
+    fprintf(file, "  SysCall header counts listed: %s\n", PassFail(syscall_counts));
     fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
     fprintf(file, "  Kernel virtual memory required ranges mapped: %s\n", PassFail(virtual_memory_required_mapped));
     fprintf(file, "  Kernel virtual memory CR3 switch requested: %s\n", PassFail(virtual_memory_switching_cr3));
@@ -294,6 +296,8 @@ static void WriteBootReport(
             "The internal syscall proof did not use Get/Set/Event packets." :
         !platform_syscalls ?
             "Platform syscall compatibility did not translate into Get/Set/Event packets." :
+        !syscall_counts ?
+            "The LinuxSysCall.h and MSSysCall.h count markers were not printed." :
         !virtual_memory_started ?
             "The kernel stopped before virtual-memory initialization." :
         !virtual_memory_required_mapped ?
@@ -572,6 +576,7 @@ int OrynRunQemu(const OrynProject* project)
         TextContains(debug_text, "[KERNEL] PASS: Interrupts work from PIC upward through APIC/APIC2.") &&
         TextContains(debug_text, "[KERNEL] PASS: SysCalls use Get/Set/Event message packets.") &&
         TextContains(debug_text, "[KERNEL] PASS: Platform syscalls translate into Get/Set/Event packets.") &&
+        TextContains(debug_text, "[KERNEL] PASS: SysCall header counts listed.") &&
         TextContains(debug_text, "[KERNEL] PASS: Unknown syscall debug logging path executed.") &&
         !TextContains(debug_text, "[KERNEL] EXCEPTION:") &&
         TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success") && command_ok;
