@@ -1,2 +1,1 @@
-#include "KernelPciDiscovery.inc"
-#include "KernelPciReport.inc"
+/* Obsolete aggregation unit kept empty for changed-file update safety. */

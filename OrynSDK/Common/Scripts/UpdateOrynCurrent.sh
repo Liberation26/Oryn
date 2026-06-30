@@ -233,6 +233,36 @@ RemoveMovedSharedKernelProjectPaths()
 }
 
 
+ApplyDeletedFiles()
+{
+    local extract_root="$1"
+    local deleted_file="$extract_root/ChangedFiles/DeletedFiles.txt"
+    local relative_path
+    local target_path
+
+    [ -f "$deleted_file" ] || return 0
+
+    while IFS= read -r relative_path || [ -n "$relative_path" ]; do
+        relative_path="${relative_path%$'\r'}"
+        case "$relative_path" in
+            ""|\#*)
+                continue
+                ;;
+            /*|*..*)
+                Warn "Ignoring unsafe deleted-file entry: $relative_path"
+                continue
+                ;;
+        esac
+
+        target_path="$WorkspaceRoot/$relative_path"
+        if [ -e "$target_path" ]; then
+            rm -rf "$target_path"
+            Ok "Removed obsolete file: $relative_path"
+        fi
+    done < "$deleted_file"
+}
+
+
 ApplyChangedFiles()
 {
     local extract_root="$1"
@@ -374,6 +404,7 @@ fi
 RemoveLegacyGeneratedProjects
 RemoveObsoleteSdkSourcePaths
 RemoveMovedSharedKernelProjectPaths
+ApplyDeletedFiles "$TempRoot/extract"
 
 chmod +x \
   "$WorkspaceRoot/Oryn.sh" \

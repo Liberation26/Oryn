@@ -1,2 +1,1 @@
-#include "BuildHashAndCompile.inc"
-#include "BuildKernelCommand.inc"
+/* Obsolete aggregation unit kept empty for changed-file update safety. */

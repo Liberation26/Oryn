@@ -1,3 +1,1 @@
-#include "BootInfoSelectionCore.inc"
-#include "BootInfoSelectionVariants.inc"
-#include "BootInfoSelectionCommand.inc"
+/* Obsolete aggregation unit kept empty for changed-file update safety. */

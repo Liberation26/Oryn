@@ -23,11 +23,11 @@ Kernel entry and ownership:
 [ OK ] We need PCI Discovery
 [ OK ] We Need Multi-Core processing
 [ OK ] We need to be able to set the PIC/APIC/2xAPIC/HPET settings for the VM
-[TOBE] We need the screen to be double buffered
-[TOBE] We need screen scrolling implemented
-[TOBE] Kernel halts itself instead of returning to the loader.
-[TOBE] Dedicated kernel lifecycle states.
-[TOBE] Kernel-owned panic screen/report path.
+[ OK ] We need the screen to be double buffered
+[ OK ] We need screen scrolling implemented
+[ OK ] Kernel halts itself instead of returning to the loader.
+[ OK ] Dedicated kernel lifecycle states.
+[ OK ] Kernel-owned panic screen/report path.
 
 Build and linking:
 [TOBE] Incremental C-to-object compilation.
