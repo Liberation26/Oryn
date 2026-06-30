@@ -4,15 +4,22 @@
 #define SERIAL_COM1 0x3F8
 #define QEMU_DEBUG_PORT 0xE9
 #define QEMU_EXIT_PORT 0xF4
-#define SERIAL_COLOR_RESET "\033[0m"
-#define SERIAL_COLOR_KERNEL "\033[36m"
-#define SERIAL_COLOR_PASS "\033[32m"
-#define SERIAL_COLOR_WARN "\033[33m"
-#define SERIAL_COLOR_FAIL "\033[31m"
-#define SERIAL_COLOR_STEP "\033[35m"
+#define OUTPUT_COLOR_RESET "\033[0m"
+#define OUTPUT_COLOR_KERNEL "\033[36m"
+#define OUTPUT_COLOR_PASS "\033[32m"
+#define OUTPUT_COLOR_WARN "\033[33m"
+#define OUTPUT_COLOR_FAIL "\033[31m"
+#define OUTPUT_COLOR_STEP "\033[35m"
+#define OUTPUT_COLOR_PCI "\033[96m"
 
-static int gSerialLineColored = 0;
-static int gSerialAtLineStart = 1;
+typedef struct KernelIoLineStyle
+{
+    const char* AnsiColour;
+    unsigned int ConsoleColour;
+} KernelIoLineStyle;
+
+static int gOutputLineColored = 0;
+static int gOutputAtLineStart = 1;
 
 static inline void Out8(unsigned short port, unsigned char value)
 {
@@ -70,22 +77,55 @@ static void SerialWriteRaw(const char* text)
     }
 }
 
-static const char* SerialColorForLine(const char* text)
+static void DebugWriteRaw(const char* text)
 {
-    if (StartsWith(text, "[KERNEL] PASS"))
+    while (*text != 0)
     {
-        return SERIAL_COLOR_PASS;
+        Out8(QEMU_DEBUG_PORT, (unsigned char)*text);
+        ++text;
+    }
+}
+
+static void RawAnsiWrite(const char* text)
+{
+    DebugWriteRaw(text);
+    SerialWriteRaw(text);
+}
+
+static KernelIoLineStyle LineStyleForText(const char* text)
+{
+    KernelIoLineStyle style;
+    style.AnsiColour = "";
+    style.ConsoleColour = KCONSOLE_COLOUR_DEFAULT;
+
+    if (StartsWith(text, "[KERNEL] PASS") || StartsWith(text, "[PASS]") ||
+        StartsWith(text, "[ OK ]") || StartsWith(text, "[OK]"))
+    {
+        style.AnsiColour = OUTPUT_COLOR_PASS;
+        style.ConsoleColour = KCONSOLE_COLOUR_PASS;
+        return style;
     }
 
     if (StartsWith(text, "[KERNEL] FAIL") || StartsWith(text, "[KERNEL] EXCEPTION") ||
         StartsWith(text, "[FAIL]"))
     {
-        return SERIAL_COLOR_FAIL;
+        style.AnsiColour = OUTPUT_COLOR_FAIL;
+        style.ConsoleColour = KCONSOLE_COLOUR_FAIL;
+        return style;
     }
 
     if (StartsWith(text, "[KERNEL] WARN") || StartsWith(text, "[WARN]"))
     {
-        return SERIAL_COLOR_WARN;
+        style.AnsiColour = OUTPUT_COLOR_WARN;
+        style.ConsoleColour = KCONSOLE_COLOUR_WARN;
+        return style;
+    }
+
+    if (StartsWith(text, "[KERNEL] PCI") || StartsWith(text, "[PCI]"))
+    {
+        style.AnsiColour = OUTPUT_COLOR_PCI;
+        style.ConsoleColour = KCONSOLE_COLOUR_PCI;
+        return style;
     }
 
     if (StartsWith(text, "[KERNEL] Virtual memory") || StartsWith(text, "[KERNEL] GDT") ||
@@ -93,41 +133,48 @@ static const char* SerialColorForLine(const char* text)
         StartsWith(text, "[KERNEL] PIC") || StartsWith(text, "[KERNEL] APIC") ||
         StartsWith(text, "[KERNEL] HPET") || StartsWith(text, "[STEP]"))
     {
-        return SERIAL_COLOR_STEP;
+        style.AnsiColour = OUTPUT_COLOR_STEP;
+        style.ConsoleColour = KCONSOLE_COLOUR_STEP;
+        return style;
     }
 
     if (StartsWith(text, "[KERNEL]") || StartsWith(text, "[INFO]"))
     {
-        return SERIAL_COLOR_KERNEL;
+        style.AnsiColour = OUTPUT_COLOR_KERNEL;
+        style.ConsoleColour = KCONSOLE_COLOUR_INFO;
+        return style;
     }
 
-    return "";
+    return style;
 }
 
-static void SerialBeginColoredLine(const char* text)
+static void BeginColoredLine(const char* text)
 {
-    const char* color;
+    KernelIoLineStyle style;
 
-    if (!gSerialAtLineStart)
+    if (!gOutputAtLineStart)
     {
         return;
     }
 
-    color = SerialColorForLine(text);
-    if (color[0] != 0)
+    style = LineStyleForText(text);
+    KConsoleSetForegroundColour(style.ConsoleColour);
+    if (style.AnsiColour[0] != 0)
     {
-        SerialWriteRaw(color);
-        gSerialLineColored = 1;
+        RawAnsiWrite(style.AnsiColour);
+        gOutputLineColored = 1;
     }
 }
 
-static void SerialEndColoredLine(void)
+static void EndColoredLine(void)
 {
-    if (gSerialLineColored)
+    if (gOutputLineColored)
     {
-        SerialWriteRaw(SERIAL_COLOR_RESET);
-        gSerialLineColored = 0;
+        RawAnsiWrite(OUTPUT_COLOR_RESET);
+        gOutputLineColored = 0;
     }
+
+    KConsoleResetForegroundColour();
 }
 
 void KernelIoInit(void)
@@ -145,7 +192,7 @@ void KernelIoWriteChar(char value)
 {
     if (value == '\n')
     {
-        SerialEndColoredLine();
+        EndColoredLine();
         Out8(QEMU_DEBUG_PORT, '\r');
         SerialWriteChar('\r');
     }
@@ -156,26 +203,26 @@ void KernelIoWriteChar(char value)
 
     if (value == '\n')
     {
-        gSerialAtLineStart = 1;
+        gOutputAtLineStart = 1;
     }
     else
     {
-        gSerialAtLineStart = 0;
+        gOutputAtLineStart = 0;
     }
 }
 
 void KernelIoWriteString(const char* text)
 {
-    SerialBeginColoredLine(text);
+    BeginColoredLine(text);
 
     while (*text != 0)
     {
         KernelIoWriteChar(*text);
         ++text;
 
-        if (gSerialAtLineStart)
+        if (gOutputAtLineStart)
         {
-            SerialBeginColoredLine(text);
+            BeginColoredLine(text);
         }
     }
 }

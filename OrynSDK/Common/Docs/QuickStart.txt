@@ -625,6 +625,24 @@ Expected proof lines include:
   [KERNEL] PASS: SysCall header counts listed.
 
 
+
+
+0.5.34 PCI English output and coloured diagnostics
+----------------------------------------------------
+PCI device diagnostics now use English labels and decoded names instead of terse abbreviations. Example fields are printed as Bus, Device, Function, Vendor, Vendor ID, Device ID, Revision, Class, Class Code, Subclass, Subclass Code, Program Interface, Header Type, BAR0, Interrupt Line, Interrupt Pin, and Secondary Bus. KernelPci also decodes common vendor IDs, class/subclass names, header types, and INTx pin names.
+
+Status output is colour-coded on every early boot output path:
+
+- serial COM1 / QEMU -serial stdio receives ANSI colour,
+- QEMU debugcon port 0xE9 receives the same ANSI colour sequences,
+- framebuffer and VGA fallback consoles use real foreground colours instead of printable escape characters.
+
+Expected extra proof lines include:
+
+  [KERNEL] PASS: PCI device output uses English labels.
+
+BootReport now checks the PCI English-label proof marker and that the QEMU debug log contains ANSI status colour sequences.
+
 0.5.33 PCI Discovery
 ---------------------
 Kernel-5 now initializes target-owned PCI discovery after the interrupt/timer/syscall proof chain and before virtual-memory allocator work.

@@ -157,6 +157,19 @@ Common/Kernel/Include/MSSysCall.h owns:
 These constants are intentionally kept with the platform compatibility headers so BootReport and kernel diagnostics can prove what each header currently covers.
 
 
+
+
+0.5.34 Diagnostic colour and PCI English ownership
+--------------------------------------------------
+The common kernel console owns framebuffer/VGA status colours through KernelConsole.h and KernelConsole.c. KernelIo.c owns line-prefix detection and fans status colours out to serial COM1, QEMU debugcon port 0xE9, and the kernel screen. The UEFI loader BootX64Io.c mirrors serial/debug ANSI colour before kernel handoff.
+
+PCI device English labels remain target-owned with the UEFI x64 PCI support because the decoded inventory is produced by the target PCI scanner:
+
+  Targets/UEFI/X64/KernelSupport/Include/KernelPci.h
+  Targets/UEFI/X64/KernelSupport/Source/PCI/KernelPci.c
+
+KernelPci now exposes helper names for vendor, class, subclass, header type, and interrupt pin output.
+
 0.5.33 PCI Discovery ownership
 ------------------------------
 PCI discovery is target-owned UEFI x64 kernel support because the current implementation uses x86 PCI config mechanism #1 and target boot ACPI mappings:

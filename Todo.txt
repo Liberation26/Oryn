@@ -13,22 +13,17 @@ Boot and handoff:
 [ OK ] Kernel ELF image is named from the user kernel/OS name.
 [ OK ] Higher-half or chosen virtual address kernel layout.
 [ OK ] Kernel command line and boot configuration block.
+
+Kernel entry and ownership:
 [ OK ] We need IDT
 [ OK ] We need GDT
-[TOBE] We need PIC,APIC, and HPET
-[TOBE] We need Interrupts
-[TOBE] We Need SysCalls
+[ OK ] We need PIC,APIC, and HPET
+[ OK ] We need Interrupts
+[ OK ] We Need SysCalls
 [TOBE] We need PCI Discovery
 [TOBE] We Need Multi-Core processing
 [TOBE] We need to be able to set the PIC/APIC/2xAPIC/HPET settings for the VM
-
-Kernel entry and ownership:
-[TOBE] KernelMain is minimal.
-[TOBE] TestOS boot report code removed from the kernel entry.
-[TOBE] Screen scrolling proof removed from the kernel entry.
-[TOBE] Kernel prints Hello from the Kernel.
-[TOBE] Kernel displays the full-kernel requirement checklist.
-[TOBE] Kernel keeps a small screen-control loop so the checklist can scroll.
+[TOBE] We need screen scrolling implemented
 [TOBE] Kernel halts itself instead of returning to the loader.
 [TOBE] Dedicated kernel lifecycle states.
 [TOBE] Kernel-owned panic screen/report path.
@@ -99,6 +94,7 @@ Memory management:
 [TOBE] Guard pages and stack overflow detection.
 [TOBE] User/kernel address-space split.
 [TOBE] DMA-safe allocation.
+[TOBE] We need Heap and Stack for Kernel and Userland
 
 Display and console:
 [TOBE] Framebuffer output path exists.

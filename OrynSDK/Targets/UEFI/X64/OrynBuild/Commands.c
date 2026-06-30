@@ -90,6 +90,9 @@ static void WriteBootReport(
     int pci_devices = TextContains(debug_text, "[KERNEL] PASS: PCI devices discovered.");
     int pci_class = TextContains(debug_text, "[KERNEL] PASS: PCI class-code decoding ready.");
     int pci_complete = TextContains(debug_text, "[KERNEL] PASS: PCI Discovery complete.");
+    int pci_english = TextContains(debug_text, "[KERNEL] PASS: PCI device output uses English labels.");
+    int qemu_debug_colour = TextContains(debug_text, "\033[32m[KERNEL] PASS") &&
+        TextContains(debug_text, "\033[0m");
     int virtual_memory_started = TextContains(debug_text, "[KERNEL] Virtual memory: starting");
     int virtual_memory_required_mapped = TextContains(debug_text, "[KERNEL] Virtual memory: required ranges mapped");
     int virtual_memory_switching_cr3 = TextContains(debug_text, "[KERNEL] Virtual memory: switching CR3 to kernel-owned PML4");
@@ -113,7 +116,8 @@ static void WriteBootReport(
         linux_translator && ms_translator && linux_vector && ms_vector &&
         unknown_linux && unknown_ms && syscall_three && platform_syscalls && syscall_counts &&
         pci_started && pci_rsdp && pci_checksum && pci_mcfg && pci_ecam && pci_config &&
-        pci_scan && pci_devices && pci_class && pci_complete && debug_exit;
+        pci_scan && pci_devices && pci_class && pci_complete && pci_english &&
+        qemu_debug_colour && debug_exit;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -205,6 +209,8 @@ static void WriteBootReport(
     fprintf(file, "  PCI devices discovered: %s\n", PassFail(pci_devices));
     fprintf(file, "  PCI class-code decoding ready: %s\n", PassFail(pci_class));
     fprintf(file, "  PCI discovery complete: %s\n", PassFail(pci_complete));
+    fprintf(file, "  PCI device output uses English labels: %s\n", PassFail(pci_english));
+    fprintf(file, "  QEMU debug output includes ANSI colour: %s\n", PassFail(qemu_debug_colour));
     fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
     fprintf(file, "  Kernel virtual memory required ranges mapped: %s\n", PassFail(virtual_memory_required_mapped));
     fprintf(file, "  Kernel virtual memory CR3 switch requested: %s\n", PassFail(virtual_memory_switching_cr3));
@@ -340,6 +346,10 @@ static void WriteBootReport(
             "The PCI class-code decoder did not initialize." :
         !pci_complete ?
             "The PCI discovery module did not emit its completion marker." :
+        !pci_english ?
+            "The PCI device output did not emit the English-label proof marker." :
+        !qemu_debug_colour ?
+            "The QEMU debug log did not include ANSI colour sequences for status lines." :
         !virtual_memory_started ?
             "The kernel stopped before virtual-memory initialization." :
         !virtual_memory_required_mapped ?
@@ -626,7 +636,10 @@ int OrynRunQemu(const OrynProject* project)
         TextContains(debug_text, "[KERNEL] PASS: PCI bus/device/function scan completed.") &&
         TextContains(debug_text, "[KERNEL] PASS: PCI devices discovered.") &&
         TextContains(debug_text, "[KERNEL] PASS: PCI class-code decoding ready.") &&
+        TextContains(debug_text, "[KERNEL] PASS: PCI device output uses English labels.") &&
         TextContains(debug_text, "[KERNEL] PASS: PCI Discovery complete.") &&
+        TextContains(debug_text, "\033[32m[KERNEL] PASS") &&
+        TextContains(debug_text, "\033[0m") &&
         !TextContains(debug_text, "[KERNEL] EXCEPTION:") &&
         TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success") && command_ok;
 

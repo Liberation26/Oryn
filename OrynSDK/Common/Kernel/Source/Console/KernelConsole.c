@@ -13,7 +13,7 @@
 #define KCONSOLE_MARGIN_X 8U
 #define KCONSOLE_MARGIN_Y 8U
 
-#define KCONSOLE_WHITE 0x00FFFFFFU
+#define KCONSOLE_WHITE KCONSOLE_COLOUR_DEFAULT
 #define KCONSOLE_BLACK 0x00000000U
 
 #define KCONSOLE_MODE_NONE 0U
@@ -22,7 +22,13 @@
 
 #define KCONSOLE_VGA_WIDTH 80U
 #define KCONSOLE_VGA_HEIGHT 25U
-#define KCONSOLE_VGA_ATTRIBUTE 0x0FU
+#define KCONSOLE_VGA_ATTRIBUTE_DEFAULT 0x0FU
+#define KCONSOLE_VGA_ATTRIBUTE_INFO 0x0BU
+#define KCONSOLE_VGA_ATTRIBUTE_PASS 0x0AU
+#define KCONSOLE_VGA_ATTRIBUTE_WARN 0x0EU
+#define KCONSOLE_VGA_ATTRIBUTE_FAIL 0x0CU
+#define KCONSOLE_VGA_ATTRIBUTE_STEP 0x0DU
+#define KCONSOLE_VGA_ATTRIBUTE_PCI 0x0BU
 
 static const unsigned char gDigits[10][7] =
 {
@@ -94,6 +100,8 @@ typedef struct KConsoleState
     unsigned int CursorX;
     unsigned int CursorY;
     unsigned int Mode;
+    unsigned int ForegroundColour;
+    unsigned char VgaAttribute;
     int Available;
     int TtfReady;
     OrynTtfFont Font;
@@ -114,7 +122,7 @@ static unsigned int KConsoleActiveGlyphWidth(void)
 
 static unsigned short KConsoleVgaEntry(char value)
 {
-    return (unsigned short)(((unsigned short)KCONSOLE_VGA_ATTRIBUTE << 8) | (unsigned char)value);
+    return (unsigned short)(((unsigned short)gConsole.VgaAttribute << 8) | (unsigned char)value);
 }
 
 static void KConsoleUseVgaTextFallback(void)
@@ -127,6 +135,8 @@ static void KConsoleUseVgaTextFallback(void)
     gConsole.CursorX = 0U;
     gConsole.CursorY = 0U;
     gConsole.Mode = KCONSOLE_MODE_VGA_TEXT;
+    gConsole.ForegroundColour = KCONSOLE_COLOUR_DEFAULT;
+    gConsole.VgaAttribute = KCONSOLE_VGA_ATTRIBUTE_DEFAULT;
     gConsole.TtfReady = 0;
     gConsole.Available = 1;
 }
@@ -366,7 +376,7 @@ static unsigned int KConsoleDrawGlyph(char value)
             gConsole.CursorX,
             gConsole.CursorY,
             KCONSOLE_TTF_PIXEL_HEIGHT,
-            KCONSOLE_WHITE);
+            gConsole.ForegroundColour);
         if (advance != 0U)
         {
             return advance;
@@ -389,7 +399,7 @@ static unsigned int KConsoleDrawGlyph(char value)
                         KConsolePutPixel(
                             gConsole.CursorX + (col * KCONSOLE_SCALE) + sx,
                             gConsole.CursorY + (row * KCONSOLE_SCALE) + sy,
-                            KCONSOLE_WHITE);
+                            gConsole.ForegroundColour);
                     }
                 }
             }
@@ -416,6 +426,8 @@ void KConsoleInit(const OrynBootInfo* bootInfo)
     gConsole.CursorX = KCONSOLE_MARGIN_X;
     gConsole.CursorY = KCONSOLE_MARGIN_Y;
     gConsole.Mode = KCONSOLE_MODE_FRAMEBUFFER;
+    gConsole.ForegroundColour = KCONSOLE_COLOUR_DEFAULT;
+    gConsole.VgaAttribute = KCONSOLE_VGA_ATTRIBUTE_DEFAULT;
     gConsole.TtfReady = OrynTtfLoadFromBootInfo(bootInfo, &gConsole.Font);
     gConsole.Available = (gConsole.Height >= (KCONSOLE_MARGIN_Y + KConsoleActiveCellHeight() + KCONSOLE_MARGIN_Y)) ? 1 : 0;
 
@@ -497,6 +509,47 @@ void KConsoleWriteChar(char value)
     gConsole.CursorX += advance + KCONSOLE_CHAR_SPACING_X;
 }
 
+static unsigned char KConsoleVgaAttributeForColour(unsigned int colour)
+{
+    if (colour == KCONSOLE_COLOUR_PASS || colour == KCONSOLE_COLOUR_OK)
+    {
+        return KCONSOLE_VGA_ATTRIBUTE_PASS;
+    }
+
+    if (colour == KCONSOLE_COLOUR_WARN)
+    {
+        return KCONSOLE_VGA_ATTRIBUTE_WARN;
+    }
+
+    if (colour == KCONSOLE_COLOUR_FAIL)
+    {
+        return KCONSOLE_VGA_ATTRIBUTE_FAIL;
+    }
+
+    if (colour == KCONSOLE_COLOUR_STEP)
+    {
+        return KCONSOLE_VGA_ATTRIBUTE_STEP;
+    }
+
+    if (colour == KCONSOLE_COLOUR_PCI || colour == KCONSOLE_COLOUR_INFO)
+    {
+        return KCONSOLE_VGA_ATTRIBUTE_INFO;
+    }
+
+    return KCONSOLE_VGA_ATTRIBUTE_DEFAULT;
+}
+
+void KConsoleSetForegroundColour(unsigned int colour)
+{
+    gConsole.ForegroundColour = colour;
+    gConsole.VgaAttribute = KConsoleVgaAttributeForColour(colour);
+}
+
+void KConsoleResetForegroundColour(void)
+{
+    KConsoleSetForegroundColour(KCONSOLE_COLOUR_DEFAULT);
+}
+
 int KConsoleIsAvailable(void)
 {
     return gConsole.Available;
@@ -511,6 +564,8 @@ const KConsoleApi KConsole =
 {
     KConsoleClearScreen,
     KConsoleWriteChar,
+    KConsoleSetForegroundColour,
+    KConsoleResetForegroundColour,
     KConsoleIsAvailable,
     KConsoleIsTtfActive
 };

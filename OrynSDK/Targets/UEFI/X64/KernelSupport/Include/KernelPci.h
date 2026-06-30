@@ -63,7 +63,11 @@ void OrynKernelPciConfigWrite32(
     unsigned int function,
     unsigned int offset,
     unsigned int value);
+const char* OrynKernelPciVendorName(unsigned int vendorId);
 const char* OrynKernelPciClassName(unsigned int classCode);
+const char* OrynKernelPciSubclassName(unsigned int classCode, unsigned int subclass);
+const char* OrynKernelPciHeaderTypeName(unsigned int headerType);
+const char* OrynKernelPciInterruptPinName(unsigned int interruptPin);
 void OrynKernelPciPrintProof(void);
 
 #endif

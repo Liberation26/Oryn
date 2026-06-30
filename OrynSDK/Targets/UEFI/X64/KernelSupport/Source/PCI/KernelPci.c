@@ -266,6 +266,25 @@ static void DiscoverMcfg(const OrynBootInfo* bootInfo)
     }
 }
 
+const char* OrynKernelPciVendorName(unsigned int vendorId)
+{
+    switch (vendorId)
+    {
+        case 0x8086U: return "Intel";
+        case 0x1234U: return "QEMU";
+        case 0x1AF4U: return "Red Hat / VirtIO";
+        case 0x1B36U: return "Red Hat / QEMU";
+        case 0x10ECU: return "Realtek";
+        case 0x1022U: return "AMD";
+        case 0x1002U: return "AMD / ATI";
+        case 0x10DEU: return "NVIDIA";
+        case 0x15ADU: return "VMware";
+        case 0x80EEU: return "VirtualBox";
+        case 0x1414U: return "Microsoft";
+        default: return "Unknown vendor";
+    }
+}
+
 const char* OrynKernelPciClassName(unsigned int classCode)
 {
     switch (classCode)
@@ -284,6 +303,107 @@ const char* OrynKernelPciClassName(unsigned int classCode)
         case 0x0BU: return "Processor";
         case 0x0CU: return "Serial bus";
         default: return "Other";
+    }
+}
+
+const char* OrynKernelPciSubclassName(unsigned int classCode, unsigned int subclass)
+{
+    if (classCode == 0x01U)
+    {
+        switch (subclass)
+        {
+            case 0x00U: return "SCSI storage controller";
+            case 0x01U: return "IDE storage controller";
+            case 0x02U: return "Floppy disk controller";
+            case 0x03U: return "IPI storage controller";
+            case 0x04U: return "RAID storage controller";
+            case 0x05U: return "ATA storage controller";
+            case 0x06U: return "SATA storage controller";
+            case 0x07U: return "Serial Attached SCSI controller";
+            case 0x08U: return "Non-volatile memory controller";
+            default: return "Other storage controller";
+        }
+    }
+
+    if (classCode == 0x02U)
+    {
+        switch (subclass)
+        {
+            case 0x00U: return "Ethernet network controller";
+            case 0x01U: return "Token ring network controller";
+            case 0x02U: return "FDDI network controller";
+            case 0x03U: return "ATM network controller";
+            case 0x80U: return "Other network controller";
+            default: return "Network controller";
+        }
+    }
+
+    if (classCode == 0x03U)
+    {
+        switch (subclass)
+        {
+            case 0x00U: return "VGA compatible display controller";
+            case 0x01U: return "XGA display controller";
+            case 0x02U: return "3D display controller";
+            case 0x80U: return "Other display controller";
+            default: return "Display controller";
+        }
+    }
+
+    if (classCode == 0x06U)
+    {
+        switch (subclass)
+        {
+            case 0x00U: return "Host bridge";
+            case 0x01U: return "ISA bridge";
+            case 0x02U: return "EISA bridge";
+            case 0x03U: return "MCA bridge";
+            case 0x04U: return "PCI-to-PCI bridge";
+            case 0x05U: return "PCMCIA bridge";
+            case 0x06U: return "NuBus bridge";
+            case 0x07U: return "CardBus bridge";
+            default: return "Bridge device";
+        }
+    }
+
+    if (classCode == 0x0CU)
+    {
+        switch (subclass)
+        {
+            case 0x00U: return "FireWire serial bus controller";
+            case 0x01U: return "ACCESS.bus controller";
+            case 0x02U: return "SSA serial bus controller";
+            case 0x03U: return "USB controller";
+            case 0x04U: return "Fibre Channel controller";
+            case 0x05U: return "SMBus controller";
+            default: return "Serial bus controller";
+        }
+    }
+
+    return "Subclass not decoded yet";
+}
+
+const char* OrynKernelPciHeaderTypeName(unsigned int headerType)
+{
+    switch (headerType & 0x7FU)
+    {
+        case 0x00U: return "Endpoint device";
+        case 0x01U: return "PCI-to-PCI bridge";
+        case 0x02U: return "CardBus bridge";
+        default: return "Unknown header type";
+    }
+}
+
+const char* OrynKernelPciInterruptPinName(unsigned int interruptPin)
+{
+    switch (interruptPin)
+    {
+        case 0U: return "No interrupt pin";
+        case 1U: return "INTA#";
+        case 2U: return "INTB#";
+        case 3U: return "INTC#";
+        case 4U: return "INTD#";
+        default: return "Unknown interrupt pin";
     }
 }
 
@@ -407,29 +527,45 @@ const OrynKernelPciState* OrynKernelPciGetState(void)
 
 static void PrintDeviceLine(const OrynKernelPciDevice* pciDevice)
 {
-    KernelIoWriteString("[KERNEL] PCI device: bus ");
-    KernelIoWriteHex64(pciDevice->Bus);
-    KernelIoWriteString(" dev ");
-    KernelIoWriteHex64(pciDevice->Device);
-    KernelIoWriteString(" func ");
-    KernelIoWriteHex64(pciDevice->Function);
-    KernelIoWriteString(" vendor/device ");
+    KernelIoWriteString("[KERNEL] PCI Device: Bus ");
+    KernelIoWriteDec64(pciDevice->Bus);
+    KernelIoWriteString(", Device ");
+    KernelIoWriteDec64(pciDevice->Device);
+    KernelIoWriteString(", Function ");
+    KernelIoWriteDec64(pciDevice->Function);
+    KernelIoWriteString(", Vendor ");
+    KernelIoWriteString(OrynKernelPciVendorName(pciDevice->VendorId));
+    KernelIoWriteString(" (Vendor ID ");
     KernelIoWriteHex64(pciDevice->VendorId);
-    KernelIoWriteString("/");
+    KernelIoWriteString("), Device ID ");
     KernelIoWriteHex64(pciDevice->DeviceId);
-    KernelIoWriteString(" class ");
+    KernelIoWriteString(", Revision ");
+    KernelIoWriteHex64(pciDevice->RevisionId);
+    KernelIoWriteString(", Class ");
     KernelIoWriteString(OrynKernelPciClassName(pciDevice->ClassCode));
-    KernelIoWriteString(" ");
+    KernelIoWriteString(" (Class Code ");
     KernelIoWriteHex64(pciDevice->ClassCode);
-    KernelIoWriteString(":" );
+    KernelIoWriteString("), Subclass ");
+    KernelIoWriteString(OrynKernelPciSubclassName(pciDevice->ClassCode, pciDevice->Subclass));
+    KernelIoWriteString(" (Subclass Code ");
     KernelIoWriteHex64(pciDevice->Subclass);
-    KernelIoWriteString(" progIF ");
+    KernelIoWriteString("), Program Interface ");
     KernelIoWriteHex64(pciDevice->ProgIf);
-    KernelIoWriteString(" irq ");
-    KernelIoWriteHex64(pciDevice->InterruptLine);
-    KernelIoWriteString("/pin ");
+    KernelIoWriteString(", Header Type ");
+    KernelIoWriteString(OrynKernelPciHeaderTypeName(pciDevice->HeaderType));
+    KernelIoWriteString(" (Header Code ");
+    KernelIoWriteHex64(pciDevice->HeaderType);
+    KernelIoWriteString("), BAR0 ");
+    KernelIoWriteHex64(pciDevice->Bar0);
+    KernelIoWriteString(", Interrupt Line ");
+    KernelIoWriteDec64(pciDevice->InterruptLine);
+    KernelIoWriteString(", Interrupt Pin ");
+    KernelIoWriteString(OrynKernelPciInterruptPinName(pciDevice->InterruptPin));
+    KernelIoWriteString(" (Pin Code ");
     KernelIoWriteHex64(pciDevice->InterruptPin);
-    KernelIoWriteString("\n");
+    KernelIoWriteString("), Secondary Bus ");
+    KernelIoWriteDec64(pciDevice->SecondaryBus);
+    KernelIoWriteString(".\n");
 }
 
 void OrynKernelPciPrintProof(void)
@@ -484,6 +620,9 @@ void OrynKernelPciPrintProof(void)
     {
         PrintDeviceLine(&gPciState.Devices[index]);
     }
+    KernelIoWriteString(gPciState.ClassDecodeReady ?
+        "[KERNEL] PASS: PCI device output uses English labels.\n" :
+        "[KERNEL] FAIL: PCI device English output unavailable.\n");
     KernelIoWriteString(gPciState.Initialized && gPciState.ConfigMechanism1Available &&
         gPciState.DevicesFound != 0U && gPciState.ClassDecodeReady ?
         "[KERNEL] PASS: PCI Discovery complete.\n" :
