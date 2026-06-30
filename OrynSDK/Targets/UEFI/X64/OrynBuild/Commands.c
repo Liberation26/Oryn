@@ -105,7 +105,7 @@ static void WriteBootReport(
     fprintf(file, "  Kernel requested QEMU debug-exit: %s\n", PassFail(debug_exit));
 
     fprintf(file, "\nFailure hint:\n  %s\n\n",
-        debug_exit ?
+        boot_pass ?
             "No kernel-side failure detected by the boot-proof markers." :
         !loader_started ?
             "The loader did not start." :

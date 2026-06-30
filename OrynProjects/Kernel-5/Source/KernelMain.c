@@ -76,6 +76,8 @@ void KernelStart(const OrynBootInfo* bootInfo)
     KernelIoInit();
     KernelIoWriteString("[KERNEL] Oryn Kernel-5 entered.\n");
     KernelIoWriteString("[KERNEL] PASS: Serial/debug output path is working.\n");
+    (void)OrynKernelGdtInit();
+    OrynKernelGdtPrintProof();
     (void)OrynKernelIdtInit();
     OrynKernelIdtPrintProof();
     KernelIoWriteString("[KERNEL] PASS: Kernel entry received one plain OrynBootInfo pointer.\n");
