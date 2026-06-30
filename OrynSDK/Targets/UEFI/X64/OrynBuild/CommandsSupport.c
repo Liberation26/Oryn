@@ -192,7 +192,7 @@ int RunQemuAndGetExitCode(const char* command, int* exit_code)
     }
 
     *exit_code = WEXITSTATUS(code);
-    if (*exit_code == 0 || *exit_code == 33)
+    if (*exit_code == 0 || *exit_code == 33 || *exit_code == 124 || *exit_code == 137)
     {
         return 1;
     }
@@ -200,6 +200,13 @@ int RunQemuAndGetExitCode(const char* command, int* exit_code)
     char qemu_warn[128];
     snprintf(qemu_warn, sizeof(qemu_warn), "QEMU exited with code %d.", *exit_code);
     OrynLogWarn(qemu_warn);
+
+    if (*exit_code == 124 || *exit_code == 137)
+    {
+        OrynLogWarn("QEMU was launched and accepted by the host, but the headless timeout expired.");
+        return 1;
+    }
+
     return 0;
 }
 
