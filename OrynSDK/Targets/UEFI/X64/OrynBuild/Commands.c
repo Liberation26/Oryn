@@ -251,6 +251,10 @@ static void WriteBootReport(
     int screen_page_scroll = TextContains(debug_text, "[KERNEL] PASS: Kernel screen page up/down works.");
     int screen_bottom = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scroll-to-bottom works.");
     int screen_scrolling = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scrolling implemented.");
+    int screen_back_buffer = TextContains(debug_text, "[KERNEL] PASS: Kernel screen back buffer allocated.");
+    int screen_renders_back = TextContains(debug_text, "[KERNEL] PASS: Kernel screen renders into back buffer first.");
+    int screen_present = TextContains(debug_text, "[KERNEL] PASS: Kernel screen presents completed frame to visible output.");
+    int screen_double_buffer = TextContains(debug_text, "[KERNEL] PASS: Kernel screen double buffering implemented.");
     int qemu_preboot_failure = (!command_ok) && !loader_started && DebugTextIsEmpty(debug_text);
 
     int want_pic = ProjectBoolEnabled(project->run_pic, 1);
@@ -298,7 +302,8 @@ static void WriteBootReport(
         pci_scan && pci_devices && pci_class && pci_complete && pci_english &&
         smp_ok && qemu_debug_colour && kernel_console && screen_scrollback &&
         screen_coloured_cells && screen_scroll_lines && screen_page_scroll &&
-        screen_bottom && screen_scrolling && virtual_memory_active && debug_exit;
+        screen_bottom && screen_scrolling && screen_back_buffer && screen_renders_back &&
+        screen_present && screen_double_buffer && virtual_memory_active && debug_exit;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -449,6 +454,10 @@ static void WriteBootReport(
     fprintf(file, "  Kernel screen page up/down: %s\n", PassFail(screen_page_scroll));
     fprintf(file, "  Kernel screen scroll-to-bottom: %s\n", PassFail(screen_bottom));
     fprintf(file, "  Kernel screen scrolling implemented: %s\n", PassFail(screen_scrolling));
+    fprintf(file, "  Kernel screen back buffer allocated: %s\n", PassFail(screen_back_buffer));
+    fprintf(file, "  Kernel screen renders into back buffer first: %s\n", PassFail(screen_renders_back));
+    fprintf(file, "  Kernel screen presents completed frame: %s\n", PassFail(screen_present));
+    fprintf(file, "  Kernel screen double buffering implemented: %s\n", PassFail(screen_double_buffer));
     fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
     fprintf(file, "  Kernel virtual memory required ranges mapped: %s\n", PassFail(virtual_memory_required_mapped));
     fprintf(file, "  Kernel virtual memory CR3 switch requested: %s\n", PassFail(virtual_memory_switching_cr3));
@@ -630,6 +639,14 @@ static void WriteBootReport(
             "The kernel screen did not return to the live bottom view." :
         !screen_scrolling ?
             "Kernel screen scrolling did not complete." :
+        !screen_back_buffer ?
+            "The kernel screen back buffer was not allocated." :
+        !screen_renders_back ?
+            "The kernel screen did not render into the back buffer first." :
+        !screen_present ?
+            "The kernel screen did not present completed frames to visible output." :
+        !screen_double_buffer ?
+            "Kernel screen double buffering did not complete." :
         !virtual_memory_started ?
             "The kernel stopped before virtual-memory initialization." :
         !virtual_memory_required_mapped ?

@@ -1,4 +1,4 @@
-OrynWsl 0.5.41 Quick Start
+OrynWsl 0.5.42 Quick Start
 
 This package is a WSL-native Oryn SDK baseline.
 
@@ -767,3 +767,14 @@ OrynWsl 0.5.41 BootReport debug-log reader fix
 The QEMU Debug.log reader now uses a 1 MB heap buffer instead of a 64 KB stack buffer. This stops long successful boots from being falsely reported as FAIL when later virtual-memory, SMP, halt, and QEMU debug-exit proof markers appear after the first 64 KB of output.
 
 SMP discovery proof markers are also printed immediately during the pre-virtual-memory ACPI/MADT discovery stage, so BootReport can verify RSDP, checksum, MADT, and CPU topology before the verbose BootInfo summary grows the log.
+
+OrynWsl 0.5.42 Kernel screen double buffering
+
+The kernel console now renders to an off-screen buffer before presenting to the visible screen. Framebuffer mode uses a kernel-owned pixel back buffer, and VGA fallback uses a shadow text buffer before copying the completed text frame to 0xB8000. Scrollback redraws, coloured cells, line/page scrolling, and normal character output all go through the same back-buffer/present path.
+
+Boot proof markers:
+
+[KERNEL] PASS: Kernel screen back buffer allocated.
+[KERNEL] PASS: Kernel screen renders into back buffer first.
+[KERNEL] PASS: Kernel screen presents completed frame to visible output.
+[KERNEL] PASS: Kernel screen double buffering implemented.

@@ -228,3 +228,7 @@ Affected files:
 The OrynBuild QEMU runner owns reading Debug.log for BootReport checks. It now reads up to 1 MB so large kernel diagnostics do not hide later PASS markers.
 
 The UEFI x64 SMP support owns early ACPI MADT topology proof markers. These markers are emitted during cached discovery before virtual memory activation and are reused when AP startup proof is printed later.
+
+0.5.42 Kernel screen double-buffer ownership
+
+Double buffering is owned by the common kernel console. The target supplies framebuffer or VGA access, while the common console owns the framebuffer pixel back buffer, VGA shadow buffer, present/blit path, and proof markers. Output code writes logical characters into scrollback cells; visible redraws render to the back buffer first, then present the completed frame to the visible framebuffer or VGA text memory.

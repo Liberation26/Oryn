@@ -147,6 +147,29 @@ static void RunKernelScreenScrollProof(void)
     }
 }
 
+static void RunKernelScreenDoubleBufferProof(void)
+{
+    KernelIoWriteString("[KERNEL] Kernel screen double buffer: starting proof.\n");
+    KernelIoWriteString("[KERNEL] Kernel screen back buffer bytes: ");
+    KernelIoWriteDec64(KConsole.BackBufferBytes());
+    KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] Kernel screen present count: ");
+    KernelIoWriteDec64(KConsole.PresentCount());
+    KernelIoWriteString("\n");
+
+    if (KConsole.IsDoubleBuffered() && KConsoleRunDoubleBufferProof())
+    {
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen back buffer allocated.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen renders into back buffer first.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen presents completed frame to visible output.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen double buffering implemented.\n");
+    }
+    else
+    {
+        KernelIoWriteString("[KERNEL] FAIL: Kernel screen double buffering proof failed.\n");
+    }
+}
+
 static void RunDescriptorAndSysCallProofs(void)
 {
     (void)OrynKernelGdtInit();
@@ -300,6 +323,7 @@ void KernelStart(const OrynBootInfo* bootInfo)
             "[KERNEL] TTF renderer: active\n" :
             "[KERNEL] TTF renderer: fallback bitmap glyphs\n");
         RunKernelScreenScrollProof();
+        RunKernelScreenDoubleBufferProof();
         KernelBootInfoPrintSummary(kernelBootInfo);
         RunMemoryProofs(kernelBootInfo);
     }

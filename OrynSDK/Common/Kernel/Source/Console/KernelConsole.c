@@ -15,6 +15,9 @@
 #define KCONSOLE_SCROLLBAR_WIDTH 4U
 #define KCONSOLE_SCROLLBACK_ROWS 512U
 #define KCONSOLE_SCROLLBACK_COLS 160U
+#define KCONSOLE_BACKBUFFER_MAX_WIDTH 1920U
+#define KCONSOLE_BACKBUFFER_MAX_HEIGHT 1080U
+#define KCONSOLE_BACKBUFFER_PIXELS (KCONSOLE_BACKBUFFER_MAX_WIDTH * KCONSOLE_BACKBUFFER_MAX_HEIGHT)
 
 #define KCONSOLE_WHITE KCONSOLE_COLOUR_DEFAULT
 #define KCONSOLE_BLACK 0x00000000U
@@ -104,6 +107,11 @@ typedef struct KConsoleState
 {
     volatile unsigned int* Framebuffer;
     unsigned long long FramebufferSize;
+    unsigned int* FramebufferBackBuffer;
+    unsigned long long FramebufferBackBufferPixels;
+    unsigned long long FramebufferBackBufferSize;
+    int DoubleBuffered;
+    unsigned int PresentCount;
     unsigned int Width;
     unsigned int Height;
     unsigned int Pitch;
@@ -128,6 +136,8 @@ typedef struct KConsoleState
 } KConsoleState;
 
 static KConsoleState gConsole;
+static unsigned int gFramebufferBackBuffer[KCONSOLE_BACKBUFFER_PIXELS];
+static unsigned short gVgaShadowBuffer[KCONSOLE_VGA_WIDTH * KCONSOLE_VGA_HEIGHT];
 static volatile unsigned short* const gVgaText = (volatile unsigned short*)0xB8000ULL;
 
 static unsigned int KConsoleActiveCellHeight(void)
@@ -139,6 +149,11 @@ static void KConsoleUseVgaTextFallback(void)
 {
     gConsole.Framebuffer = 0;
     gConsole.FramebufferSize = 0ULL;
+    gConsole.FramebufferBackBuffer = 0;
+    gConsole.FramebufferBackBufferPixels = 0ULL;
+    gConsole.FramebufferBackBufferSize = 0ULL;
+    gConsole.DoubleBuffered = 1;
+    gConsole.PresentCount = 0U;
     gConsole.Width = KCONSOLE_VGA_WIDTH;
     gConsole.Height = KCONSOLE_VGA_HEIGHT;
     gConsole.Pitch = KCONSOLE_VGA_WIDTH;
@@ -219,21 +234,78 @@ static const unsigned char* KConsoleGlyph(char value)
 static void KConsolePutPixel(unsigned int x, unsigned int y, unsigned int colour)
 {
     unsigned long long index;
-    unsigned long long byteOffset;
 
-    if (!gConsole.Available || x >= gConsole.Width || y >= gConsole.Height)
+    if (!gConsole.Available || gConsole.Mode != KCONSOLE_MODE_FRAMEBUFFER ||
+        gConsole.FramebufferBackBuffer == 0 || x >= gConsole.Width || y >= gConsole.Height)
     {
         return;
     }
 
-    index = ((unsigned long long)y * (unsigned long long)gConsole.Pitch) + (unsigned long long)x;
-    byteOffset = index * 4ULL;
-    if (byteOffset + 3ULL >= gConsole.FramebufferSize)
+    index = ((unsigned long long)y * (unsigned long long)gConsole.Width) + (unsigned long long)x;
+    if (index >= gConsole.FramebufferBackBufferPixels)
     {
         return;
     }
 
-    gConsole.Framebuffer[index] = colour;
+    gConsole.FramebufferBackBuffer[index] = colour;
+}
+
+static void KConsolePresentFramebuffer(void)
+{
+    if (!gConsole.Available || gConsole.Mode != KCONSOLE_MODE_FRAMEBUFFER ||
+        gConsole.Framebuffer == 0 || gConsole.FramebufferBackBuffer == 0)
+    {
+        return;
+    }
+
+    for (unsigned int y = 0U; y < gConsole.Height; ++y)
+    {
+        for (unsigned int x = 0U; x < gConsole.Width; ++x)
+        {
+            unsigned long long sourceIndex = ((unsigned long long)y * (unsigned long long)gConsole.Width) + (unsigned long long)x;
+            unsigned long long targetIndex = ((unsigned long long)y * (unsigned long long)gConsole.Pitch) + (unsigned long long)x;
+            unsigned long long targetByteOffset = targetIndex * 4ULL;
+
+            if (sourceIndex < gConsole.FramebufferBackBufferPixels &&
+                targetByteOffset + 3ULL < gConsole.FramebufferSize)
+            {
+                gConsole.Framebuffer[targetIndex] = gConsole.FramebufferBackBuffer[sourceIndex];
+            }
+        }
+    }
+
+    gConsole.PresentCount += 1U;
+}
+
+static void KConsolePresentVga(void)
+{
+    if (!gConsole.Available || gConsole.Mode != KCONSOLE_MODE_VGA_TEXT)
+    {
+        return;
+    }
+
+    for (unsigned int row = 0U; row < KCONSOLE_VGA_HEIGHT; ++row)
+    {
+        for (unsigned int col = 0U; col < KCONSOLE_VGA_WIDTH; ++col)
+        {
+            unsigned int index = (row * KCONSOLE_VGA_WIDTH) + col;
+            gVgaText[index] = gVgaShadowBuffer[index];
+        }
+    }
+
+    gConsole.PresentCount += 1U;
+}
+
+static void KConsolePresent(void)
+{
+    if (gConsole.Mode == KCONSOLE_MODE_FRAMEBUFFER)
+    {
+        KConsolePresentFramebuffer();
+    }
+    else if (gConsole.Mode == KCONSOLE_MODE_VGA_TEXT)
+    {
+        KConsolePresentVga();
+    }
 }
 
 static void KConsoleClearCell(unsigned int x, unsigned int y)
@@ -257,11 +329,11 @@ static unsigned int KConsoleDrawGlyph(char value)
         unsigned int advance = OrynTtfRenderAsciiGlyph(
             &gConsole.Font,
             value,
-            gConsole.Framebuffer,
-            gConsole.FramebufferSize,
+            gConsole.FramebufferBackBuffer,
+            gConsole.FramebufferBackBufferSize,
             gConsole.Width,
             gConsole.Height,
-            gConsole.Pitch,
+            gConsole.Width,
             gConsole.CursorX,
             gConsole.CursorY,
             KCONSOLE_TTF_PIXEL_HEIGHT,
@@ -418,7 +490,7 @@ static void KConsoleVgaClearPixels(void)
     {
         for (unsigned int col = 0U; col < KCONSOLE_VGA_WIDTH; ++col)
         {
-            gVgaText[(row * KCONSOLE_VGA_WIDTH) + col] =
+            gVgaShadowBuffer[(row * KCONSOLE_VGA_WIDTH) + col] =
                 (unsigned short)(((unsigned short)KCONSOLE_VGA_ATTRIBUTE_DEFAULT << 8) | (unsigned char)' ');
         }
     }
@@ -495,7 +567,7 @@ static void KConsoleRenderCell(unsigned int screenRow, unsigned int screenColumn
     {
         if (screenRow < KCONSOLE_VGA_HEIGHT && screenColumn < KCONSOLE_VGA_WIDTH)
         {
-            gVgaText[(screenRow * KCONSOLE_VGA_WIDTH) + screenColumn] =
+            gVgaShadowBuffer[(screenRow * KCONSOLE_VGA_WIDTH) + screenColumn] =
                 (unsigned short)(((unsigned short)cell.VgaAttribute << 8) | (unsigned char)cell.Value);
         }
         return;
@@ -547,6 +619,7 @@ static void KConsoleRenderVisible(void)
     }
 
     KConsoleDrawScrollbar();
+    KConsolePresent();
 }
 
 static int KConsoleCurrentLineIsVisible(void)
@@ -619,6 +692,7 @@ static void KConsoleStorePrintable(char value)
     {
         KConsoleRenderCell(gConsole.CurrentLine - gConsole.ViewTopLine, gConsole.CurrentColumn);
         KConsoleDrawScrollbar();
+        KConsolePresent();
     }
 
     gConsole.CurrentColumn += 1U;
@@ -667,13 +741,19 @@ void KConsoleInit(const OrynBootInfo* bootInfo)
         gConsole.Width = bootInfo->Framebuffer.Width;
         gConsole.Height = KConsoleVisibleHeight(bootInfo);
         gConsole.Pitch = bootInfo->Framebuffer.PixelsPerScanLine;
+        gConsole.FramebufferBackBuffer = gFramebufferBackBuffer;
+        gConsole.FramebufferBackBufferPixels = (unsigned long long)gConsole.Width * (unsigned long long)gConsole.Height;
+        gConsole.FramebufferBackBufferSize = gConsole.FramebufferBackBufferPixels * 4ULL;
+        gConsole.DoubleBuffered = gConsole.FramebufferBackBufferPixels <= (unsigned long long)KCONSOLE_BACKBUFFER_PIXELS ? 1 : 0;
+        gConsole.PresentCount = 0U;
         gConsole.CursorX = KCONSOLE_MARGIN_X;
         gConsole.CursorY = KCONSOLE_MARGIN_Y;
         gConsole.Mode = KCONSOLE_MODE_FRAMEBUFFER;
         gConsole.ForegroundColour = KCONSOLE_COLOUR_DEFAULT;
         gConsole.VgaAttribute = KCONSOLE_VGA_ATTRIBUTE_DEFAULT;
         gConsole.TtfReady = OrynTtfLoadFromBootInfo(bootInfo, &gConsole.Font);
-        gConsole.Available = (gConsole.Height >= (KCONSOLE_MARGIN_Y + KConsoleActiveCellHeight() + KCONSOLE_MARGIN_Y)) ? 1 : 0;
+        gConsole.Available = (gConsole.Height >= (KCONSOLE_MARGIN_Y + KConsoleActiveCellHeight() + KCONSOLE_MARGIN_Y) &&
+            gConsole.DoubleBuffered) ? 1 : 0;
 
         if (!gConsole.Available)
         {
@@ -818,6 +898,45 @@ unsigned int KConsoleScrollbackRows(void)
     return KCONSOLE_SCROLLBACK_ROWS;
 }
 
+int KConsoleIsDoubleBuffered(void)
+{
+    return gConsole.Available && gConsole.DoubleBuffered;
+}
+
+unsigned long long KConsoleBackBufferBytes(void)
+{
+    if (!gConsole.Available)
+    {
+        return 0ULL;
+    }
+
+    if (gConsole.Mode == KCONSOLE_MODE_FRAMEBUFFER)
+    {
+        return gConsole.FramebufferBackBufferSize;
+    }
+
+    return (unsigned long long)(KCONSOLE_VGA_WIDTH * KCONSOLE_VGA_HEIGHT * sizeof(unsigned short));
+}
+
+unsigned int KConsolePresentCount(void)
+{
+    return gConsole.PresentCount;
+}
+
+int KConsoleRunDoubleBufferProof(void)
+{
+    unsigned int before;
+
+    if (!gConsole.Available || !gConsole.DoubleBuffered || KConsoleBackBufferBytes() == 0ULL)
+    {
+        return 0;
+    }
+
+    before = gConsole.PresentCount;
+    KConsoleRenderVisible();
+    return gConsole.PresentCount > before;
+}
+
 int KConsoleRunScrollProof(void)
 {
     if (!gConsole.Available || gConsole.VisibleRows == 0U || gConsole.VisibleColumns == 0U)
@@ -923,5 +1042,8 @@ const KConsoleApi KConsole =
     KConsoleScrollToBottom,
     KConsoleVisibleRows,
     KConsoleVisibleColumns,
-    KConsoleScrollbackRows
+    KConsoleScrollbackRows,
+    KConsoleIsDoubleBuffered,
+    KConsoleBackBufferBytes,
+    KConsolePresentCount
 };

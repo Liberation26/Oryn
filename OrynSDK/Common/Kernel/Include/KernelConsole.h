@@ -28,6 +28,9 @@ typedef struct KConsoleApi
     unsigned int (*VisibleRows)(void);
     unsigned int (*VisibleColumns)(void);
     unsigned int (*ScrollbackRows)(void);
+    int (*IsDoubleBuffered)(void);
+    unsigned long long (*BackBufferBytes)(void);
+    unsigned int (*PresentCount)(void);
 } KConsoleApi;
 
 extern const KConsoleApi KConsole;
@@ -47,6 +50,10 @@ void KConsoleScrollToBottom(void);
 unsigned int KConsoleVisibleRows(void);
 unsigned int KConsoleVisibleColumns(void);
 unsigned int KConsoleScrollbackRows(void);
+int KConsoleIsDoubleBuffered(void);
+unsigned long long KConsoleBackBufferBytes(void);
+unsigned int KConsolePresentCount(void);
+int KConsoleRunDoubleBufferProof(void);
 int KConsoleRunScrollProof(void);
 
 #endif
