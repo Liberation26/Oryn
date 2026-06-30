@@ -6,12 +6,14 @@
 #include "KernelGdt.h"
 #include "KernelIdt.h"
 #include "KernelInterrupts.h"
+#include "KernelSysCallInterrupts.h"
 #include "KernelPic.h"
 #include "KernelApic.h"
 #include "KernelHpet.h"
 #include "KernelMemoryMap.h"
 #include "KernelPhysicalMemory.h"
 #include "KernelVirtualMemory.h"
+#include "SysCall.h"
 
 static OrynKernelMemoryMap gKernelMemoryMap;
 static OrynKernelPhysicalMemory gPhysicalMemory;
@@ -85,8 +87,16 @@ void KernelStart(const OrynBootInfo* bootInfo)
     OrynKernelGdtPrintProof();
     (void)OrynKernelIdtInit();
     (void)OrynKernelInterruptsInit();
+    OrynSysCallInit();
+    (void)OrynKernelSysCallInterruptsInit();
     OrynKernelIdtPrintProof();
     OrynKernelInterruptsPrintProof();
+    OrynSysCallPrintProof();
+    OrynKernelSysCallInterruptsPrintProof();
+    (void)OrynSysCallRunInternalProof();
+    (void)OrynKernelSysCallInterruptsRunProof();
+    OrynSysCallPrintRuntimeProof();
+    OrynKernelSysCallInterruptsPrintRuntimeProof();
     OrynKernelCpuDetect();
     OrynKernelCpuPrintFeatures();
     (void)OrynKernelPicInitAndDisable();

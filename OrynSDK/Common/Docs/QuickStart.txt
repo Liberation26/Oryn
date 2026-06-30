@@ -562,3 +562,40 @@ Expected proof lines include:
   [KERNEL] PASS: APIC timer interrupt fired through IDT dispatch.
   [KERNEL] PASS: APIC EOI path executed.
   [KERNEL] PASS: Interrupts work from PIC upward through APIC/APIC2.
+
+0.5.31 SysCalls: Get, Set, Event message packets
+------------------------------------------------
+Kernel-5 now initializes the common internal syscall core before the controller interrupt proofs.
+
+Internal kernel syscalls are exactly:
+
+  SysCallGet
+  SysCallSet
+  SysCallEvent
+
+Each call accepts an OrynSysCallPacket message packet. Platform compatibility layers translate external ABI numbers into those three packet calls:
+
+  Common/Kernel/Include/LinuxSysCall.h
+  Common/Kernel/Include/MSSysCall.h
+
+The UEFI x64 target owns only the receiving interrupt vectors:
+
+  0x80 LinuxSysCall compatibility vector
+  0x81 MSSysCall compatibility vector
+
+Unknown platform syscall numbers are not fatal. They are translated into a compatibility SysCallEvent packet and printed as DEBUG output so the missing syscall can be implemented later.
+
+Expected proof lines include:
+
+  [KERNEL] PASS: SysCall core initialized.
+  [KERNEL] PASS: SysCall message packet ABI ready.
+  [KERNEL] PASS: SysCallGet packet handled.
+  [KERNEL] PASS: SysCallSet packet handled.
+  [KERNEL] PASS: SysCallEvent packet handled.
+  [KERNEL] PASS: LinuxSysCall translator registered.
+  [KERNEL] PASS: MSSysCall translator registered.
+  [KERNEL] PASS: Linux syscall vector 0x80 received and translated.
+  [KERNEL] PASS: MS syscall vector 0x81 received and translated.
+  [KERNEL] PASS: Unknown syscall debug logging path executed.
+  [KERNEL] PASS: SysCalls use Get/Set/Event message packets.
+  [KERNEL] PASS: Platform syscalls translate into Get/Set/Event packets.

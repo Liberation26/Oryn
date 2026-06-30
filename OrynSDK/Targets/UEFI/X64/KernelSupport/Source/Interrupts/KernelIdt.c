@@ -5,6 +5,9 @@
 
 #define ORYN_IDT_PRESENT 0x80U
 #define ORYN_IDT_TYPE_INTERRUPT 0x0EU
+#define ORYN_IDT_DPL_USER 0x60U
+#define ORYN_IDT_LINUX_SYSCALL_VECTOR 0x80U
+#define ORYN_IDT_MS_SYSCALL_VECTOR 0x81U
 #define ORYN_IDT_DEFAULT_IST 0U
 #define ORYN_IDT_EXCEPTION_IST_MASK 0x07U
 #define ORYN_IDT_ASSERT(name, condition) typedef char name[(condition) ? 1 : -1]
@@ -164,6 +167,10 @@ static void SetGate(
     gIdt[vector].Selector = selector;
     gIdt[vector].Ist = ist & ORYN_IDT_EXCEPTION_IST_MASK;
     gIdt[vector].TypeAttributes = ORYN_IDT_PRESENT | ORYN_IDT_TYPE_INTERRUPT;
+    if (vector == ORYN_IDT_LINUX_SYSCALL_VECTOR || vector == ORYN_IDT_MS_SYSCALL_VECTOR)
+    {
+        gIdt[vector].TypeAttributes |= ORYN_IDT_DPL_USER;
+    }
     gIdt[vector].OffsetMiddle = (unsigned short)((address >> 16) & 0xFFFFULL);
     gIdt[vector].OffsetHigh = (unsigned int)((address >> 32) & 0xFFFFFFFFULL);
     gIdt[vector].Reserved = 0U;

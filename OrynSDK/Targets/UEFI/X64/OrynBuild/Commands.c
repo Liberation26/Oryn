@@ -65,6 +65,20 @@ static void WriteBootReport(
     int apic_irq_counters = TextContains(debug_text, "[KERNEL] PASS: APIC timer IRQ counter updated by interrupt dispatch.");
     int apic_eoi = TextContains(debug_text, "[KERNEL] PASS: APIC EOI path executed.");
     int interrupt_chain = TextContains(debug_text, "[KERNEL] PASS: Interrupts work from PIC upward through APIC/APIC2.");
+    int syscall_core = TextContains(debug_text, "[KERNEL] PASS: SysCall core initialized.");
+    int syscall_packet = TextContains(debug_text, "[KERNEL] PASS: SysCall message packet ABI ready.");
+    int syscall_get = TextContains(debug_text, "[KERNEL] PASS: SysCallGet packet handled.");
+    int syscall_set = TextContains(debug_text, "[KERNEL] PASS: SysCallSet packet handled.");
+    int syscall_event = TextContains(debug_text, "[KERNEL] PASS: SysCallEvent packet handled.");
+    int syscall_unknown = TextContains(debug_text, "[KERNEL] PASS: Unknown syscall debug logging path executed.");
+    int linux_translator = TextContains(debug_text, "[KERNEL] PASS: LinuxSysCall translator registered.");
+    int ms_translator = TextContains(debug_text, "[KERNEL] PASS: MSSysCall translator registered.");
+    int linux_vector = TextContains(debug_text, "[KERNEL] PASS: Linux syscall vector 0x80 received and translated.");
+    int ms_vector = TextContains(debug_text, "[KERNEL] PASS: MS syscall vector 0x81 received and translated.");
+    int unknown_linux = TextContains(debug_text, "[KERNEL] PASS: Unknown Linux syscall was reported as debug.");
+    int unknown_ms = TextContains(debug_text, "[KERNEL] PASS: Unknown MS syscall was reported as debug.");
+    int syscall_three = TextContains(debug_text, "[KERNEL] PASS: SysCalls use Get/Set/Event message packets.");
+    int platform_syscalls = TextContains(debug_text, "[KERNEL] PASS: Platform syscalls translate into Get/Set/Event packets.");
     int virtual_memory_started = TextContains(debug_text, "[KERNEL] Virtual memory: starting");
     int virtual_memory_required_mapped = TextContains(debug_text, "[KERNEL] Virtual memory: required ranges mapped");
     int virtual_memory_switching_cr3 = TextContains(debug_text, "[KERNEL] Virtual memory: switching CR3 to kernel-owned PML4");
@@ -83,7 +97,10 @@ static void WriteBootReport(
         pic_irq0 && pic_irq0_count && pic_eoi && apic_available && apic2_enabled &&
         local_apic_enabled && apic_timer_probe && hpet_rsdp && hpet_checksum &&
         hpet_table && hpet_enabled && hpet_counter && apic_timer_interrupt &&
-        apic_irq_counters && apic_eoi && interrupt_chain && debug_exit;
+        apic_irq_counters && apic_eoi && interrupt_chain && syscall_core &&
+        syscall_packet && syscall_get && syscall_set && syscall_event && syscall_unknown &&
+        linux_translator && ms_translator && linux_vector && ms_vector &&
+        unknown_linux && unknown_ms && syscall_three && platform_syscalls && debug_exit;
 
     FILE* file = fopen(report_path, "wb");
     if (file == 0)
@@ -150,6 +167,20 @@ static void WriteBootReport(
     fprintf(file, "  APIC timer IRQ counter updated: %s\n", PassFail(apic_irq_counters));
     fprintf(file, "  APIC EOI path executed: %s\n", PassFail(apic_eoi));
     fprintf(file, "  Interrupt chain PIC upward complete: %s\n", PassFail(interrupt_chain));
+    fprintf(file, "  SysCall core initialized: %s\n", PassFail(syscall_core));
+    fprintf(file, "  SysCall message packet ABI ready: %s\n", PassFail(syscall_packet));
+    fprintf(file, "  SysCallGet packet handled: %s\n", PassFail(syscall_get));
+    fprintf(file, "  SysCallSet packet handled: %s\n", PassFail(syscall_set));
+    fprintf(file, "  SysCallEvent packet handled: %s\n", PassFail(syscall_event));
+    fprintf(file, "  Unknown syscall debug log path: %s\n", PassFail(syscall_unknown));
+    fprintf(file, "  LinuxSysCall translator registered: %s\n", PassFail(linux_translator));
+    fprintf(file, "  MSSysCall translator registered: %s\n", PassFail(ms_translator));
+    fprintf(file, "  Linux syscall vector 0x80 translated: %s\n", PassFail(linux_vector));
+    fprintf(file, "  MS syscall vector 0x81 translated: %s\n", PassFail(ms_vector));
+    fprintf(file, "  Unknown Linux syscall debug report: %s\n", PassFail(unknown_linux));
+    fprintf(file, "  Unknown MS syscall debug report: %s\n", PassFail(unknown_ms));
+    fprintf(file, "  Internal SysCalls use Get/Set/Event packets: %s\n", PassFail(syscall_three));
+    fprintf(file, "  Platform syscalls translate to Get/Set/Event: %s\n", PassFail(platform_syscalls));
     fprintf(file, "  Kernel virtual memory started: %s\n", PassFail(virtual_memory_started));
     fprintf(file, "  Kernel virtual memory required ranges mapped: %s\n", PassFail(virtual_memory_required_mapped));
     fprintf(file, "  Kernel virtual memory CR3 switch requested: %s\n", PassFail(virtual_memory_switching_cr3));
@@ -235,6 +266,34 @@ static void WriteBootReport(
             "The APIC EOI path did not execute." :
         !interrupt_chain ?
             "The interrupt chain did not pass from PIC upward through APIC/APIC2." :
+        !syscall_core ?
+            "The internal SysCall core did not initialize." :
+        !syscall_packet ?
+            "The SysCall message-packet ABI was not prepared." :
+        !syscall_get ?
+            "SysCallGet did not handle its proof packet." :
+        !syscall_set ?
+            "SysCallSet did not handle its proof packet." :
+        !syscall_event ?
+            "SysCallEvent did not handle its proof packet." :
+        !syscall_unknown ?
+            "Unknown syscall debug logging did not run." :
+        !linux_translator ?
+            "LinuxSysCall.h translator was not registered." :
+        !ms_translator ?
+            "MSSysCall.h translator was not registered." :
+        !linux_vector ?
+            "The Linux syscall vector 0x80 did not translate into the internal syscall system." :
+        !ms_vector ?
+            "The MS syscall vector 0x81 did not translate into the internal syscall system." :
+        !unknown_linux ?
+            "Unknown Linux syscall reporting did not produce a debug path." :
+        !unknown_ms ?
+            "Unknown MS syscall reporting did not produce a debug path." :
+        !syscall_three ?
+            "The internal syscall proof did not use Get/Set/Event packets." :
+        !platform_syscalls ?
+            "Platform syscall compatibility did not translate into Get/Set/Event packets." :
         !virtual_memory_started ?
             "The kernel stopped before virtual-memory initialization." :
         !virtual_memory_required_mapped ?
@@ -511,6 +570,9 @@ int OrynRunQemu(const OrynProject* project)
         TextContains(debug_text, "[KERNEL] PASS: HPET counter advanced in probe.") &&
         TextContains(debug_text, "[KERNEL] PASS: APIC timer interrupt fired through IDT dispatch.") &&
         TextContains(debug_text, "[KERNEL] PASS: Interrupts work from PIC upward through APIC/APIC2.") &&
+        TextContains(debug_text, "[KERNEL] PASS: SysCalls use Get/Set/Event message packets.") &&
+        TextContains(debug_text, "[KERNEL] PASS: Platform syscalls translate into Get/Set/Event packets.") &&
+        TextContains(debug_text, "[KERNEL] PASS: Unknown syscall debug logging path executed.") &&
         !TextContains(debug_text, "[KERNEL] EXCEPTION:") &&
         TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success") && command_ok;
 

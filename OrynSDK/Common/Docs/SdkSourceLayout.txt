@@ -123,3 +123,21 @@ The interrupt dispatcher is target-owned UEFI x64 kernel support, not common cod
   Targets/UEFI/X64/KernelSupport/Source/Interrupts/KernelInterrupts.c
 
 The dispatcher is the bridge above the IDT stubs and below the controller-specific EOI paths. PIC IRQ0 is proven first, then the local APIC/APIC2 timer interrupt is proven.
+
+0.5.31 SysCall ownership
+------------------------
+The internal syscall ABI is common kernel support because Get/Set/Event message packets are target-neutral:
+
+  Common/Kernel/Include/SysCall.h
+  Common/Kernel/Include/LinuxSysCall.h
+  Common/Kernel/Include/MSSysCall.h
+  Common/Kernel/Source/SysCalls/SysCall.c
+  Common/Kernel/Source/SysCalls/LinuxSysCall.c
+  Common/Kernel/Source/SysCalls/MSSysCall.c
+
+The UEFI x64 target owns the interrupt-vector receive bridge only:
+
+  Targets/UEFI/X64/KernelSupport/Include/KernelSysCallInterrupts.h
+  Targets/UEFI/X64/KernelSupport/Source/Interrupts/KernelSysCallInterrupts.c
+
+IDT vectors 0x80 and 0x81 are marked callable from user privilege later, while the current Kernel-5 proof invokes them from kernel mode to validate translation and debug logging before a process/userland layer exists.
