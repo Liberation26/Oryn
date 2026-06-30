@@ -106,7 +106,8 @@ void CollectBootReportFacts(
     facts->screen_scroll_lines = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scroll up/down works.");
     facts->screen_page_scroll = TextContains(debug_text, "[KERNEL] PASS: Kernel screen page up/down works.");
     facts->screen_bottom = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scroll-to-bottom works.");
-    facts->screen_stable_proof = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scroll proof keeps visible output stable.");
+    facts->screen_stable_proof = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scroll proof keeps visible output stable.") ||
+        TextContains(debug_text, "[KERNEL] PASS: Kernel screen proof keeps visible output stable.");
     facts->screen_scrolling = TextContains(debug_text, "[KERNEL] PASS: Kernel screen scrolling implemented.");
     facts->screen_back_buffer = TextContains(debug_text, "[KERNEL] PASS: Kernel screen back buffer allocated.");
     facts->screen_renders_back = TextContains(debug_text, "[KERNEL] PASS: Kernel screen renders into back buffer first.");

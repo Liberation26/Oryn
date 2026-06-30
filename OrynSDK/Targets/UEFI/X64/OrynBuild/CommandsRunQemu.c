@@ -314,7 +314,8 @@ int OrynRunQemu(const OrynProject* project)
         TextContains(debug_text, "[KERNEL] PASS: Kernel screen uses fast scroll path after visible area is full.") &&
         TextContains(debug_text, "[KERNEL] PASS: Kernel screen refresh is line/scroll optimized.") &&
         TextContains(debug_text, "[KERNEL] PASS: Kernel screen line-buffered double buffering implemented.") &&
-        TextContains(debug_text, "[KERNEL] PASS: Kernel screen scroll proof keeps visible output stable.") &&
+        (TextContains(debug_text, "[KERNEL] PASS: Kernel screen scroll proof keeps visible output stable.") ||
+         TextContains(debug_text, "[KERNEL] PASS: Kernel screen proof keeps visible output stable.")) &&
         TextContains(debug_text, "[KERNEL] PASS: Kernel screen visible presents are atomic.") &&
         TextContains(debug_text, "[KERNEL] PASS: Physical allocator tracking capacity is sufficient.") &&
         (interactive_display ?

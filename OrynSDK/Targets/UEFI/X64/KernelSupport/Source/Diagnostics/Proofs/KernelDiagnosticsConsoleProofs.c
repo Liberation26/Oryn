@@ -32,7 +32,7 @@ static void OrynKernelDiagnosticsRunScreenScrollProof(void)
         KernelIoWriteString("[KERNEL] PASS: Kernel screen scroll up/down works.\n");
         KernelIoWriteString("[KERNEL] PASS: Kernel screen page up/down works.\n");
         KernelIoWriteString("[KERNEL] PASS: Kernel screen scroll-to-bottom works.\n");
-        KernelIoWriteString("[KERNEL] PASS: Kernel screen proof keeps visible output stable.\n");
+        KernelIoWriteString("[KERNEL] PASS: Kernel screen scroll proof keeps visible output stable.\n");
         KernelIoWriteString("[KERNEL] PASS: Kernel screen scrolling implemented.\n");
     }
     else
