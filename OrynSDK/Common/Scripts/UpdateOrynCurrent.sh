@@ -20,6 +20,45 @@ RequireCommand()
     fi
 }
 
+HashFileSha256()
+{
+    local file_path="$1"
+
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$file_path" | awk '{ print $1 }'
+        return ${PIPESTATUS[0]}
+    fi
+
+    if command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$file_path" | awk '{ print $1 }'
+        return ${PIPESTATUS[0]}
+    fi
+
+    if command -v openssl >/dev/null 2>&1; then
+        openssl dgst -sha256 "$file_path" | awk '{ print $NF }'
+        return ${PIPESTATUS[0]}
+    fi
+
+    return 127
+}
+
+FileSizeBytes()
+{
+    local file_path="$1"
+
+    if stat -c '%s' "$file_path" >/dev/null 2>&1; then
+        stat -c '%s' "$file_path"
+        return 0
+    fi
+
+    if stat -f '%z' "$file_path" >/dev/null 2>&1; then
+        stat -f '%z' "$file_path"
+        return 0
+    fi
+
+    wc -c < "$file_path" | tr -d ' '
+}
+
 
 AppendValidationReport()
 {
@@ -209,6 +248,158 @@ ValidateDeletedFilesManifest()
     ValidationOk "DeletedFiles.txt checked with $count delete entr$( [ "$count" -eq 1 ] && printf 'y' || printf 'ies' )."
 }
 
+ValidatePackageTreeManifest()
+{
+    local extract_root="$1"
+    local tree_name="$2"
+    local expected_version="$3"
+    local tree_root="$extract_root/$tree_name"
+    local manifest_path="$tree_root/PackageManifest.txt"
+    local manifest_failed=0
+    local declared_tree=""
+    local declared_version=""
+    local declared_count=""
+    local declared_bytes=""
+    local actual_count=0
+    local actual_bytes=0
+    local listed_file="$TempRoot/${tree_name}.manifest.listed"
+    local actual_file="$TempRoot/${tree_name}.manifest.actual"
+    local payload_file
+    local relative_path
+    local size_text
+    local hash_text
+    local actual_size
+    local actual_hash
+    local duplicate
+    local missing
+    local extra
+
+    if [ ! -d "$tree_root" ]; then
+        ValidationFail "$tree_name manifest cannot be checked because $tree_name is missing."
+        return 0
+    fi
+
+    if [ ! -f "$manifest_path" ]; then
+        ValidationFail "$tree_name/PackageManifest.txt is missing."
+        return 0
+    fi
+
+    declared_tree="$(sed -n 's/^Tree=//p' "$manifest_path" | head -n 1 | tr -d '\r')"
+    declared_version="$(sed -n 's/^PackageVersion=//p' "$manifest_path" | head -n 1 | tr -d '\r')"
+    declared_count="$(sed -n 's/^FileCount=//p' "$manifest_path" | head -n 1 | tr -d '\r')"
+    declared_bytes="$(sed -n 's/^TotalBytes=//p' "$manifest_path" | head -n 1 | tr -d '\r')"
+
+    if [ "$declared_tree" != "$tree_name" ]; then
+        ValidationFail "$tree_name manifest Tree value is '$declared_tree', expected '$tree_name'."
+        manifest_failed=1
+    fi
+
+    if [ -n "$expected_version" ] && [ "$declared_version" != "$expected_version" ]; then
+        ValidationFail "$tree_name manifest version is '$declared_version', expected '$expected_version'."
+        manifest_failed=1
+    fi
+
+    : > "$listed_file"
+    while IFS= read -r line || [ -n "$line" ]; do
+        line="${line%$'\r'}"
+        [ -n "$line" ] || continue
+        relative_path="${line%%$'\t'*}"
+        rest="${line#*$'\t'}"
+        size_text="${rest%%$'\t'*}"
+        hash_text="${rest#*$'\t'}"
+
+        if [ -z "$relative_path" ] || [ "$relative_path" = "$line" ] || [ "$size_text" = "$rest" ] || [ -z "$hash_text" ]; then
+            ValidationFail "$tree_name manifest contains malformed file row: $line"
+            manifest_failed=1
+            continue
+        fi
+
+        if [ "$relative_path" = "PackageManifest.txt" ] || PackagePathIsUnsafe "$relative_path"; then
+            ValidationFail "$tree_name manifest contains unsafe file path: $relative_path"
+            manifest_failed=1
+            continue
+        fi
+
+        payload_file="$tree_root/$relative_path"
+        if [ ! -f "$payload_file" ]; then
+            ValidationFail "$tree_name manifest lists missing file: $relative_path"
+            manifest_failed=1
+            continue
+        fi
+
+        actual_size="$(FileSizeBytes "$payload_file")"
+        if [ "$actual_size" != "$size_text" ]; then
+            ValidationFail "$tree_name manifest size mismatch for $relative_path: manifest $size_text, actual $actual_size"
+            manifest_failed=1
+            continue
+        fi
+
+        actual_hash="$(HashFileSha256 "$payload_file" 2>/dev/null || true)"
+        if [ -z "$actual_hash" ]; then
+            ValidationFail "$tree_name manifest hash check could not run for $relative_path. Install sha256sum, shasum, or openssl."
+            manifest_failed=1
+            continue
+        fi
+
+        if [ "$actual_hash" != "$hash_text" ]; then
+            ValidationFail "$tree_name manifest sha256 mismatch for $relative_path."
+            manifest_failed=1
+            continue
+        fi
+
+        printf '%s\n' "$relative_path" >> "$listed_file"
+    done < <(awk 'BEGIN { in_files = 0 } { sub(/\r$/, "") } /^Files:$/ { in_files = 1; next } in_files == 1 { print }' "$manifest_path")
+
+    sort "$listed_file" -o "$listed_file"
+    duplicate="$(uniq -d "$listed_file" | head -n 1)"
+    if [ -n "$duplicate" ]; then
+        ValidationFail "$tree_name manifest contains duplicate file row: $duplicate"
+        manifest_failed=1
+    fi
+
+    (cd "$tree_root" && find . -type f ! -name 'PackageManifest.txt' -printf '%P\n' | sort) > "$actual_file"
+    actual_count="$(wc -l < "$actual_file" | tr -d ' ')"
+    actual_bytes="$(cd "$tree_root" && find . -type f ! -name 'PackageManifest.txt' -printf '%s\n' | awk '{ total += $1 } END { print total + 0 }')"
+
+    missing="$(comm -23 "$actual_file" "$listed_file" | head -n 1)"
+    extra="$(comm -13 "$actual_file" "$listed_file" | head -n 1)"
+
+    if [ -n "$missing" ]; then
+        ValidationFail "$tree_name manifest does not list payload file: $missing"
+        manifest_failed=1
+    fi
+
+    if [ -n "$extra" ]; then
+        ValidationFail "$tree_name manifest lists file not present in payload scan: $extra"
+        manifest_failed=1
+    fi
+
+    if [ -n "$declared_count" ] && [ "$declared_count" != "$actual_count" ]; then
+        ValidationFail "$tree_name manifest FileCount mismatch: manifest $declared_count, actual $actual_count"
+        manifest_failed=1
+    fi
+
+    if [ -n "$declared_bytes" ] && [ "$declared_bytes" != "$actual_bytes" ]; then
+        ValidationFail "$tree_name manifest TotalBytes mismatch: manifest $declared_bytes, actual $actual_bytes"
+        manifest_failed=1
+    fi
+
+    if [ "$manifest_failed" -eq 0 ]; then
+        ValidationOk "$tree_name/PackageManifest.txt verified $actual_count files and $actual_bytes bytes."
+    fi
+}
+
+ValidateUpdatePackageManifests()
+{
+    local extract_root="$1"
+    local selected_version="$2"
+    local expected
+
+    expected="$(SelectedPackageBaseVersion "$selected_version")"
+    ValidatePackageTreeManifest "$extract_root" "FullSource" "$expected"
+    ValidatePackageTreeManifest "$extract_root" "ChangedFiles" "$expected"
+}
+
 ValidateVersionFiles()
 {
     local extract_root="$1"
@@ -309,6 +500,7 @@ ValidatePackageBeforeCopy()
     ValidateCriticalSdkFiles "$extract_root"
     ValidateModePayload "$extract_root" "$mode"
     ValidateVersionFiles "$extract_root" "$selected_version"
+    ValidateUpdatePackageManifests "$extract_root" "$selected_version"
     ValidateNoNestedPackageRoots "$extract_root"
     ValidateDeletedFilesManifest "$extract_root"
 

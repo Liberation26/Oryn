@@ -301,8 +301,17 @@ Package self-validation:
 - The validation report is written as PackageSelfValidationReport.txt in the temporary updater folder for that run.
 
 
-0.5.82 bootstrap archive resolver fix:
+0.5.83 bootstrap archive resolver fix:
 - ChangedFiles must include the native build resolver source files, not only updater files.
 - BuildArchivePaths.c is required because BuildArchiveCompile.c, BuildArchiveManifest.c, and BuildModuleAdd.c call BuildArchiveDirectory/BuildArchivePath during native tool bootstrap.
 - BuildOryn.sh now checks for critical archive resolver sources before invoking clang so missing update payloads fail with a clear SDK diagnostic instead of an undefined linker symbol.
 - Package self-validation now requires the archive resolver implementation files in FullSource before any copy step.
+
+0.5.83 package manifest rule
+---------------------------
+Every update package now carries two root manifests:
+
+- FullSource/PackageManifest.txt
+- ChangedFiles/PackageManifest.txt
+
+Each manifest records the package version, owning tree, file count, total payload bytes, and one row for every regular payload file in that tree. The updater validates both manifests before copying any file. A mismatch in path safety, missing files, extra files, duplicate rows, file size, or sha256 stops the update before the SDK tree is touched.

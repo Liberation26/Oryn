@@ -1,6 +1,6 @@
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.82
-Updated from package: 0.5.82 Bootstrap Archive Resolver Fix
+Version: 0.5.83
+Updated from package: 0.5.83 Bootstrap Archive Resolver Fix
 Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
@@ -478,3 +478,8 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [ OK ] Prerequisite filling is now a native SDK app/command.
        Use `oryn prerequisites check`, `oryn prerequisites plan`, `oryn prerequisites install`, or `oryn prerequisites manifest`.
        The command detects apt, dnf, pacman, zypper, Homebrew, and winget providers, reports exact missing tools, builds an install command, supports the old FillPrerequisites.sh wrapper, and writes Common/Reports/PrerequisitesReport.txt.
+
+[ OK ] 0.5.83 Add update package manifest for FullSource and ChangedFiles.
+       FullSource/PackageManifest.txt and ChangedFiles/PackageManifest.txt are generated for each package tree.
+       Updater validates manifest tree name, package version, file count, byte count, listed paths, file sizes, and sha256 values before copy.
+       Missing, extra, duplicate, unsafe, or corrupted payload files now fail closed before SDK/project updates.
