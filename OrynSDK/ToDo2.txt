@@ -1,3 +1,5 @@
+Oryn WSL SDK ToDo2 - 0.5.107
+
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
 Version: 0.5.104
 Updated from package: 0.5.104 User Copy Demand Paging and Page Ownership
@@ -616,7 +618,7 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [WARN] Full user process lifecycle integration, page eviction, copy-on-write, and mmap-backed file regions remain future work.
 
 
-0.5.106 - Process/thread and scheduler-ready stack foundation
+0.5.107 - Process/thread and scheduler-ready stack foundation
 [ OK ] Add process/thread structures that bind to per-process address spaces.
 [ OK ] Add scheduler-ready kernel thread stack allocation through guarded heap/VM helpers.
 [ OK ] Add Process and Scheduler modules to generated module manifests.
@@ -624,3 +626,6 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 
 [ OK ] Fix VM manifest readiness before Process/Scheduler start policy.
        VirtualMemory is now marked ready immediately after the VM proof succeeds, before Process/Scheduler prerequisite checks run.
+
+[ OK ] 0.5.107: Process manifest state is marked ready before Scheduler prerequisite checks.
+       Scheduler no longer fails with "missing prerequisite: Process" after Process proof succeeds.

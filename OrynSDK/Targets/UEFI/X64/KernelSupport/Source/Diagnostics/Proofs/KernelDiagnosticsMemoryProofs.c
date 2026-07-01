@@ -107,20 +107,44 @@ static void OrynKernelDiagnosticsRunVirtualMemoryProof(const OrynBootInfo* kerne
             (void)OrynKernelLifecycleTransition(OrynKernelLifecycleVirtualMemoryReady);
             OrynKernelModuleManifestReady(OrynKernelModuleVirtualMemory);
 
-            if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleProcess) &&
-                OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleScheduler))
+            if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleProcess))
             {
                 if (OrynKernelProcessRunSelfTest(&gPhysicalMemory))
                 {
+                    /*
+                     * Scheduler depends on Process.  Mark Process ready as
+                     * soon as its address-space and guarded kernel-thread
+                     * proof succeeds, then evaluate Scheduler selection.
+                     * This keeps manifest policy ordered by real state instead
+                     * of checking both modules while Process is still starting.
+                     */
                     OrynKernelModuleManifestReady(OrynKernelModuleProcess);
-                    OrynKernelModuleManifestReady(OrynKernelModuleScheduler);
                     OrynKernelProcessPrintProof();
+
+                    if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleScheduler))
+                    {
+                        const OrynKernelProcessStats* processStats = OrynKernelProcessGetStats();
+                        if (processStats != 0 &&
+                            processStats->SchedulerReadyThreadCount > 0U &&
+                            processStats->KernelThreadStackCount > 0U)
+                        {
+                            OrynKernelModuleManifestReady(OrynKernelModuleScheduler);
+                        }
+                        else
+                        {
+                            OrynKernelModuleManifestFailed(OrynKernelModuleScheduler);
+                            OrynKernelScreenReportFail(0, "Scheduler-ready stack proof failed.");
+                        }
+                    }
                 }
                 else
                 {
                     OrynKernelModuleManifestFailed(OrynKernelModuleProcess);
-                    OrynKernelModuleManifestFailed(OrynKernelModuleScheduler);
                     OrynKernelScreenReportFail(0, "Process/thread scheduler stack proof failed.");
+                    if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleScheduler))
+                    {
+                        OrynKernelModuleManifestFailed(OrynKernelModuleScheduler);
+                    }
                 }
             }
         }
