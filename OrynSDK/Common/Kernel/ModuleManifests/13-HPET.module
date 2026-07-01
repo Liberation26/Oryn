@@ -1,0 +1,5 @@
+Order=13
+Id=OrynKernelModuleHpet
+Name=HPET
+Items=ACPI HPET table, MMIO base, main counter
+Requires=OrynKernelModuleBootInfo,OrynKernelModuleInterrupts

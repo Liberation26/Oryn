@@ -1,0 +1,5 @@
+Order=00
+Id=OrynKernelModuleBootInfo
+Name=BootInfo
+Items=ABI, checksum, command line, memory map, framebuffer
+Requires=

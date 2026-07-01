@@ -1,0 +1,5 @@
+Order=09
+Id=OrynKernelModuleCpu
+Name=CPU
+Items=CPUID vendor, APIC, x2APIC, TSC deadline
+Requires=

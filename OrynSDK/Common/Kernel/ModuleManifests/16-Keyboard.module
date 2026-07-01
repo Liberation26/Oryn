@@ -1,0 +1,5 @@
+Order=16
+Id=OrynKernelModuleKeyboard
+Name=Keyboard
+Items=IRQ1, scan decoder, scroll keys, release state
+Requires=OrynKernelModuleConsole,OrynKernelModuleInterrupts,OrynKernelModulePic

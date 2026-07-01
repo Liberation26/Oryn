@@ -1,0 +1,5 @@
+Order=10
+Id=OrynKernelModulePic
+Name=PIC
+Items=remap, masks, IRQ0 proof, EOI
+Requires=OrynKernelModuleCpu,OrynKernelModuleInterrupts

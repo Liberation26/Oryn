@@ -1,0 +1,5 @@
+Order=17
+Id=OrynKernelModuleFat32
+Name=FAT32
+Items=BPB, FSInfo, FAT, clusters, directories, files
+Requires=OrynKernelModuleConsole

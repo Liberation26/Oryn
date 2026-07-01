@@ -1,0 +1,5 @@
+Order=19
+Id=OrynKernelModulePhysicalMemory
+Name=PhysicalMemory
+Items=usable pages, free list, allocation proof
+Requires=OrynKernelModuleBootInfo

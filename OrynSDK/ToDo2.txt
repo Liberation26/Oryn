@@ -1,6 +1,6 @@
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.88
-Updated from package: 0.5.88 FAT32 VFS Production Foundation
+Version: 0.5.90
+Updated from package: 0.5.90 FAT32 Formatter Mount Validation Fix
 Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
@@ -506,3 +506,15 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [ OK ] VFS now normalizes paths, rejects backslash and dot/dot-dot traversal, chooses the longest matching mount prefix, blocks duplicate mounts, and exposes VFS status reporting.
 [ OK ] Added OrynFat32CheckVolume, OrynFat32Flush, OrynFat32GetFreeClusterEstimate, OrynFat32ValidatePath, OrynFat32LastStatus, OrynVfsNormalizePath, and OrynVfsLastStatus.
 [WARN] Long filename support, journaling, permissions, caching, real device hotplug, fsck repair, and full POSIX file descriptors are still future filesystem layers, not claimed complete in this step.
+0.5.90 FAT32 formatter mount validation fix:
+[ OK ] Fixed formatter/mounter mismatch that caused the kernel FAT32/VFS proof to fail immediately after formatting.
+[ OK ] Formatter now writes a valid FAT32 media descriptor before mount validation.
+[ OK ] Formatter now writes backup boot and FSInfo sectors for the declared backup locations.
+[ OK ] Native build still links Kernel-5.elf from resolved module archives.
+
+
+[ OK ] 0.5.90 generated module manifests.
+       Kernel module metadata now comes from per-module files in Common/Kernel/ModuleManifests.
+       The native build regenerates KernelModuleManifest.h and KernelModuleManifestData.c before compiling the kernel.
+       Build/Plan/KernelModuleManifestGeneration.txt records the manifest source files and generated outputs.
+       Static hand-maintained C module tables are no longer the source of truth.

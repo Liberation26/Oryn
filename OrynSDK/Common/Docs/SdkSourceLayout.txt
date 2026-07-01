@@ -346,3 +346,13 @@ Each manifest records the package version, owning tree, file count, total payloa
 - FAT32 write paths now preserve FAT high bits, mirror FAT copies, track free-space hints, truncate freed chains, and protect non-empty directories.
 - VFS now normalizes paths, rejects traversal/backslash forms, chooses the longest matching mount, and exposes last-status reporting.
 - This is the production foundation for the in-kernel filesystem path; long filenames, journaling, and POSIX file descriptors remain separate future layers.
+0.5.90 FAT32 formatter mount validation fix notes:
+- Kernel FAT32/VFS proof images now carry the FAT32 media descriptor required by production mount validation.
+- The formatter mirrors boot and FSInfo sectors to the declared backup sector locations before the mount proof runs.
+- The fix specifically covers the formatter-created-valid-volume followed by mount-validation-failed regression in 0.5.88.
+
+
+Generated kernel module manifests:
+- Common/Kernel/ModuleManifests/*.module is the source of truth for kernel module ID, name, item list, and prerequisite list.
+- The native build regenerates Common/Kernel/Include/KernelModuleManifest.h and Common/Kernel/Source/Manifest/KernelModuleManifestData.c before kernel compile.
+- Build/Plan/KernelModuleManifestGeneration.txt proves the generated table source and output paths for each build.

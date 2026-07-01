@@ -41,6 +41,7 @@ int OrynFat32FormatMemoryImage(uint8_t* image, uint32_t sector_count, const char
     boot[13] = 1U;
     Fat32Write16(boot, 14U, (uint16_t)reserved);
     boot[16] = (uint8_t)fat_count;
+    boot[21] = 0xF8U;
     Fat32Write32(boot, 32U, sector_count);
     Fat32Write32(boot, 36U, fat_size);
     Fat32Write32(boot, 44U, root_cluster);
@@ -60,6 +61,9 @@ int OrynFat32FormatMemoryImage(uint8_t* image, uint32_t sector_count, const char
     Fat32Write32(fsinfo, 492U, 3U);
     fsinfo[510] = 0x55U;
     fsinfo[511] = 0xAAU;
+
+    OrynMemcpy(image + (6U * ORYN_FAT32_SECTOR_SIZE), boot, ORYN_FAT32_SECTOR_SIZE);
+    OrynMemcpy(image + (7U * ORYN_FAT32_SECTOR_SIZE), fsinfo, ORYN_FAT32_SECTOR_SIZE);
 
     fat0 = image + (reserved * ORYN_FAT32_SECTOR_SIZE);
     fat1 = fat0 + (fat_size * ORYN_FAT32_SECTOR_SIZE);

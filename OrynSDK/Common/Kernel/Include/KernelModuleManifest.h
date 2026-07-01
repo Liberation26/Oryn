@@ -1,29 +1,31 @@
 #ifndef ORYN_KERNEL_MODULE_MANIFEST_H
 #define ORYN_KERNEL_MODULE_MANIFEST_H
 
+/* Generated from Common/Kernel/ModuleManifests/*.module. Do not hand-edit module tables here. */
+
 typedef enum OrynKernelModuleId
 {
     OrynKernelModuleBootInfo = 0,
-    OrynKernelModuleScreenReport,
-    OrynKernelModuleLibC,
-    OrynKernelModuleLifecycle,
-    OrynKernelModulePanic,
-    OrynKernelModuleGdt,
-    OrynKernelModuleIdt,
-    OrynKernelModuleInterrupts,
-    OrynKernelModuleSysCalls,
-    OrynKernelModuleCpu,
-    OrynKernelModulePic,
-    OrynKernelModuleApic,
-    OrynKernelModuleSmp,
-    OrynKernelModuleHpet,
-    OrynKernelModulePci,
-    OrynKernelModuleConsole,
-    OrynKernelModuleKeyboard,
-    OrynKernelModuleFat32,
-    OrynKernelModuleVfs,
-    OrynKernelModulePhysicalMemory,
-    OrynKernelModuleVirtualMemory,
+    OrynKernelModuleScreenReport = 1,
+    OrynKernelModuleLibC = 2,
+    OrynKernelModuleLifecycle = 3,
+    OrynKernelModulePanic = 4,
+    OrynKernelModuleGdt = 5,
+    OrynKernelModuleIdt = 6,
+    OrynKernelModuleInterrupts = 7,
+    OrynKernelModuleSysCalls = 8,
+    OrynKernelModuleCpu = 9,
+    OrynKernelModulePic = 10,
+    OrynKernelModuleApic = 11,
+    OrynKernelModuleSmp = 12,
+    OrynKernelModuleHpet = 13,
+    OrynKernelModulePci = 14,
+    OrynKernelModuleConsole = 15,
+    OrynKernelModuleKeyboard = 16,
+    OrynKernelModuleFat32 = 17,
+    OrynKernelModuleVfs = 18,
+    OrynKernelModulePhysicalMemory = 19,
+    OrynKernelModuleVirtualMemory = 20,
     OrynKernelModuleCount
 } OrynKernelModuleId;
 

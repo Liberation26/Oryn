@@ -1,0 +1,5 @@
+Order=18
+Id=OrynKernelModuleVfs
+Name=VFS
+Items=root mount, stat, read, write, delete, list
+Requires=OrynKernelModuleFat32

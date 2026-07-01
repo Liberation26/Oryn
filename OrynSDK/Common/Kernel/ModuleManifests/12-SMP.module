@@ -1,0 +1,5 @@
+Order=12
+Id=OrynKernelModuleSmp
+Name=SMP
+Items=MADT topology, AP trampoline, INIT/SIPI
+Requires=OrynKernelModuleApic

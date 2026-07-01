@@ -1,0 +1,5 @@
+Order=05
+Id=OrynKernelModuleGdt
+Name=GDT
+Items=kernel code/data selectors, TSS descriptor, IST stack
+Requires=

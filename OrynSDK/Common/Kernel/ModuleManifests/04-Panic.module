@@ -1,0 +1,5 @@
+Order=04
+Id=OrynKernelModulePanic
+Name=Panic
+Items=panic begin, report, active state, halt
+Requires=OrynKernelModuleBootInfo
