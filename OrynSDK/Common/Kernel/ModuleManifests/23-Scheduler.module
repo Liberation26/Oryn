@@ -8,3 +8,7 @@ CompiledIn=Yes
 Required=No
 FatalOnMissingPrerequisite=Yes
 Select=BootInfoMemoryMap,BootInfoKernelRange
+
+StopCallback=OrynKernelModuleDefaultStop
+PanicCallback=OrynKernelModuleDefaultPanic
+ShutdownCallback=OrynKernelModuleDefaultShutdown

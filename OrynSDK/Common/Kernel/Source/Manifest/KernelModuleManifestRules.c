@@ -134,6 +134,124 @@ void OrynKernelModuleManifestFailed(OrynKernelModuleId id)
     }
 }
 
+int OrynKernelModuleManifestHasLifecycleCallbacks(OrynKernelModuleId id)
+{
+    const OrynKernelModuleManifestItem* item = OrynKernelModuleManifestGet(id);
+    return (item && item->StopCallback && item->PanicCallback && item->ShutdownCallback &&
+        item->StopCallbackName && item->PanicCallbackName && item->ShutdownCallbackName) ? 1 : 0;
+}
+
+static int ShouldRunLifecycleCallback(const OrynKernelModuleManifestItem* item)
+{
+    if (!item || !item->CompiledIn)
+    {
+        return 0;
+    }
+
+    if (item->State == OrynKernelModuleStateAbsent || item->State == OrynKernelModuleStateSkipped ||
+        item->State == OrynKernelModuleStateStopped || item->State == OrynKernelModuleStateShutdown)
+    {
+        return 0;
+    }
+
+    return 1;
+}
+
+int OrynKernelModuleManifestStop(OrynKernelModuleId id)
+{
+    OrynKernelModuleManifestItem* item = OrynKernelModuleManifestMutable(id);
+    if (!ShouldRunLifecycleCallback(item))
+    {
+        return 0;
+    }
+
+    item->State = OrynKernelModuleStateStopping;
+    if (!item->StopCallback || !item->StopCallback(id))
+    {
+        item->State = OrynKernelModuleStateFailed;
+        return 0;
+    }
+
+    item->State = OrynKernelModuleStateStopped;
+    return 1;
+}
+
+int OrynKernelModuleManifestPanic(OrynKernelModuleId id)
+{
+    OrynKernelModuleManifestItem* item = OrynKernelModuleManifestMutable(id);
+    if (!ShouldRunLifecycleCallback(item))
+    {
+        return 0;
+    }
+
+    item->State = OrynKernelModuleStatePanic;
+    if (!item->PanicCallback || !item->PanicCallback(id))
+    {
+        item->State = OrynKernelModuleStateFailed;
+        return 0;
+    }
+
+    return 1;
+}
+
+int OrynKernelModuleManifestShutdown(OrynKernelModuleId id)
+{
+    OrynKernelModuleManifestItem* item = OrynKernelModuleManifestMutable(id);
+    if (!ShouldRunLifecycleCallback(item))
+    {
+        return 0;
+    }
+
+    item->State = OrynKernelModuleStateShuttingDown;
+    if (!item->ShutdownCallback || !item->ShutdownCallback(id))
+    {
+        item->State = OrynKernelModuleStateFailed;
+        return 0;
+    }
+
+    item->State = OrynKernelModuleStateShutdown;
+    return 1;
+}
+
+unsigned int OrynKernelModuleManifestInvokeStopCallbacks(void)
+{
+    unsigned int count = 0U;
+    for (int index = (int)OrynKernelModuleCount - 1; index >= 0; --index)
+    {
+        if (OrynKernelModuleManifestStop((OrynKernelModuleId)index))
+        {
+            ++count;
+        }
+    }
+    return count;
+}
+
+unsigned int OrynKernelModuleManifestInvokePanicCallbacks(void)
+{
+    unsigned int count = 0U;
+    for (int index = (int)OrynKernelModuleCount - 1; index >= 0; --index)
+    {
+        if (OrynKernelModuleManifestPanic((OrynKernelModuleId)index))
+        {
+            ++count;
+        }
+    }
+    return count;
+}
+
+unsigned int OrynKernelModuleManifestInvokeShutdownCallbacks(void)
+{
+    unsigned int count = 0U;
+    for (int index = (int)OrynKernelModuleCount - 1; index >= 0; --index)
+    {
+        if (OrynKernelModuleManifestShutdown((OrynKernelModuleId)index))
+        {
+            ++count;
+        }
+    }
+    return count;
+}
+
 const char* OrynKernelModuleManifestStateName(OrynKernelModuleState state)
 {
     switch (state)
@@ -143,6 +261,11 @@ const char* OrynKernelModuleManifestStateName(OrynKernelModuleState state)
         case OrynKernelModuleStateSelected: return "selected";
         case OrynKernelModuleStateStarting: return "starting";
         case OrynKernelModuleStateReady: return "ready";
+        case OrynKernelModuleStateStopping: return "stopping";
+        case OrynKernelModuleStateStopped: return "stopped";
+        case OrynKernelModuleStatePanic: return "panic";
+        case OrynKernelModuleStateShuttingDown: return "shutting-down";
+        case OrynKernelModuleStateShutdown: return "shutdown";
         case OrynKernelModuleStateSkipped: return "skipped";
         case OrynKernelModuleStateFailed: return "failed";
         default: return "unknown";

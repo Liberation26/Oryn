@@ -16,6 +16,9 @@ typedef struct OrynKernelModuleManifestSource
     int CompiledIn;
     int Required;
     int FatalOnMissingPrerequisite;
+    char StopCallback[128];
+    char PanicCallback[128];
+    char ShutdownCallback[128];
     char Path[ORYN_MAX_PATH];
 } OrynKernelModuleManifestSource;
 
@@ -110,6 +113,30 @@ static int IsSafeSelectionText(const char* text)
     return 1;
 }
 
+
+static int IsSafeCallbackSymbol(const char* text)
+{
+    if (text == 0 || text[0] == 0)
+    {
+        return 0;
+    }
+
+    if (!(isalpha((unsigned char)text[0]) || text[0] == '_'))
+    {
+        return 0;
+    }
+
+    for (const char* cursor = text; *cursor != 0; ++cursor)
+    {
+        if (!isalnum((unsigned char)*cursor) && *cursor != '_')
+        {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 static int ParseKernelModuleManifestFile(const char* path, OrynKernelModuleManifestSource* output)
 {
     memset(output, 0, sizeof(*output));
@@ -118,6 +145,9 @@ static int ParseKernelModuleManifestFile(const char* path, OrynKernelModuleManif
     output->Required = 0;
     output->FatalOnMissingPrerequisite = 0;
     snprintf(output->Select, sizeof(output->Select), "Always");
+    snprintf(output->StopCallback, sizeof(output->StopCallback), "OrynKernelModuleDefaultStop");
+    snprintf(output->PanicCallback, sizeof(output->PanicCallback), "OrynKernelModuleDefaultPanic");
+    snprintf(output->ShutdownCallback, sizeof(output->ShutdownCallback), "OrynKernelModuleDefaultShutdown");
 
     FILE* file = fopen(path, "r");
     if (!file)
@@ -170,6 +200,18 @@ static int ParseKernelModuleManifestFile(const char* path, OrynKernelModuleManif
         {
             snprintf(output->Select, sizeof(output->Select), "%s", line + 7);
         }
+        else if (StartsWithText(line, "StopCallback="))
+        {
+            snprintf(output->StopCallback, sizeof(output->StopCallback), "%s", line + 13);
+        }
+        else if (StartsWithText(line, "PanicCallback="))
+        {
+            snprintf(output->PanicCallback, sizeof(output->PanicCallback), "%s", line + 14);
+        }
+        else if (StartsWithText(line, "ShutdownCallback="))
+        {
+            snprintf(output->ShutdownCallback, sizeof(output->ShutdownCallback), "%s", line + 17);
+        }
     }
 
     fclose(file);
@@ -180,7 +222,10 @@ static int ParseKernelModuleManifestFile(const char* path, OrynKernelModuleManif
     }
 
     if (!IsSafeManifestId(output->Id) || !IsSafeDisplayText(output->Name) || !IsSafeDisplayText(output->Items) ||
-        !IsSafeSelectionText(output->Select))
+        !IsSafeSelectionText(output->Select) ||
+        !IsSafeCallbackSymbol(output->StopCallback) ||
+        !IsSafeCallbackSymbol(output->PanicCallback) ||
+        !IsSafeCallbackSymbol(output->ShutdownCallback))
     {
         return 0;
     }
@@ -348,9 +393,15 @@ static int WriteKernelModuleManifestHeader(const OrynProject* project, const Ory
     fprintf(file, "    OrynKernelModuleStateSelected,\n");
     fprintf(file, "    OrynKernelModuleStateStarting,\n");
     fprintf(file, "    OrynKernelModuleStateReady,\n");
+    fprintf(file, "    OrynKernelModuleStateStopping,\n");
+    fprintf(file, "    OrynKernelModuleStateStopped,\n");
+    fprintf(file, "    OrynKernelModuleStatePanic,\n");
+    fprintf(file, "    OrynKernelModuleStateShuttingDown,\n");
+    fprintf(file, "    OrynKernelModuleStateShutdown,\n");
     fprintf(file, "    OrynKernelModuleStateSkipped,\n");
     fprintf(file, "    OrynKernelModuleStateFailed\n");
     fprintf(file, "} OrynKernelModuleState;\n\n");
+    fprintf(file, "typedef int (*OrynKernelModuleLifecycleCallback)(OrynKernelModuleId id);\n\n");
     fprintf(file, "typedef struct OrynKernelModuleManifestItem\n{\n");
     fprintf(file, "    OrynKernelModuleId Id;\n");
     fprintf(file, "    const char* Name;\n");
@@ -361,6 +412,12 @@ static int WriteKernelModuleManifestHeader(const OrynProject* project, const Ory
     fprintf(file, "    int CompiledIn;\n");
     fprintf(file, "    int Required;\n");
     fprintf(file, "    int FatalOnMissingPrerequisite;\n");
+    fprintf(file, "    const char* StopCallbackName;\n");
+    fprintf(file, "    const char* PanicCallbackName;\n");
+    fprintf(file, "    const char* ShutdownCallbackName;\n");
+    fprintf(file, "    OrynKernelModuleLifecycleCallback StopCallback;\n");
+    fprintf(file, "    OrynKernelModuleLifecycleCallback PanicCallback;\n");
+    fprintf(file, "    OrynKernelModuleLifecycleCallback ShutdownCallback;\n");
     fprintf(file, "    OrynKernelModuleState State;\n");
     fprintf(file, "} OrynKernelModuleManifestItem;\n\n");
     fprintf(file, "typedef struct OrynKernelCompiledModuleRecord\n{\n");
@@ -383,6 +440,17 @@ static int WriteKernelModuleManifestHeader(const OrynProject* project, const Ory
     fprintf(file, "void OrynKernelModuleManifestReady(OrynKernelModuleId id);\n");
     fprintf(file, "void OrynKernelModuleManifestSkipped(OrynKernelModuleId id);\n");
     fprintf(file, "void OrynKernelModuleManifestFailed(OrynKernelModuleId id);\n");
+    fprintf(file, "int OrynKernelModuleDefaultStop(OrynKernelModuleId id);\n");
+    fprintf(file, "int OrynKernelModuleDefaultPanic(OrynKernelModuleId id);\n");
+    fprintf(file, "int OrynKernelModuleDefaultShutdown(OrynKernelModuleId id);\n");
+    fprintf(file, "int OrynKernelModuleManifestHasLifecycleCallbacks(OrynKernelModuleId id);\n");
+    fprintf(file, "int OrynKernelModuleManifestStop(OrynKernelModuleId id);\n");
+    fprintf(file, "int OrynKernelModuleManifestPanic(OrynKernelModuleId id);\n");
+    fprintf(file, "int OrynKernelModuleManifestShutdown(OrynKernelModuleId id);\n");
+    fprintf(file, "unsigned int OrynKernelModuleManifestInvokeStopCallbacks(void);\n");
+    fprintf(file, "unsigned int OrynKernelModuleManifestInvokePanicCallbacks(void);\n");
+    fprintf(file, "unsigned int OrynKernelModuleManifestInvokeShutdownCallbacks(void);\n");
+    fprintf(file, "void OrynKernelModuleManifestCallbackProof(void);\n");
     fprintf(file, "const char* OrynKernelModuleManifestStateName(OrynKernelModuleState state);\n");
     fprintf(file, "unsigned int OrynKernelCompiledModuleCount(void);\n");
     fprintf(file, "const OrynKernelCompiledModuleRecord* OrynKernelCompiledModuleGet(unsigned int index);\n");
@@ -406,6 +474,9 @@ static int WriteKernelModuleManifestData(const OrynProject* project, const OrynK
 
     fprintf(file, "#include \"KernelModuleManifest.h\"\n\n");
     fprintf(file, "/* Generated from kernel module manifest files. Do not hand-edit module tables here. */\n\n");
+    fprintf(file, "int OrynKernelModuleDefaultStop(OrynKernelModuleId id)\n{\n    (void)id;\n    return 1;\n}\n\n");
+    fprintf(file, "int OrynKernelModuleDefaultPanic(OrynKernelModuleId id)\n{\n    (void)id;\n    return 1;\n}\n\n");
+    fprintf(file, "int OrynKernelModuleDefaultShutdown(OrynKernelModuleId id)\n{\n    (void)id;\n    return 1;\n}\n\n");
     fprintf(file, "static OrynKernelModuleManifestItem gKernelModuleManifest[OrynKernelModuleCount];\n");
     fprintf(file, "static OrynKernelCompiledModuleRecord gCompiledKernelModules[OrynKernelModuleCount];\n\n");
     fprintf(file, "static void SetModule(\n");
@@ -417,7 +488,13 @@ static int WriteKernelModuleManifestData(const OrynProject* project, const OrynK
     fprintf(file, "    unsigned int requireCount,\n");
     fprintf(file, "    int compiledIn,\n");
     fprintf(file, "    int required,\n");
-    fprintf(file, "    int fatalOnMissingPrerequisite)\n{\n");
+    fprintf(file, "    int fatalOnMissingPrerequisite,\n");
+    fprintf(file, "    const char* stopCallbackName,\n");
+    fprintf(file, "    const char* panicCallbackName,\n");
+    fprintf(file, "    const char* shutdownCallbackName,\n");
+    fprintf(file, "    OrynKernelModuleLifecycleCallback stopCallback,\n");
+    fprintf(file, "    OrynKernelModuleLifecycleCallback panicCallback,\n");
+    fprintf(file, "    OrynKernelModuleLifecycleCallback shutdownCallback)\n{\n");
     fprintf(file, "    gKernelModuleManifest[id].Id = id;\n");
     fprintf(file, "    gKernelModuleManifest[id].Name = name;\n");
     fprintf(file, "    gKernelModuleManifest[id].Items = items;\n");
@@ -426,6 +503,12 @@ static int WriteKernelModuleManifestData(const OrynProject* project, const OrynK
     fprintf(file, "    gKernelModuleManifest[id].CompiledIn = compiledIn;\n");
     fprintf(file, "    gKernelModuleManifest[id].Required = required;\n");
     fprintf(file, "    gKernelModuleManifest[id].FatalOnMissingPrerequisite = fatalOnMissingPrerequisite;\n");
+    fprintf(file, "    gKernelModuleManifest[id].StopCallbackName = stopCallbackName;\n");
+    fprintf(file, "    gKernelModuleManifest[id].PanicCallbackName = panicCallbackName;\n");
+    fprintf(file, "    gKernelModuleManifest[id].ShutdownCallbackName = shutdownCallbackName;\n");
+    fprintf(file, "    gKernelModuleManifest[id].StopCallback = stopCallback;\n");
+    fprintf(file, "    gKernelModuleManifest[id].PanicCallback = panicCallback;\n");
+    fprintf(file, "    gKernelModuleManifest[id].ShutdownCallback = shutdownCallback;\n");
     fprintf(file, "    gKernelModuleManifest[id].State = compiledIn ? OrynKernelModuleStateRegistered : OrynKernelModuleStateAbsent;\n");
     fprintf(file, "    gCompiledKernelModules[id].Id = id;\n");
     fprintf(file, "    gCompiledKernelModules[id].Name = name;\n");
@@ -441,7 +524,7 @@ static int WriteKernelModuleManifestData(const OrynProject* project, const OrynK
     fprintf(file, "\n");
     for (int index = 0; index < module_count; ++index)
     {
-        fprintf(file, "    SetModule(%s, \"%s\", \"%s\", \"%s\", requires_%s, %dU, %d, %d, %d);\n",
+        fprintf(file, "    SetModule(%s, \"%s\", \"%s\", \"%s\", requires_%s, %dU, %d, %d, %d, \"%s\", \"%s\", \"%s\", %s, %s, %s);\n",
             modules[index].Id,
             modules[index].Name,
             modules[index].Items,
@@ -450,7 +533,13 @@ static int WriteKernelModuleManifestData(const OrynProject* project, const OrynK
             CountRequires(modules[index].Requires),
             modules[index].CompiledIn,
             modules[index].Required,
-            modules[index].FatalOnMissingPrerequisite);
+            modules[index].FatalOnMissingPrerequisite,
+            modules[index].StopCallback,
+            modules[index].PanicCallback,
+            modules[index].ShutdownCallback,
+            modules[index].StopCallback,
+            modules[index].PanicCallback,
+            modules[index].ShutdownCallback);
     }
     fprintf(file, "}\n\n");
     fprintf(file, "OrynKernelModuleManifestItem* OrynKernelModuleManifestMutable(OrynKernelModuleId id)\n{\n");
@@ -486,11 +575,11 @@ static int WriteKernelModuleManifestReport(const OrynProject* project, const Ory
     fprintf(file, "GeneratedHeader=Common/Kernel/Include/KernelModuleManifest.h\n");
     fprintf(file, "GeneratedData=Common/Kernel/Source/Manifest/KernelModuleManifestData.c\n");
     fprintf(file, "ModuleCount=%d\n", module_count);
-    fprintf(file, "Fields=Order<TAB>Id<TAB>Name<TAB>Requires<TAB>Select<TAB>CompiledIn<TAB>Required<TAB>FatalOnMissingPrerequisite<TAB>SourcePath\n");
+    fprintf(file, "Fields=Order<TAB>Id<TAB>Name<TAB>Requires<TAB>Select<TAB>CompiledIn<TAB>Required<TAB>FatalOnMissingPrerequisite<TAB>StopCallback<TAB>PanicCallback<TAB>ShutdownCallback<TAB>SourcePath\n");
     fprintf(file, "Modules:\n");
     for (int index = 0; index < module_count; ++index)
     {
-        fprintf(file, "%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\n",
+        fprintf(file, "%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\t%s\t%s\t%s\n",
             modules[index].Order,
             modules[index].Id,
             modules[index].Name,
@@ -499,6 +588,9 @@ static int WriteKernelModuleManifestReport(const OrynProject* project, const Ory
             modules[index].CompiledIn,
             modules[index].Required,
             modules[index].FatalOnMissingPrerequisite,
+            modules[index].StopCallback,
+            modules[index].PanicCallback,
+            modules[index].ShutdownCallback,
             modules[index].Path);
     }
 
@@ -532,6 +624,6 @@ int GenerateKernelModuleManifestTables(const OrynProject* project)
         OrynLogWarn("Kernel module manifest generation report could not be written.");
     }
 
-    LogBuildPlanDecision(project, "kernel-module-manifest", "Generated kernel module C tables from per-module manifest files with compiled-in registry and boot policy.");
+    LogBuildPlanDecision(project, "kernel-module-manifest", "Generated kernel module C tables from per-module manifest files with compiled-in registry, boot policy, and lifecycle callbacks.");
     return 1;
 }

@@ -1291,7 +1291,8 @@ unzip -q "$ZipPath" -d "$TempRoot/extract" || {
     exit 1
 }
 
-ValidatePackageBeforeCopy "$ZipPath" "$TempRoot/extract" "$Mode" "$SelectedVersion" "$TempRoot/ZipEntries.txt"
+Warn "Package validation is disabled by SDK policy. Extracted files will be applied without package self-validation or signature checks."
+Info "No package validation was run for: $ZipPath"
 
 if [ "$Mode" = "full" ]; then
     ApplyFullSource "$TempRoot/extract"

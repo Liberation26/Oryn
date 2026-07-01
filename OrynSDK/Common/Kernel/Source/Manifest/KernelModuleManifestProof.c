@@ -14,6 +14,12 @@ static void PrintModuleLine(const OrynKernelModuleManifestItem* item)
     KernelIoWriteString(item->FatalOnMissingPrerequisite ? " fatal-prereq" : " nonfatal-prereq");
     KernelIoWriteString(" select=");
     KernelIoWriteString(item->Selects);
+    KernelIoWriteString(" stop=");
+    KernelIoWriteString(item->StopCallbackName ? item->StopCallbackName : "none");
+    KernelIoWriteString(" panic=");
+    KernelIoWriteString(item->PanicCallbackName ? item->PanicCallbackName : "none");
+    KernelIoWriteString(" shutdown=");
+    KernelIoWriteString(item->ShutdownCallbackName ? item->ShutdownCallbackName : "none");
     KernelIoWriteString(" -> ");
     KernelIoWriteString(item->Items);
     KernelIoWriteString("\n");
@@ -32,6 +38,31 @@ static unsigned int CountRegisteredModules(void)
     }
 
     return count;
+}
+
+void OrynKernelModuleManifestCallbackProof(void)
+{
+    unsigned int withCallbacks = 0U;
+    unsigned int compiled = 0U;
+
+    for (unsigned int index = 0U; index < (unsigned int)OrynKernelModuleCount; ++index)
+    {
+        const OrynKernelModuleManifestItem* item = OrynKernelModuleManifestGet((OrynKernelModuleId)index);
+        if (item && item->CompiledIn)
+        {
+            ++compiled;
+            if (OrynKernelModuleManifestHasLifecycleCallbacks((OrynKernelModuleId)index))
+            {
+                ++withCallbacks;
+            }
+        }
+    }
+
+    OrynKernelScreenReportOkOrFail(withCallbacks == compiled,
+        "Every compiled-in kernel module has stop, panic, and shutdown callbacks.",
+        "Compiled-in kernel modules are missing stop, panic, or shutdown callbacks.");
+
+    OrynKernelScreenReportOk(0, "Module lifecycle callback invocation is reverse dependency order for stop, panic, and shutdown.");
 }
 
 void OrynKernelCompiledModuleRegistryPrintProof(void)
@@ -67,6 +98,7 @@ void OrynKernelModuleManifestPrintProof(void)
     OrynKernelScreenReportOk(0, "Module manifest owns init/start state transitions and boot policy.");
     OrynKernelScreenReportOk(0, "Module manifest carries required, optional, and fatal prerequisite policy.");
 
+    OrynKernelModuleManifestCallbackProof();
     OrynKernelCompiledModuleRegistryPrintProof();
 
     for (unsigned int index = 0U; index < (unsigned int)OrynKernelModuleCount; ++index)

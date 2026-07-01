@@ -1,3 +1,12 @@
+OrynWsl SDK ToDo2 update: 0.5.110
+
+[ OK ] Added module stop, panic, and shutdown callbacks to generated KernelModuleManifest records.
+[ OK ] Added per-module callback metadata fields: StopCallback, PanicCallback, and ShutdownCallback.
+[ OK ] Added manifest-owned lifecycle callback APIs for stop, panic, and shutdown invocation in reverse module order.
+[ OK ] Panic flow now invokes registered module panic callbacks before halting.
+[ OK ] Shutdown flow now invokes registered module shutdown callbacks before final halt path.
+[ OK ] Module manifest proof now verifies every compiled-in module has stop, panic, and shutdown callbacks.
+
 OrynWsl SDK ToDo2 update: 0.5.109
 
 [ OK ] Fixed Process/thread scheduler stack proof guard-page accounting by snapshotting heap stack-guard page count before stack allocation.
@@ -112,6 +121,7 @@ Current kernel foundation already present:
 [ OK ] KernelModuleManifest foundation exists.
 [ OK ] KernelModuleManifest has item names, owned items, prerequisites, and states.
 [ OK ] KernelModuleManifest prevents start before declared prerequisites are ready.
+[ OK ] KernelModuleManifest owns stop, panic, and shutdown callback metadata and lifecycle callback invocation.
 [ OK ] Manifest currently orders APIC after PIC, CPU, and Interrupts.
 [ OK ] GDT and IDT foundations exist.
 [ OK ] CPU exception report path exists.
@@ -646,3 +656,11 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
        Future failures now report whether the missing part was heap initialization, process allocation, address-space binding, scheduler stack allocation, or stack guard accounting.
 [ OK ] Scheduler prerequisite failure is no longer the root symptom when Process stack proof fails.
        Process proof now reports the real failed sub-step first, then Scheduler remains blocked only as a consequence.
+
+0.5.111 - Package validation removed from updater
+[ OK ] Removed package self-validation from the update path.
+[ OK ] Removed signed package authenticity checks from the normal update path.
+[ OK ] Update now extracts and applies selected FullSource/ChangedFiles payloads directly.
+[ OK ] Added ChangedFiles copy of UpdateOrynCurrent.sh so future updates carry no-validation policy.
+[WARN] Package authenticity is no longer enforced by the updater by design.
+

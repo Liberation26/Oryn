@@ -3,6 +3,7 @@
 #include "KernelDiagnosticsLogger.h"
 #include "KernelLifecycle.h"
 #include "KernelPanic.h"
+#include "KernelModuleManifest.h"
 
 static void OrynKernelBootProofHandleActivePanic(void)
 {
@@ -11,6 +12,7 @@ static void OrynKernelBootProofHandleActivePanic(void)
         return;
     }
 
+    (void)OrynKernelModuleManifestInvokePanicCallbacks();
     OrynKernelDiagnosticsLogHaltMessage();
     OrynKernelPanicHalt();
 }
@@ -27,4 +29,5 @@ void OrynKernelBootProofRunSequence(const OrynBootInfo* kernelBootInfo)
     OrynKernelBootProofHandleActivePanic();
     OrynKernelBootProofEnterRunningState();
     OrynKernelDiagnosticsRunHaltProofs();
+    (void)OrynKernelModuleManifestInvokeShutdownCallbacks();
 }

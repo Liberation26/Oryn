@@ -7,3 +7,7 @@ CompiledIn=Yes
 Required=Yes
 FatalOnMissingPrerequisite=Yes
 Select=Always
+
+StopCallback=OrynKernelModuleDefaultStop
+PanicCallback=OrynKernelModuleDefaultPanic
+ShutdownCallback=OrynKernelModuleDefaultShutdown

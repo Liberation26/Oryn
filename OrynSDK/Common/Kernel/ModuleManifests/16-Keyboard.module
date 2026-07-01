@@ -7,3 +7,7 @@ CompiledIn=Yes
 Required=No
 FatalOnMissingPrerequisite=No
 Select=BootInfoFramebuffer,VmPic
+
+StopCallback=OrynKernelModuleDefaultStop
+PanicCallback=OrynKernelModuleDefaultPanic
+ShutdownCallback=OrynKernelModuleDefaultShutdown

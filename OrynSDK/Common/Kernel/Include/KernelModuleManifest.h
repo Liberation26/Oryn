@@ -39,9 +39,16 @@ typedef enum OrynKernelModuleState
     OrynKernelModuleStateSelected,
     OrynKernelModuleStateStarting,
     OrynKernelModuleStateReady,
+    OrynKernelModuleStateStopping,
+    OrynKernelModuleStateStopped,
+    OrynKernelModuleStatePanic,
+    OrynKernelModuleStateShuttingDown,
+    OrynKernelModuleStateShutdown,
     OrynKernelModuleStateSkipped,
     OrynKernelModuleStateFailed
 } OrynKernelModuleState;
+
+typedef int (*OrynKernelModuleLifecycleCallback)(OrynKernelModuleId id);
 
 typedef struct OrynKernelModuleManifestItem
 {
@@ -54,6 +61,12 @@ typedef struct OrynKernelModuleManifestItem
     int CompiledIn;
     int Required;
     int FatalOnMissingPrerequisite;
+    const char* StopCallbackName;
+    const char* PanicCallbackName;
+    const char* ShutdownCallbackName;
+    OrynKernelModuleLifecycleCallback StopCallback;
+    OrynKernelModuleLifecycleCallback PanicCallback;
+    OrynKernelModuleLifecycleCallback ShutdownCallback;
     OrynKernelModuleState State;
 } OrynKernelModuleManifestItem;
 
@@ -79,6 +92,17 @@ int OrynKernelModuleManifestBegin(OrynKernelModuleId id);
 void OrynKernelModuleManifestReady(OrynKernelModuleId id);
 void OrynKernelModuleManifestSkipped(OrynKernelModuleId id);
 void OrynKernelModuleManifestFailed(OrynKernelModuleId id);
+int OrynKernelModuleDefaultStop(OrynKernelModuleId id);
+int OrynKernelModuleDefaultPanic(OrynKernelModuleId id);
+int OrynKernelModuleDefaultShutdown(OrynKernelModuleId id);
+int OrynKernelModuleManifestHasLifecycleCallbacks(OrynKernelModuleId id);
+int OrynKernelModuleManifestStop(OrynKernelModuleId id);
+int OrynKernelModuleManifestPanic(OrynKernelModuleId id);
+int OrynKernelModuleManifestShutdown(OrynKernelModuleId id);
+unsigned int OrynKernelModuleManifestInvokeStopCallbacks(void);
+unsigned int OrynKernelModuleManifestInvokePanicCallbacks(void);
+unsigned int OrynKernelModuleManifestInvokeShutdownCallbacks(void);
+void OrynKernelModuleManifestCallbackProof(void);
 const char* OrynKernelModuleManifestStateName(OrynKernelModuleState state);
 unsigned int OrynKernelCompiledModuleCount(void);
 const OrynKernelCompiledModuleRecord* OrynKernelCompiledModuleGet(unsigned int index);
