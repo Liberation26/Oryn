@@ -95,6 +95,18 @@ static void OrynKernelDiagnosticsRunVirtualMemoryProof(const OrynBootInfo* kerne
             OrynKernelScreenReportOk(0, "User/kernel address split is active.");
             OrynKernelScreenReportOk(0, "copy_from_user and copy_to_user safety helpers passed proof.");
             OrynKernelScreenReportOk(0, "Demand allocation for user anonymous pages passed proof.");
+
+            /*
+             * Process and Scheduler depend on VirtualMemory.  Mark the VM
+             * module ready immediately after the VM proof succeeds, before
+             * asking the manifest policy whether dependent modules may start.
+             * Otherwise a valid Process selection is incorrectly reported as
+             * missing the VirtualMemory prerequisite while VM is still in the
+             * Starting state.
+             */
+            (void)OrynKernelLifecycleTransition(OrynKernelLifecycleVirtualMemoryReady);
+            OrynKernelModuleManifestReady(OrynKernelModuleVirtualMemory);
+
             if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleProcess) &&
                 OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleScheduler))
             {
@@ -115,11 +127,10 @@ static void OrynKernelDiagnosticsRunVirtualMemoryProof(const OrynBootInfo* kerne
         else
         {
             OrynKernelScreenReportFail(0, "Virtual memory address-space API proof failed.");
+            OrynKernelModuleManifestFailed(OrynKernelModuleVirtualMemory);
         }
         OrynVirtualMemoryPrintProof(&gVirtualMemory);
         OrynKernelPageFaultPolicyPrintProof();
-        (void)OrynKernelLifecycleTransition(OrynKernelLifecycleVirtualMemoryReady);
-        OrynKernelModuleManifestReady(OrynKernelModuleVirtualMemory);
         OrynKernelDiagnosticsRunHeapGuardProof();
     }
     else

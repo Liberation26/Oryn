@@ -63,7 +63,7 @@ OrynLibC function-unit manifests
 - KernelVirtualMemory.h exposes copy_from_user/copy_to_user-style helpers as OrynCopyFromUser and OrynCopyToUser.
 - KernelPhysicalMemory now tracks page ownership and reference diagnostics for page-table, heap, user, reserved, and generic page use.
 
-0.5.105 layout additions:
+0.5.106 layout additions:
 - Common/Kernel/Include/KernelProcess.h
 - Common/Kernel/Source/Process/KernelProcess.c
 - Common/Kernel/ModuleManifests/22-Process.module

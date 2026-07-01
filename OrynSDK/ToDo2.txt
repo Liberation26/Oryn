@@ -616,8 +616,11 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [WARN] Full user process lifecycle integration, page eviction, copy-on-write, and mmap-backed file regions remain future work.
 
 
-0.5.105 - Process/thread and scheduler-ready stack foundation
+0.5.106 - Process/thread and scheduler-ready stack foundation
 [ OK ] Add process/thread structures that bind to per-process address spaces.
 [ OK ] Add scheduler-ready kernel thread stack allocation through guarded heap/VM helpers.
 [ OK ] Add Process and Scheduler modules to generated module manifests.
 [ OK ] Add KernelInit graph stages for Process and Scheduler after VirtualMemory.
+
+[ OK ] Fix VM manifest readiness before Process/Scheduler start policy.
+       VirtualMemory is now marked ready immediately after the VM proof succeeds, before Process/Scheduler prerequisite checks run.
