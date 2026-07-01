@@ -25,6 +25,9 @@ typedef struct OrynKernelPanicReport
     int ScreenShown;
     int ReportWritten;
     int HaltedByKernel;
+    int PanicOnUnhandledException;
+    unsigned long long UnhandledExceptionCount;
+    const char* LastUnhandledExceptionName;
 } OrynKernelPanicReport;
 
 void OrynKernelPanicInit(const OrynBootInfo* bootInfo);
@@ -42,6 +45,9 @@ void OrynKernelPanicSetException(
     unsigned long long cr2);
 int OrynKernelPanicIsActive(void);
 const OrynKernelPanicReport* OrynKernelPanicGetReport(void);
+void OrynKernelPanicEnableUnhandledExceptionPolicy(void);
+void OrynKernelPanicRecordUnhandledException(const char* exceptionName);
+void OrynKernelPanicPrintExceptionPolicyProof(void);
 void OrynKernelPanicRenderScreen(void);
 void OrynKernelPanicWriteReport(void);
 void OrynKernelPanicHalt(void) __attribute__((noreturn));

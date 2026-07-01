@@ -8,6 +8,17 @@
 static OrynKernelSchedulerState gScheduler;
 static unsigned int gNextTimerId = 1U;
 static unsigned long long gSchedulerJiffies;
+static unsigned int gSchedulerProofWorkCount;
+
+static void SchedulerProofWork(void* context)
+{
+    unsigned int* value = (unsigned int*)context;
+    if (value != 0)
+    {
+        *value += 1U;
+    }
+    gSchedulerProofWorkCount += 1U;
+}
 
 static unsigned int ClampCpuCount(unsigned int cpuCount)
 {
@@ -99,6 +110,8 @@ void OrynKernelSchedulerInit(unsigned int cpuCount, unsigned int tickVector)
     gScheduler.JiffiesInternalOnly = 1U;
     gScheduler.TimerWheelReady = 1U;
     gScheduler.SleepQueueReady = 1U;
+    gScheduler.WorkQueueReady = 1U;
+    gScheduler.WaitQueueReady = 1U;
     gScheduler.CpuCount = ClampCpuCount(cpuCount);
     for (unsigned int cpu = 0U; cpu < gScheduler.CpuCount; ++cpu)
     {
@@ -165,6 +178,106 @@ int OrynKernelSchedulerQueueTimer(unsigned long long deadlineTick,
     node->Context = context;
     QueueNode(node);
     return 1;
+}
+
+int OrynKernelSchedulerQueueDeviceWork(unsigned int deviceId,
+    OrynKernelWorkRoutine routine, void* context, const char* name)
+{
+    if (gScheduler.Initialized == 0U || routine == 0)
+    {
+        return 0;
+    }
+    for (unsigned int index = 0U; index < ORYN_KERNEL_WORK_QUEUE_LIMIT; ++index)
+    {
+        OrynKernelWorkItem* item = &gScheduler.WorkQueue[index];
+        if (item->Used == 0U)
+        {
+            item->Used = 1U;
+            item->DeviceId = deviceId;
+            item->Routine = routine;
+            item->Context = context;
+            item->Name = name;
+            gScheduler.WorkQueued += 1U;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+unsigned int OrynKernelSchedulerRunDeviceWork(unsigned int budget, unsigned int inInterruptContext)
+{
+    unsigned int ran = 0U;
+    if (inInterruptContext)
+    {
+        gScheduler.WorkRejectedInInterrupt += 1U;
+        return 0U;
+    }
+    if (budget == 0U)
+    {
+        budget = ORYN_KERNEL_WORK_QUEUE_LIMIT;
+    }
+    for (unsigned int index = 0U; index < ORYN_KERNEL_WORK_QUEUE_LIMIT && ran < budget; ++index)
+    {
+        OrynKernelWorkItem item = gScheduler.WorkQueue[index];
+        if (item.Used && item.Routine != 0)
+        {
+            (void)memset(&gScheduler.WorkQueue[index], 0, sizeof(gScheduler.WorkQueue[index]));
+            item.Routine(item.Context);
+            gScheduler.WorkExecuted += 1U;
+            ran += 1U;
+        }
+    }
+    return ran;
+}
+
+int OrynKernelSchedulerWaitQueueSleep(OrynKernelThread* thread, const char* reason)
+{
+    if (gScheduler.Initialized == 0U || thread == 0)
+    {
+        return 0;
+    }
+    for (unsigned int index = 0U; index < ORYN_KERNEL_WAIT_QUEUE_LIMIT; ++index)
+    {
+        OrynKernelWaitQueueNode* node = &gScheduler.WaitQueue[index];
+        if (node->Used == 0U)
+        {
+            node->Used = 1U;
+            node->WaitId = index + 1U;
+            node->Thread = thread;
+            node->Reason = reason;
+            thread->State = OrynKernelThreadStateBlocked;
+            thread->SchedulerReady = 0U;
+            gScheduler.WaitQueueCount += 1U;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+unsigned int OrynKernelSchedulerWaitQueueWakeOne(const char* reason)
+{
+    for (unsigned int index = 0U; index < ORYN_KERNEL_WAIT_QUEUE_LIMIT; ++index)
+    {
+        OrynKernelWaitQueueNode* node = &gScheduler.WaitQueue[index];
+        if (node->Used != 0U)
+        {
+            OrynKernelThread* thread = node->Thread;
+            (void)reason;
+            (void)memset(node, 0, sizeof(*node));
+            if (thread != 0)
+            {
+                thread->State = OrynKernelThreadStateSchedulerReady;
+                thread->SchedulerReady = 1U;
+            }
+            if (gScheduler.WaitQueueCount > 0U)
+            {
+                gScheduler.WaitQueueCount -= 1U;
+            }
+            gScheduler.WaitQueueWakeCount += 1U;
+            return 1U;
+        }
+    }
+    return 0U;
 }
 
 void OrynKernelSchedulerTick(unsigned int cpuId, unsigned long long nowTick)
@@ -235,6 +348,27 @@ int OrynKernelSchedulerRunSelfTest(OrynKernelThread* thread)
         return 0;
     }
     OrynKernelSchedulerTick(1U, 5ULL);
+    unsigned int workValue = 0U;
+    if (!OrynKernelSchedulerQueueDeviceWork(1U, SchedulerProofWork, &workValue, "proof-device-work"))
+    {
+        return 0;
+    }
+    if (OrynKernelSchedulerRunDeviceWork(4U, 1U) != 0U)
+    {
+        return 0;
+    }
+    if (OrynKernelSchedulerRunDeviceWork(4U, 0U) != 1U || workValue != 1U)
+    {
+        return 0;
+    }
+    if (!OrynKernelSchedulerWaitQueueSleep(thread, "proof-wait"))
+    {
+        return 0;
+    }
+    if (OrynKernelSchedulerWaitQueueWakeOne("proof-wait") != 1U)
+    {
+        return 0;
+    }
     return thread->SchedulerReady != 0U && thread->State == OrynKernelThreadStateSchedulerReady &&
         gScheduler.WakeCount > 0U && gScheduler.ExpiredTimers > 0U &&
         gScheduler.CpuTicks[0].TickCount > 0ULL && gScheduler.CpuTicks[1].TickCount > 0ULL;
@@ -260,4 +394,11 @@ void OrynKernelSchedulerPrintProof(void)
     OrynKernelScreenReportOkOrFail(gScheduler.JiffiesInternalOnly && gScheduler.InternalJiffies > 0ULL,
         "Scheduler jiffies are private implementation detail, not public clock API.",
         "Scheduler jiffies implementation-detail proof failed.");
+    OrynKernelScreenReportOkOrFail(gScheduler.WorkQueueReady && gScheduler.WorkExecuted > 0U &&
+        gSchedulerProofWorkCount > 0U && gScheduler.WorkRejectedInInterrupt > 0U,
+        "Scheduler work queues run device work outside interrupt context.",
+        "Scheduler work queue proof failed.");
+    OrynKernelScreenReportOkOrFail(gScheduler.WaitQueueReady && gScheduler.WaitQueueWakeCount > 0U,
+        "Scheduler wait queues block and wake sleeping threads.",
+        "Scheduler wait queue proof failed.");
 }

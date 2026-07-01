@@ -1,7 +1,7 @@
 Order=04
 Id=OrynKernelModulePanic
 Name=Panic
-Items=panic begin, report, active state, halt
+Items=panic begin, report, active state, halt, unhandled exception crash policy
 Requires=OrynKernelModuleBootInfo
 CompiledIn=Yes
 Required=Yes

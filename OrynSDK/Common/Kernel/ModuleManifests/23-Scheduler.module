@@ -2,7 +2,7 @@
 Order=23
 Id=OrynKernelModuleScheduler
 Name=Scheduler
-Items=kernel thread records, scheduler-ready stacks, guarded stack allocation
+Items=kernel thread records, scheduler-ready stacks, guarded stack allocation, timer wheel, sleep queues, work queues, wait queues
 Requires=OrynKernelModuleProcess,OrynKernelModuleHeap
 CompiledIn=Yes
 Required=No

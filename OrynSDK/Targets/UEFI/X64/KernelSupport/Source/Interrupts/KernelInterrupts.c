@@ -10,7 +10,6 @@
 #include "KernelPortIo.h"
 #include "KernelScreenReport.h"
 #include "KernelSmp.h"
-
 #define ORYN_PIT_CHANNEL0 0x40U
 #define ORYN_PIT_COMMAND 0x43U
 #define ORYN_PIT_MODE0_LOHI 0x30U
@@ -437,6 +436,7 @@ void OrynKernelInterruptsPrintProof(void)
     OrynKernelInterruptsPrintCpuAccountingProof();
     OrynKernelInterruptLockPrintProof();
     OrynKernelDeferredPrintProof();
+    OrynKernelInterruptsPrintIrqMaskProof();
 }
 
 void OrynKernelInterruptsPrintCpuAccountingProof(void)

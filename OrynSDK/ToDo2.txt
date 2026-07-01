@@ -241,10 +241,11 @@ Milestone 0.9 - Interrupt and deferred-work system:
 [ OK ] Add per-CPU interrupt accounting.
 [ OK ] Add interrupt-safe lock primitives.
 [ OK ] Add bottom halves/deferred procedure calls.
-[TOBE] Add work queues for non-interrupt context device work.
-[TOBE] Add wait queues for sleeping threads.
-[TOBE] Add safe IRQ masking/unmasking APIs.
-[TOBE] Add panic-on-unhandled-exception policy with crash details.
+[ OK ] Add work queues for non-interrupt context device work.
+[ OK ] Add wait queues for sleeping threads.
+[ OK ] Add safe IRQ masking/unmasking APIs.
+[ OK ] Add panic-on-unhandled-exception policy with crash details.
+       0.5.122 proof: Scheduler work/wait queues, interrupt-safe IRQ masking APIs, and panic crash-detail exception policy are implemented and covered by proof output.
 
 Milestone 1.0 - Threads, processes, and scheduler:
 [TOBE] Define kernel thread structure.

@@ -56,6 +56,11 @@ typedef struct OrynKernelInterruptState
     unsigned int CpuAccountsReady;
     unsigned int CurrentCpuIndex;
     unsigned int InterruptNesting;
+    unsigned int IrqMaskApiReady;
+    unsigned int IrqMaskOperations;
+    unsigned int IrqUnmaskOperations;
+    unsigned int IrqMaskRejected;
+    unsigned int LastMaskedIrq;
     OrynKernelInterruptCpuAccount CpuAccounts[ORYN_INTERRUPT_CPU_ACCOUNT_LIMIT];
 } OrynKernelInterruptState;
 
@@ -87,6 +92,10 @@ unsigned int OrynKernelInterruptsAreInInterrupt(void);
 void OrynKernelInterruptsEnable(void);
 void OrynKernelInterruptsDisable(void);
 unsigned int OrynKernelInterruptsAreEnabled(void);
+int OrynKernelInterruptsMaskIrq(unsigned int irq);
+int OrynKernelInterruptsUnmaskIrq(unsigned int irq);
+int OrynKernelInterruptsSetIrqMasked(unsigned int irq, unsigned int masked);
+void OrynKernelInterruptsPrintIrqMaskProof(void);
 void OrynKernelInterruptsDispatch(OrynIdtInterruptFrame* frame);
 int OrynKernelInterruptsRunPicTimerProof(void);
 int OrynKernelInterruptsRunApicTimerProof(void);

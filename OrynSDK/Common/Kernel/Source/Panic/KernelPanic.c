@@ -39,6 +39,9 @@ static void ClearReport(void)
     gPanicReport.ScreenShown = 0;
     gPanicReport.ReportWritten = 0;
     gPanicReport.HaltedByKernel = 0;
+    gPanicReport.PanicOnUnhandledException = 1;
+    gPanicReport.UnhandledExceptionCount = 0ULL;
+    gPanicReport.LastUnhandledExceptionName = "none";
 }
 
 static void WriteTextField(const char* name, const char* value)
@@ -109,6 +112,24 @@ void OrynKernelPanicBegin(
     StartPanic(reason, detail, code);
 }
 
+void OrynKernelPanicEnableUnhandledExceptionPolicy(void)
+{
+    gPanicReport.PanicOnUnhandledException = 1;
+}
+
+void OrynKernelPanicRecordUnhandledException(const char* exceptionName)
+{
+    gPanicReport.UnhandledExceptionCount += 1ULL;
+    gPanicReport.LastUnhandledExceptionName = TextOrDefault(exceptionName, "CPU exception");
+}
+
+void OrynKernelPanicPrintExceptionPolicyProof(void)
+{
+    OrynKernelScreenReportOkOrFail(gPanicReport.PanicOnUnhandledException,
+        "Unhandled CPU exceptions are fatal and produce crash details.",
+        "Unhandled CPU exception panic policy is not enabled.");
+}
+
 void OrynKernelPanicSetException(
     const char* exceptionName,
     unsigned long long vector,
@@ -118,6 +139,7 @@ void OrynKernelPanicSetException(
     unsigned long long rflags,
     unsigned long long cr2)
 {
+    OrynKernelPanicRecordUnhandledException(exceptionName);
     StartPanic("CPU exception", exceptionName, vector);
     gPanicReport.Vector = vector;
     gPanicReport.ErrorCode = errorCode;
@@ -172,8 +194,10 @@ void OrynKernelPanicWriteReport(void)
     WriteDecField("sequence", gPanicReport.Sequence);
     WriteTextField("reason", gPanicReport.Reason);
     WriteTextField("detail", gPanicReport.Detail);
+    WriteTextField("last unhandled exception", gPanicReport.LastUnhandledExceptionName);
     WriteTextField("lifecycle", OrynKernelLifecycleStateName(gPanicReport.LifecycleState));
     WriteHexField("code", gPanicReport.Code);
+    WriteDecField("unhandled exceptions", gPanicReport.UnhandledExceptionCount);
     WriteHexField("vector", gPanicReport.Vector);
     WriteHexField("error code", gPanicReport.ErrorCode);
     WriteHexField("rip", gPanicReport.Rip);
@@ -184,6 +208,7 @@ void OrynKernelPanicWriteReport(void)
     OrynKernelScreenReportOkOrWarn(KConsole.IsAvailable(),
         "Kernel panic screen rendered by kernel console.",
         "Kernel panic screen unavailable; serial/debug report remains active.");
+    OrynKernelPanicPrintExceptionPolicyProof();
     OrynKernelScreenReportOk(0, "Kernel panic report written to serial and debugcon.");
     if (gPanicReport.HaltedByKernel)
     {
