@@ -1,4 +1,5 @@
 #include "KernelVirtualMemory.h"
+#include "KernelPageFaultPolicy.h"
 
 #define ORYN_PAGE_PRESENT 0x001ULL
 #define ORYN_PAGE_WRITABLE 0x002ULL
@@ -86,6 +87,11 @@ static OrynVmEntry* VmNewTable(OrynKernelPhysicalMemory* physicalMemory)
         return 0;
     }
     VmClearBytes((void*)physicalAddress, ORYN_VIRTUAL_PAGE_SIZE);
+    (void)OrynPhysicalMemorySetPageOwner(
+        physicalMemory,
+        physicalAddress,
+        OrynPhysicalPageOwnerPageTable,
+        0ULL);
     return (OrynVmEntry*)physicalAddress;
 }
 
@@ -297,11 +303,23 @@ int OrynVirtualMemoryRunAddressSpaceSelfTest(
     OrynKernelAddressSpace processSpace;
     unsigned long long physical;
     unsigned long long userAddress = ORYN_VIRTUAL_USER_BASE + 0x200000ULL;
+    unsigned long long demandAddress = ORYN_VIRTUAL_USER_BASE + 0x300000ULL;
+    unsigned char userSeed[8];
+    unsigned char kernelCopy[8];
+    OrynIdtInterruptFrame demandFrame;
     int ok;
     if (virtualMemory == 0 || physicalMemory == 0)
     {
         return 0;
     }
+    for (unsigned int index = 0U; index < sizeof(userSeed); ++index)
+    {
+        userSeed[index] = (unsigned char)(0x41U + index);
+        kernelCopy[index] = 0U;
+    }
+    VmClearBytes(&demandFrame, sizeof(demandFrame));
+    demandFrame.ErrorCode = ORYN_PAGE_FAULT_USER | ORYN_PAGE_FAULT_WRITE;
+
     ok = OrynVirtualMemoryInitKernelAddressSpace(virtualMemory);
     ok = ok && OrynVirtualMemoryCreateProcessAddressSpace(physicalMemory, &processSpace);
     physical = OrynPhysicalMemoryAllocatePageBelow(physicalMemory, ORYN_PHYSICAL_EARLY_DIRECT_MAP_LIMIT);
@@ -313,8 +331,47 @@ int OrynVirtualMemoryRunAddressSpaceSelfTest(
     }
     if (ok)
     {
+        unsigned char* physicalBytes = (unsigned char*)physical;
+        for (unsigned int index = 0U; index < sizeof(userSeed); ++index)
+        {
+            physicalBytes[index] = userSeed[index];
+        }
+        ok = OrynCopyFromUser(&processSpace, kernelCopy, (const void*)userAddress, sizeof(kernelCopy));
+    }
+    if (ok)
+    {
+        for (unsigned int index = 0U; index < sizeof(userSeed); ++index)
+        {
+            if (kernelCopy[index] != userSeed[index])
+            {
+                ok = 0;
+            }
+        }
+    }
+    if (ok)
+    {
+        userSeed[0] = 0x5AU;
+        ok = OrynCopyToUser(&processSpace, (void*)userAddress, userSeed, sizeof(userSeed));
+    }
+    if (ok)
+    {
         ok = OrynVirtualMemoryProtect(&processSpace, userAddress, ORYN_VIRTUAL_PAGE_SIZE,
             ORYN_VIRTUAL_FLAG_READ | ORYN_VIRTUAL_FLAG_USER);
+    }
+    if (ok)
+    {
+        ok = OrynVirtualMemoryReserveAnonymousRegion(&processSpace, demandAddress,
+            ORYN_VIRTUAL_PAGE_SIZE * 2ULL,
+            ORYN_VIRTUAL_FLAG_READ | ORYN_VIRTUAL_FLAG_WRITE | ORYN_VIRTUAL_FLAG_USER);
+    }
+    if (ok)
+    {
+        OrynKernelPageFaultPolicySetProcessContext(&processSpace);
+        OrynKernelPageFaultPolicySetDemandAllocator(&processSpace, physicalMemory);
+        ok = OrynKernelPageFaultPolicyHandle(&demandFrame, demandAddress) ==
+            OrynKernelPageFaultActionRecover;
+        OrynKernelPageFaultPolicySetDemandAllocator(0, 0);
+        OrynKernelPageFaultPolicySetProcessContext(0);
     }
     if (ok)
     {
@@ -326,6 +383,10 @@ int OrynVirtualMemoryRunAddressSpaceSelfTest(
         virtualMemory->ApiMappedPages += processSpace.MappedPages;
         virtualMemory->ApiProtectedPages += processSpace.ProtectedPages;
         virtualMemory->ApiUnmappedPages += processSpace.UnmappedPages;
+        virtualMemory->DemandAllocatedUserPages += processSpace.DemandAllocatedPages;
+        virtualMemory->AnonymousRegionsCreated += processSpace.AnonymousRegionCount;
+        virtualMemory->UserCopyBytesIn += sizeof(kernelCopy);
+        virtualMemory->UserCopyBytesOut += sizeof(userSeed);
     }
     return ok;
 }

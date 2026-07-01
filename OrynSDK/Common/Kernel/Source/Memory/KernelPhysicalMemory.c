@@ -134,6 +134,7 @@ unsigned long long OrynPhysicalMemoryAllocatePageBelow(
             allocator->FreePageCount -= 1U;
             allocator->FreePages[pageIndex] = allocator->FreePages[allocator->FreePageCount];
             allocator->UsedPageCount += 1U;
+            (void)OrynPhysicalMemorySetPageOwner(allocator, page, OrynPhysicalPageOwnerGeneric, 0ULL);
             return page;
         }
     }
@@ -150,7 +151,9 @@ unsigned long long OrynPhysicalMemoryAllocatePage(OrynKernelPhysicalMemory* allo
 
     allocator->FreePageCount -= 1U;
     allocator->UsedPageCount += 1U;
-    return allocator->FreePages[allocator->FreePageCount];
+    unsigned long long page = allocator->FreePages[allocator->FreePageCount];
+    (void)OrynPhysicalMemorySetPageOwner(allocator, page, OrynPhysicalPageOwnerGeneric, 0ULL);
+    return page;
 }
 
 unsigned int OrynPhysicalMemoryReserveRange(
@@ -175,6 +178,7 @@ unsigned int OrynPhysicalMemoryReserveRange(
             allocator->FreePageCount -= 1U;
             allocator->FreePages[index] = allocator->FreePages[allocator->FreePageCount];
             allocator->ReservedPages += 1U;
+            (void)OrynPhysicalMemorySetPageOwner(allocator, page, OrynPhysicalPageOwnerReserved, physicalStart);
             removed += 1U;
             continue;
         }
@@ -202,6 +206,7 @@ int OrynPhysicalMemoryFreePage(OrynKernelPhysicalMemory* allocator, unsigned lon
         return 0;
     }
 
+    (void)OrynPhysicalMemorySetPageOwner(allocator, physicalAddress, OrynPhysicalPageOwnerFree, 0ULL);
     allocator->FreePages[allocator->FreePageCount] = physicalAddress;
     allocator->FreePageCount += 1U;
 
@@ -210,5 +215,134 @@ int OrynPhysicalMemoryFreePage(OrynKernelPhysicalMemory* allocator, unsigned lon
         allocator->UsedPageCount -= 1U;
     }
 
+    return 1;
+}
+
+
+static OrynPhysicalPageRecord* FindPageRecord(
+    OrynKernelPhysicalMemory* allocator,
+    unsigned long long physicalAddress)
+{
+    unsigned long long page = AlignDown(physicalAddress);
+    if (allocator == 0)
+    {
+        return 0;
+    }
+    for (unsigned int index = 0U; index < allocator->PageRecordCount; ++index)
+    {
+        if (allocator->PageRecords[index].PhysicalAddress == page)
+        {
+            return &allocator->PageRecords[index];
+        }
+    }
+    return 0;
+}
+
+int OrynPhysicalMemorySetPageOwner(
+    OrynKernelPhysicalMemory* allocator,
+    unsigned long long physicalAddress,
+    unsigned int owner,
+    unsigned long long tag)
+{
+    OrynPhysicalPageRecord* record;
+    unsigned long long page = AlignDown(physicalAddress);
+    if (allocator == 0 || allocator->Initialized == 0U || !IsAlignedPage(page))
+    {
+        return 0;
+    }
+    record = FindPageRecord(allocator, page);
+    if (record == 0)
+    {
+        if (allocator->PageRecordCount >= ORYN_PHYSICAL_MAX_OWNERSHIP_RECORDS)
+        {
+            allocator->OwnershipRecordOverflows += 1ULL;
+            return 0;
+        }
+        record = &allocator->PageRecords[allocator->PageRecordCount++];
+        record->PhysicalAddress = page;
+        record->ReferenceCount = 0U;
+    }
+    record->Owner = owner;
+    record->Tag = tag;
+    if (owner == OrynPhysicalPageOwnerFree)
+    {
+        record->ReferenceCount = 0U;
+    }
+    else if (record->ReferenceCount == 0U)
+    {
+        record->ReferenceCount = 1U;
+    }
+    return 1;
+}
+
+int OrynPhysicalMemoryAddPageReference(
+    OrynKernelPhysicalMemory* allocator,
+    unsigned long long physicalAddress)
+{
+    OrynPhysicalPageRecord* record = FindPageRecord(allocator, physicalAddress);
+    if (record == 0 || record->Owner == OrynPhysicalPageOwnerFree)
+    {
+        if (allocator != 0)
+        {
+            allocator->OwnershipMismatches += 1ULL;
+        }
+        return 0;
+    }
+    record->ReferenceCount += 1U;
+    return 1;
+}
+
+int OrynPhysicalMemoryReleasePageReference(
+    OrynKernelPhysicalMemory* allocator,
+    unsigned long long physicalAddress)
+{
+    OrynPhysicalPageRecord* record = FindPageRecord(allocator, physicalAddress);
+    if (record == 0 || record->ReferenceCount == 0U)
+    {
+        if (allocator != 0)
+        {
+            allocator->OwnershipMismatches += 1ULL;
+        }
+        return 0;
+    }
+    record->ReferenceCount -= 1U;
+    if (record->ReferenceCount == 0U)
+    {
+        record->Owner = OrynPhysicalPageOwnerFree;
+        record->Tag = 0ULL;
+    }
+    return 1;
+}
+
+int OrynPhysicalMemoryGetOwnershipStats(
+    const OrynKernelPhysicalMemory* allocator,
+    OrynPhysicalPageOwnershipStats* stats)
+{
+    if (allocator == 0 || stats == 0)
+    {
+        return 0;
+    }
+    for (unsigned int index = 0U; index < sizeof(*stats); ++index)
+    {
+        ((unsigned char*)stats)[index] = 0U;
+    }
+    stats->RecordsUsed = allocator->PageRecordCount;
+    stats->RecordsCapacity = ORYN_PHYSICAL_MAX_OWNERSHIP_RECORDS;
+    stats->OwnershipRecordOverflows = allocator->OwnershipRecordOverflows;
+    stats->OwnershipMismatches = allocator->OwnershipMismatches;
+    for (unsigned int index = 0U; index < allocator->PageRecordCount; ++index)
+    {
+        const OrynPhysicalPageRecord* record = &allocator->PageRecords[index];
+        if (record->ReferenceCount != 0U)
+        {
+            stats->PagesWithReferences += 1ULL;
+            stats->TotalReferences += record->ReferenceCount;
+        }
+        if (record->Owner == OrynPhysicalPageOwnerGeneric) stats->GenericPages += 1ULL;
+        else if (record->Owner == OrynPhysicalPageOwnerPageTable) stats->PageTablePages += 1ULL;
+        else if (record->Owner == OrynPhysicalPageOwnerKernelHeap) stats->KernelHeapPages += 1ULL;
+        else if (record->Owner == OrynPhysicalPageOwnerUserPage) stats->UserPages += 1ULL;
+        else if (record->Owner == OrynPhysicalPageOwnerReserved) stats->ReservedPages += 1ULL;
+    }
     return 1;
 }

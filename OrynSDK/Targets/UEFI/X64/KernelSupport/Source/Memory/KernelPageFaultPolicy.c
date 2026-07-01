@@ -4,6 +4,8 @@
 
 static OrynKernelPageFaultPolicyState gPageFaultPolicy;
 static const OrynKernelAddressSpace* gFaultProcessAddressSpace;
+static OrynKernelAddressSpace* gDemandAddressSpace;
+static OrynKernelPhysicalMemory* gDemandPhysicalMemory;
 
 static void ClearPolicy(void)
 {
@@ -13,6 +15,8 @@ static void ClearPolicy(void)
         bytes[index] = 0U;
     }
     gFaultProcessAddressSpace = 0;
+    gDemandAddressSpace = 0;
+    gDemandPhysicalMemory = 0;
 }
 
 void OrynKernelPageFaultPolicyInit(void)
@@ -35,6 +39,32 @@ void OrynKernelPageFaultPolicySetProcessContext(const OrynKernelAddressSpace* ad
     else
     {
         gFaultProcessAddressSpace = 0;
+    gDemandAddressSpace = 0;
+    gDemandPhysicalMemory = 0;
+    }
+}
+
+
+void OrynKernelPageFaultPolicySetDemandAllocator(
+    OrynKernelAddressSpace* addressSpace,
+    OrynKernelPhysicalMemory* physicalMemory)
+{
+    if (!gPageFaultPolicy.Initialized)
+    {
+        OrynKernelPageFaultPolicyInit();
+    }
+
+    if (addressSpace != 0 && addressSpace->Initialized != 0U &&
+        addressSpace->ProcessOwned != 0U && physicalMemory != 0 &&
+        physicalMemory->Initialized != 0U)
+    {
+        gDemandAddressSpace = addressSpace;
+        gDemandPhysicalMemory = physicalMemory;
+    }
+    else
+    {
+        gDemandAddressSpace = 0;
+        gDemandPhysicalMemory = 0;
     }
 }
 
@@ -107,8 +137,26 @@ OrynKernelPageFaultAction OrynKernelPageFaultPolicyHandle(
         gPageFaultPolicy.UserFaults += 1ULL;
         if (gFaultProcessAddressSpace != 0)
         {
-            gPageFaultPolicy.UserProcessFaults += 1ULL;
-            action = OrynKernelPageFaultActionKillProcess;
+            if ((errorCode & ORYN_PAGE_FAULT_PRESENT) == 0ULL &&
+                gDemandAddressSpace != 0 &&
+                OrynVirtualMemoryDemandAllocateUserPage(
+                    gDemandAddressSpace,
+                    gDemandPhysicalMemory,
+                    faultAddress,
+                    ORYN_VIRTUAL_FLAG_READ | ORYN_VIRTUAL_FLAG_WRITE | ORYN_VIRTUAL_FLAG_USER))
+            {
+                gPageFaultPolicy.DemandAllocatedFaults += 1ULL;
+                action = OrynKernelPageFaultActionRecover;
+            }
+            else
+            {
+                if ((errorCode & ORYN_PAGE_FAULT_PRESENT) == 0ULL && gDemandAddressSpace != 0)
+                {
+                    gPageFaultPolicy.DemandAllocationFailures += 1ULL;
+                }
+                gPageFaultPolicy.UserProcessFaults += 1ULL;
+                action = OrynKernelPageFaultActionKillProcess;
+            }
         }
         else
         {
@@ -204,6 +252,9 @@ void OrynKernelPageFaultPolicyPrintProof(void)
     OrynKernelScreenReportOkOrFail(gPageFaultPolicy.UserProcessFaults != 0ULL && gPageFaultPolicy.NonFatalFaults != 0ULL,
         "User page faults with process context use non-fatal process policy.",
         "User page-fault process policy did not run.");
+    OrynKernelScreenReportOkOrFail(gPageFaultPolicy.DemandAllocatedFaults != 0ULL,
+        "Demand allocation handles non-present user pages.",
+        "Demand allocation did not handle a user page fault.");
     OrynKernelScreenReportOkOrFail(gPageFaultPolicy.GuardPageFaults != 0ULL,
         "Guard-page page faults are classified as fatal.",
         "Guard-page page-fault policy did not classify faults.");

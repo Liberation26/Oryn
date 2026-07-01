@@ -22,6 +22,18 @@
 #define ORYN_VIRTUAL_USER_LIMIT 0x0000800000000000ULL
 #define ORYN_VIRTUAL_KERNEL_BASE 0xFFFF800000000000ULL
 #define ORYN_VIRTUAL_KERNEL_LIMIT 0xFFFFFFFFFFFFFFFFULL
+#define ORYN_VIRTUAL_MAX_ANONYMOUS_REGIONS 32U
+#define ORYN_USER_COPY_OK 1
+#define ORYN_USER_COPY_FAIL 0
+
+typedef struct OrynVirtualAnonymousRegion
+{
+    unsigned int Used;
+    unsigned long long Base;
+    unsigned long long Bytes;
+    unsigned long long Flags;
+    unsigned long long CommittedPages;
+} OrynVirtualAnonymousRegion;
 
 typedef struct OrynKernelAddressSpace
 {
@@ -36,6 +48,9 @@ typedef struct OrynKernelAddressSpace
     unsigned long long MappedPages;
     unsigned long long ProtectedPages;
     unsigned long long UnmappedPages;
+    unsigned long long DemandAllocatedPages;
+    unsigned long long AnonymousRegionCount;
+    OrynVirtualAnonymousRegion AnonymousRegions[ORYN_VIRTUAL_MAX_ANONYMOUS_REGIONS];
 } OrynKernelAddressSpace;
 
 typedef struct OrynKernelVirtualMemory
@@ -84,6 +99,11 @@ typedef struct OrynKernelVirtualMemory
     unsigned int AddressSpaceApiReady;
     unsigned int PageFaultPolicyReady;
     unsigned int ProcessAddressSpacesCreated;
+    unsigned long long DemandAllocatedUserPages;
+    unsigned long long AnonymousRegionsCreated;
+    unsigned long long UserCopyBytesIn;
+    unsigned long long UserCopyBytesOut;
+    unsigned long long UserCopyFaults;
     OrynKernelAddressSpace KernelAddressSpace;
 } OrynKernelVirtualMemory;
 
@@ -110,6 +130,35 @@ int OrynVirtualMemoryProtect(
     unsigned long long virtualAddress,
     unsigned long long bytes,
     unsigned long long flags);
+
+int OrynVirtualMemoryReserveAnonymousRegion(
+    OrynKernelAddressSpace* addressSpace,
+    unsigned long long virtualAddress,
+    unsigned long long bytes,
+    unsigned long long flags);
+int OrynVirtualMemoryDemandAllocateUserPage(
+    OrynKernelAddressSpace* addressSpace,
+    OrynKernelPhysicalMemory* physicalMemory,
+    unsigned long long faultAddress,
+    unsigned long long flags);
+int OrynVirtualMemoryIsRangeInUserSpace(
+    unsigned long long virtualAddress,
+    unsigned long long bytes);
+int OrynVirtualMemoryIsUserRangeMapped(
+    OrynKernelAddressSpace* addressSpace,
+    unsigned long long virtualAddress,
+    unsigned long long bytes,
+    unsigned long long requiredFlags);
+int OrynCopyFromUser(
+    OrynKernelAddressSpace* addressSpace,
+    void* kernelDestination,
+    const void* userSource,
+    unsigned long long bytes);
+int OrynCopyToUser(
+    OrynKernelAddressSpace* addressSpace,
+    void* userDestination,
+    const void* kernelSource,
+    unsigned long long bytes);
 int OrynVirtualMemoryRunAddressSpaceSelfTest(
     OrynKernelVirtualMemory* virtualMemory,
     OrynKernelPhysicalMemory* physicalMemory);

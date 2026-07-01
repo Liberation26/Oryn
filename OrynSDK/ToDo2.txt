@@ -1,6 +1,6 @@
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.102
-Updated from package: 0.5.102 Virtual Memory Address Space Policy
+Version: 0.5.104
+Updated from package: 0.5.104 User Copy Demand Paging and Page Ownership
 Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
@@ -143,32 +143,32 @@ Milestone 0.6 - Clean kernel entry and module ownership:
 [ OK ] Reduce KernelMain to one responsibility: enter kernel runtime and start the boot sequence.
 [ OK ] Move all boot proof category checks out of the runtime boot sequence into KernelSelfTest or BootProof modules.
 [ OK ] Move screen status category emission into KernelScreenReport only for category lines.
-[WARN] Move serial proof detail into Diagnostics/Logger only.
-[WARN] Add a KernelInit graph with ordered stages and explicit dependencies.
+[ OK ] Move serial proof detail into Diagnostics/Logger only.
+[ OK ] Add a KernelInit graph with ordered stages and explicit dependencies.
 [ OK ] Add per-module manifest items with OK/WARN/FAIL capable states.
-[WARN] Add module init/start proof through manifest state transitions.
+[ OK ] Add module init/start proof through manifest state transitions.
 [TOBE] Add module stop, panic, and shutdown callbacks.
 [ OK ] Add a registry of compiled-in kernel modules.
 [ OK ] Add dependency validation so a module cannot start before its prerequisites.
-[TOBE] Add fatal/non-fatal boot policy per module.
-[TOBE] Make every boot option start strictly according to the BootInfo items and project-selected options actually given.
-[TOBE] Emit WARN, not FAIL, when an optional module has nothing selected to start.
-[TOBE] Emit FAIL when a required module is selected but prerequisites are missing.
+[ OK ] Add fatal/non-fatal boot policy per module.
+[ OK ] Make every boot option start strictly according to the BootInfo items and project-selected options actually given.
+[ OK ] Emit WARN, not FAIL, when an optional module has nothing selected to start.
+[ OK ] Emit FAIL when a required module is selected but prerequisites are missing.
 
 Milestone 0.7 - Production memory management:
 [ OK ] Physical page allocator foundation exists.
 [ OK ] Higher-half kernel mapping foundation exists.
-[TOBE] Create a real kernel heap: kmalloc, kfree, krealloc, kcalloc.
-[TOBE] Add heap statistics and leak counters.
-[TOBE] Add slab/object caches for fixed-size kernel structures.
-[TOBE] Add guard pages for kernel stacks and critical heaps.
+[ OK ] Create a real kernel heap: kmalloc, kfree, krealloc, kcalloc.
+[ OK ] Add heap statistics and leak counters.
+[ OK ] Add slab/object caches for fixed-size kernel structures.
+[ OK ] Add guard pages for kernel stacks and critical heaps.
 [ OK ] Add page-fault handler policy instead of only reporting faults.
 [ OK ] Add virtual memory map/unmap/protect APIs.
 [ OK ] Add per-process address spaces.
 [ OK ] Add user/kernel address split.
-[TOBE] Add copy_from_user and copy_to_user safety helpers.
-[TOBE] Add demand allocation for user pages.
-[TOBE] Add page reference counts.
+[ OK ] Add copy_from_user and copy_to_user safety helpers using user/kernel split and page-fault-aware address validation.
+[ OK ] Add demand allocation for user pages and anonymous regions.
+[ OK ] Add page reference counts and ownership diagnostics.
 [TOBE] Add copy-on-write foundation for fork-like process creation later.
 [TOBE] Add DMA-safe physical allocation constraints.
 [TOBE] Add memory pressure and out-of-memory policy.
@@ -592,3 +592,25 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [ OK ] Added process-owned address-space creation with copied kernel-half mappings.
 [ OK ] Added explicit user/kernel address split constants and boot proof output.
 [ OK ] Added VM proof coverage for user mapping, protection change, unmap, process address-space creation, and page-fault policy classification.
+
+
+0.5.103 Page-fault process policy fix:
+[ OK ] User page-fault policy proof now uses an explicit process/address-space context.
+[ OK ] Invalid user page-fault context remains fatal by policy.
+[ OK ] Valid user process page faults follow non-fatal process policy classification.
+
+0.5.104 User copy, demand allocation, and page ownership diagnostics:
+[ OK ] Added OrynCopyFromUser and OrynCopyToUser helpers.
+[ OK ] User copy helpers validate the user/kernel address split before copying.
+[ OK ] User copy helpers validate that user pages are mapped with required permissions before copying.
+[ OK ] User copy helpers translate mapped user virtual pages to owned physical pages rather than blindly dereferencing unchecked pointers.
+[ OK ] Added anonymous user-region reservation to per-process address spaces.
+[ OK ] Added demand allocation for non-present user anonymous pages through the page-fault policy.
+[ OK ] Page-fault policy can now recover a non-present user anonymous page fault by allocating and mapping a page.
+[ OK ] Page-fault policy still treats kernel faults, guard-page faults, and invalid user contexts as fatal.
+[ OK ] Added physical page ownership records.
+[ OK ] Added page reference counters.
+[ OK ] Added page owner classes for generic pages, page tables, kernel heap pages, user pages, and reserved pages.
+[ OK ] Added ownership diagnostics for record usage, total references, owner counts, overflows, and mismatches.
+[ OK ] Virtual-memory proof now covers user copy helpers, anonymous region demand allocation, and ownership diagnostics.
+[WARN] Full user process lifecycle integration, page eviction, copy-on-write, and mmap-backed file regions remain future work.

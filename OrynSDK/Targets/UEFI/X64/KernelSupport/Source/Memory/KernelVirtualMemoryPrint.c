@@ -147,6 +147,22 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
     KernelIoWriteDec64(virtualMemory->ProcessAddressSpacesCreated);
     KernelIoWriteString("\n");
 
+    KernelIoWriteString("[KERNEL] Anonymous user regions created: ");
+    KernelIoWriteDec64(virtualMemory->AnonymousRegionsCreated);
+    KernelIoWriteString("\n");
+
+    KernelIoWriteString("[KERNEL] Demand-allocated user pages: ");
+    KernelIoWriteDec64(virtualMemory->DemandAllocatedUserPages);
+    KernelIoWriteString("\n");
+
+    KernelIoWriteString("[KERNEL] User copy bytes from user: ");
+    KernelIoWriteDec64(virtualMemory->UserCopyBytesIn);
+    KernelIoWriteString("\n");
+
+    KernelIoWriteString("[KERNEL] User copy bytes to user: ");
+    KernelIoWriteDec64(virtualMemory->UserCopyBytesOut);
+    KernelIoWriteString("\n");
+
     KernelIoWriteString("[KERNEL] Page-fault policy: ");
     KernelIoWriteString(virtualMemory->PageFaultPolicyReady ? "ready\n" : "not proven\n");
 

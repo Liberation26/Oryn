@@ -64,6 +64,7 @@ void OrynPhysicalMemoryPrintFinalState(const OrynKernelPhysicalMemory* allocator
     WritePageCount("  Tracked free pages: ", allocator->FreePageCount);
     WritePageCount("  Used pages: ", allocator->UsedPageCount);
     WritePageCount("  Reserved handoff/kernel pages: ", allocator->ReservedPages);
+    OrynPhysicalMemoryPrintOwnershipDiagnostics(allocator);
     KernelIoWriteString("  Lowest tracked free page: ");
     KernelIoWriteHex64(allocator->LowestFreeAddress);
     KernelIoWriteString("\n");
@@ -117,4 +118,42 @@ void OrynPhysicalMemoryRunSelfTest(OrynKernelPhysicalMemory* allocator)
     }
 
     KernelIoWriteString("[KERNEL] Physical allocator self-test: complete\n");
+}
+
+
+void OrynPhysicalMemoryPrintOwnershipDiagnostics(const OrynKernelPhysicalMemory* allocator)
+{
+    OrynPhysicalPageOwnershipStats stats;
+    if (!OrynPhysicalMemoryGetOwnershipStats(allocator, &stats))
+    {
+        KernelIoWriteString("[KERNEL] Physical page ownership diagnostics: unavailable\n");
+        return;
+    }
+    KernelIoWriteString("[KERNEL] Physical page ownership records: ");
+    KernelIoWriteDec64(stats.RecordsUsed);
+    KernelIoWriteString(" / ");
+    KernelIoWriteDec64(stats.RecordsCapacity);
+    KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] Physical page references: ");
+    KernelIoWriteDec64(stats.TotalReferences);
+    KernelIoWriteString(" across ");
+    KernelIoWriteDec64(stats.PagesWithReferences);
+    KernelIoWriteString(" page(s)\n");
+    KernelIoWriteString("[KERNEL] Page owner counts: generic=");
+    KernelIoWriteDec64(stats.GenericPages);
+    KernelIoWriteString(" page-table=");
+    KernelIoWriteDec64(stats.PageTablePages);
+    KernelIoWriteString(" heap=");
+    KernelIoWriteDec64(stats.KernelHeapPages);
+    KernelIoWriteString(" user=");
+    KernelIoWriteDec64(stats.UserPages);
+    KernelIoWriteString(" reserved=");
+    KernelIoWriteDec64(stats.ReservedPages);
+    KernelIoWriteString("\n");
+    OrynKernelScreenReportOkOrFail(stats.OwnershipRecordOverflows == 0ULL,
+        "Physical page ownership diagnostics have capacity.",
+        "Physical page ownership diagnostics overflowed.");
+    OrynKernelScreenReportOkOrFail(stats.OwnershipMismatches == 0ULL,
+        "Physical page reference counters are consistent.",
+        "Physical page reference counter mismatch detected.");
 }

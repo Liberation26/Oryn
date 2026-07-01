@@ -56,3 +56,9 @@ OrynLibC function-unit manifests
 - Targets/UEFI/X64/KernelSupport/Include/KernelVirtualMemory.h now exposes address-space objects, user/kernel split constants, and map/unmap/protect APIs.
 - Targets/UEFI/X64/KernelSupport/Source/Memory/KernelVirtualMemoryApi.c owns process address-space creation plus virtual map/unmap/protect operations.
 - KernelInterrupts dispatches page faults through KernelPageFaultPolicy before panic escalation.
+
+
+0.5.104 memory-management additions:
+- Targets/UEFI/X64/KernelSupport/Source/Memory/KernelVirtualMemoryUser.c owns user-copy validation, anonymous user regions, and demand user-page allocation helpers.
+- KernelVirtualMemory.h exposes copy_from_user/copy_to_user-style helpers as OrynCopyFromUser and OrynCopyToUser.
+- KernelPhysicalMemory now tracks page ownership and reference diagnostics for page-table, heap, user, reserved, and generic page use.

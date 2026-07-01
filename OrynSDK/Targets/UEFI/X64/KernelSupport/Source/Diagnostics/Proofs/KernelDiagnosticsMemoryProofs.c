@@ -84,19 +84,21 @@ static void OrynKernelDiagnosticsRunVirtualMemoryProof(const OrynBootInfo* kerne
     OrynKernelDiagnosticsLogText("[KERNEL] Virtual memory: starting\n");
     if (OrynVirtualMemoryInit(kernelBootInfo, &gKernelMemoryMap, &gPhysicalMemory, &gVirtualMemory))
     {
+        if (OrynKernelPageFaultPolicyRunSelfTest())
+        {
+            gVirtualMemory.PageFaultPolicyReady = 1U;
+        }
         if (OrynVirtualMemoryRunAddressSpaceSelfTest(&gVirtualMemory, &gPhysicalMemory))
         {
             OrynKernelScreenReportOk(0, "Virtual memory map/unmap/protect APIs passed proof.");
             OrynKernelScreenReportOk(0, "Per-process address-space creation passed proof.");
             OrynKernelScreenReportOk(0, "User/kernel address split is active.");
+            OrynKernelScreenReportOk(0, "copy_from_user and copy_to_user safety helpers passed proof.");
+            OrynKernelScreenReportOk(0, "Demand allocation for user anonymous pages passed proof.");
         }
         else
         {
             OrynKernelScreenReportFail(0, "Virtual memory address-space API proof failed.");
-        }
-        if (OrynKernelPageFaultPolicyRunSelfTest())
-        {
-            gVirtualMemory.PageFaultPolicyReady = 1U;
         }
         OrynVirtualMemoryPrintProof(&gVirtualMemory);
         OrynKernelPageFaultPolicyPrintProof();
