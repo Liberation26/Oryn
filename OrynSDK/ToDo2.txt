@@ -1,6 +1,6 @@
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.85
-Updated from package: 0.5.85 Generated File Manifests
+Version: 0.5.86
+Updated from package: 0.5.86 Kernel Boot Proof Ownership
 Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
@@ -116,7 +116,7 @@ Current kernel foundation already present:
 [ OK ] Keyboard IRQ1 screen scrolling proof exists.
 [ OK ] Physical memory allocator foundation exists.
 [ OK ] Higher-half virtual-memory foundation exists.
-[WARN] KernelRuntimeBootSequence still owns too much proof orchestration.
+[ OK ] KernelRuntimeBootSequence no longer owns proof orchestration; it enters runtime and calls KernelBootProof only.
 [WARN] Console exists but is still too close to the kernel proof flow.
 [WARN] FAT32 and VFS kernel modules exist, but they are not production-ready filesystems yet.
 [WARN] Module manifests are static C tables, not generated from per-module manifest files yet.
@@ -415,7 +415,7 @@ Milestone 2.3 - Module manifests and selectable boot options:
 Recommended implementation order:
 1. Finish per-module manifests and generate the manifest C table from them.
 2. Make the runtime boot sequence start modules only from selected BootInfo/project options.
-3. Move remaining proof orchestration out of KernelRuntimeBootSequence into KernelSelfTest/BootProof modules.
+3. Keep KernelRuntimeBootSequence limited to runtime entry and boot-proof handoff.
 4. Complete Diagnostics/Logger ring buffer and make serial proof detail flow through it.
 5. Turn FillPrerequisites.sh into a full prerequisites app/command with proof report.
 6. Finish OrynLibC unit tests and function-level manifests.
@@ -438,7 +438,7 @@ Immediate next 10 SDK tasks:
 [TOBE] 2. Add OrynBuild manifest validation so APIC/PIC/CPU/Interrupts order and all other prerequisites are checked before compile/run.
 [TOBE] 3. Make runtime start decisions come from selected BootInfo/project options, not hardcoded proof order.
 [TOBE] 4. Add WARN/FAIL policy for optional unselected modules versus required missing prerequisites.
-[TOBE] 5. Move remaining proof logic from KernelRuntimeBootSequence into KernelSelfTest/BootProof.
+[ OK ] 5. Move remaining proof orchestration from KernelRuntimeBootSequence into KernelBootProof.
 [TOBE] 6. Add Diagnostics/Logger ring buffer and route serial details through it.
 [ OK ] 7. Expand FillPrerequisites into a complete command with detect/install/report phases.
 [TOBE] 8. Add OrynLibC function-level manifests and unit tests.
@@ -486,3 +486,9 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [ OK ] 0.5.84 Add signed package hashes for release-grade package authenticity.
 
 [ OK ] 0.5.85 Add generated file manifests for every package file in FullSource and ChangedFiles.
+
+0.5.86 Kernel boot proof ownership:
+[ OK ] KernelRuntimeBootSequence now has one runtime duty: enter the kernel runtime and hand off to the boot proof runner.
+[ OK ] Added KernelBootProof.h as the ownership boundary for boot proof sequencing.
+[ OK ] Added KernelBootProofOrchestrator.c to own boot proof execution, panic handoff, running-state transition, and halt proofs.
+[ OK ] KernelRuntimeBootSequence no longer includes KernelDiagnostics, KernelLifecycle, KernelPanic, or KernelIo.

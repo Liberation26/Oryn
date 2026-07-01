@@ -327,3 +327,8 @@ Each manifest records the package version, owning tree, file count, total payloa
 - Each generated file manifest lists every file inside its tree, including PackageManifest.txt, with size and SHA256.
 - The updater validates both generated file manifests before any copy operation.
 - The signed PackageHashes.txt covers the generated manifests so tree file inventories are authenticity-protected.
+
+0.5.86 boot proof ownership:
+- Targets/UEFI/X64/KernelSupport/Include/KernelBootProof.h declares the boot proof runner boundary.
+- Targets/UEFI/X64/KernelSupport/Source/Diagnostics/Proofs/KernelBootProofOrchestrator.c owns proof orchestration after runtime entry.
+- Targets/UEFI/X64/KernelSupport/Source/Runtime/KernelRuntimeBootSequence.c only enters runtime, hands off to KernelBootProof, exits for non-interactive VM, and halts.
