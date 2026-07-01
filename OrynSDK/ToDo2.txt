@@ -1,6 +1,7 @@
-OrynWsl ToDo2 - Linux-like Full Kernel Roadmap
-Version: 0.5.61
-Purpose: Define the work needed to grow OrynWsl from the current boot-proven kernel into a full kernel that behaves like a small Linux-class operating system.
+OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
+Version: 0.5.77
+Updated from package: 0.5.76 OrynLibC
+Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
 Oryn is not meant to copy Linux source code or become a Linux distribution.
@@ -17,6 +18,10 @@ Oryn is meant to provide the same kind of kernel capability that makes Linux use
 - diagnostics, logging, panic, crash, and recovery paths;
 - repeatable builds and automated boot tests.
 
+Meaning of "SDK":
+The SDK is the source, build, boot, image, test, and support layer used to create freestanding kernels and operating systems.
+It must stay native-C-first and must not depend on .NET, managed runtimes, or hosted operating-system services inside the kernel path.
+
 Status tags:
 [ OK ] Implemented enough for the current release target.
 [WARN] Present but partial, smoke-test only, or not production-safe.
@@ -27,6 +32,7 @@ Hard project rules:
 [ OK ] Native C SDK only. No .NET runtime inside the kernel path.
 [ OK ] UEFI is a loader target only. The kernel must not call UEFI after handoff.
 [ OK ] Kernel receives plain OrynBootInfo and then owns the machine.
+[ OK ] KernelMain has one responsibility: enter kernel runtime and start the boot sequence.
 [ OK ] Screen output rule: framebuffer status screen shows only OK, WARN, or FAIL category lines.
 [ OK ] Detailed proof output belongs on serial/debug output and boot reports.
 [ OK ] Exactly three kernel syscall concepts: Get, Set, Event.
@@ -35,14 +41,39 @@ Hard project rules:
 [ OK ] Source code must follow the Single Responsibility Principle.
 [ OK ] Keep source files under 500 lines. Split by function or responsibility.
 [ OK ] Incremental C-to-object compilation must remain the default.
+[ OK ] SDK source is separated into Common and Targets/UEFI/X64 ownership areas.
+[ OK ] FAT32 image creation must support growth toward hundreds of files.
+[ OK ] Build, image, and run must use project source and selected BootInfo items.
 
-Current foundation already proven:
+Current SDK foundation already present:
+[ OK ] Root launchers exist for Oryn.sh, oryn, update, and gitpush.
+[ OK ] Common/Scripts exists for build, update, git push, launcher, and prerequisite helper ownership.
+[ OK ] FillPrerequisites.sh exists as the SDK prerequisite filling script.
+[ OK ] Common/OrynBuild native C skeleton exists.
+[ OK ] UEFI x64 target-owned OrynBuild implementation exists.
+[ OK ] Incremental source hash and object rebuild logic exists.
+[ OK ] Build manifest source exists.
+[WARN] Build dependency graph is still source-list based and not yet a full module/archive resolver.
+[WARN] Prerequisite filling is present as a script, but it is not yet a complete cross-platform installer/app.
+[TOBE] Add stronger diagnostics for every build-plan decision and skipped source.
+[TOBE] Add package self-validation before update copies files.
+[TOBE] Add update package manifest for FullSource and ChangedFiles.
+
+Current kernel foundation already present:
 [ OK ] UEFI x64 BOOTX64.EFI loader exists.
 [ OK ] ELF64 kernel loading is separate from the EFI loader application.
 [ OK ] OrynBootInfo handoff exists with version, size, flags, and checksum validation.
 [ OK ] Kernel-owned BootInfo copy exists.
 [ OK ] Kernel owns its lifecycle and halt path.
 [ OK ] Kernel-owned panic screen/report path exists.
+[ OK ] KernelRuntimeEnterAndStartBootSequence owns runtime entry from KernelStart.
+[ OK ] KernelMain is reduced to calling the runtime entry only.
+[ OK ] KernelScreenReport exists for OK/WARN/FAIL category emission.
+[ OK ] KernelLifecycle states exist.
+[ OK ] KernelModuleManifest foundation exists.
+[ OK ] KernelModuleManifest has item names, owned items, prerequisites, and states.
+[ OK ] KernelModuleManifest prevents start before declared prerequisites are ready.
+[ OK ] Manifest currently orders APIC after PIC, CPU, and Interrupts.
 [ OK ] GDT and IDT foundations exist.
 [ OK ] CPU exception report path exists.
 [ OK ] PIC IRQ0 proof exists.
@@ -54,21 +85,41 @@ Current foundation already proven:
 [ OK ] Keyboard IRQ1 screen scrolling proof exists.
 [ OK ] Physical memory allocator foundation exists.
 [ OK ] Higher-half virtual-memory foundation exists.
-[ OK ] KernelMain still contains too much smoke-test orchestration.
-[ OK ] Console exists but is still too close to the kernel proof flow.
-[ OK ] FAT32 image creation exists, but kernel-side FAT32/VFS is not production-ready.
+[WARN] KernelRuntimeBootSequence still owns too much proof orchestration.
+[WARN] Console exists but is still too close to the kernel proof flow.
+[WARN] FAT32 and VFS kernel modules exist, but they are not production-ready filesystems yet.
+[WARN] Module manifests are static C tables, not generated from per-module manifest files yet.
+
+Current OrynLibC foundation already present:
+[ OK ] OrynLibC source tree exists under Common/OrynLibC.
+[ OK ] Public headers exist for stddef.h, stdint.h, stdbool.h, limits.h, errno.h, assert.h, string.h, ctype.h, stdlib.h, and inttypes.h.
+[ OK ] String units exist for memset, memcpy, memmove, memcmp, strlen, strcpy, strcmp, strchr, strcat, strstr, memchr, and strerror.
+[ OK ] Ctype unit exists for digit/alpha/alnum/space/xdigit/lower/upper helpers.
+[ OK ] Stdlib units exist for atoi/number conversion family, abs/llabs-style helpers, strtol/strtoul/strtoull, and abort foundation.
+[ OK ] Errno and assert foundations exist.
+[ OK ] OrynLibC proof source exists.
+[WARN] LibC is enough for the current kernel/SDK proof but not yet a full freestanding libc.
+[WARN] LibC object selection exists, but archive-style dependency resolution is not complete.
+[TOBE] Split remaining multi-function LibC files further where practical.
+[TOBE] Add complete function-level manifests for each LibC unit.
+[TOBE] Add tests for every LibC function.
+[TOBE] Add freestanding-safe printf/snprintf family after integer/string foundation is stable.
 
 Milestone 0.6 - Clean kernel entry and module ownership:
 [ OK ] Reduce KernelMain to one responsibility: enter kernel runtime and start the boot sequence.
-[TOBE] Move all boot proof category checks out of KernelMain into a KernelSelfTest or BootProof module.
-[TOBE] Move screen status category emission into KernelScreenReport only.
-[TOBE] Move serial proof detail into Diagnostics/Logger only.
-[TOBE] Add a KernelInit graph with ordered stages and explicit dependencies.
-[TOBE] Add per-stage status objects with OK/WARN/FAIL and serial detail text.
-[TOBE] Add module init, start, stop, panic, and shutdown callbacks.
-[TOBE] Add a registry of compiled-in kernel modules.
-[TOBE] Add dependency validation so a module cannot start before its prerequisites.
+[WARN] Move all boot proof category checks out of the runtime boot sequence into KernelSelfTest or BootProof modules.
+[ OK ] Move screen status category emission into KernelScreenReport only for category lines.
+[WARN] Move serial proof detail into Diagnostics/Logger only.
+[WARN] Add a KernelInit graph with ordered stages and explicit dependencies.
+[ OK ] Add per-module manifest items with OK/WARN/FAIL capable states.
+[WARN] Add module init/start proof through manifest state transitions.
+[TOBE] Add module stop, panic, and shutdown callbacks.
+[ OK ] Add a registry of compiled-in kernel modules.
+[ OK ] Add dependency validation so a module cannot start before its prerequisites.
 [TOBE] Add fatal/non-fatal boot policy per module.
+[TOBE] Make every boot option start strictly according to the BootInfo items and project-selected options actually given.
+[TOBE] Emit WARN, not FAIL, when an optional module has nothing selected to start.
+[TOBE] Emit FAIL when a required module is selected but prerequisites are missing.
 
 Milestone 0.7 - Production memory management:
 [ OK ] Physical page allocator foundation exists.
@@ -167,6 +218,7 @@ Milestone 1.2 - Executable loading and external commands:
 [TOBE] Make the shell a separate loaded userland application.
 
 Milestone 1.3 - VFS and file descriptor model:
+[WARN] KernelVfs source exists but is currently a foundation, not the final file descriptor model.
 [TOBE] Define vnode/inode/file structures.
 [TOBE] Define file descriptor table per process.
 [TOBE] Add open, close, read, write, seek, stat, readdir, mkdir, unlink, rename primitives.
@@ -183,7 +235,9 @@ Milestone 1.3 - VFS and file descriptor model:
 
 Milestone 1.4 - Storage stack:
 [WARN] PCI storage-class discovery exists.
-[TOBE] Define block device abstraction: sector size, block count, read, write, flush.
+[WARN] KernelBlockDevice source exists as a foundation.
+[WARN] FAT32 source exists for BPB, FAT, cluster I/O, directory, file read/write, format, mutate, names, and path helpers.
+[TOBE] Define production block device abstraction: sector size, block count, read, write, flush.
 [TOBE] Add partition table parser: MBR first, GPT next.
 [TOBE] Add AHCI/SATA driver.
 [TOBE] Add NVMe driver.
@@ -192,8 +246,7 @@ Milestone 1.4 - Storage stack:
 [TOBE] Add block cache.
 [TOBE] Add request queue and completion events.
 [TOBE] Add read-only mount mode for unsafe drivers.
-[TOBE] Add FAT32 production read.
-[TOBE] Add FAT32 production write after read path is proven.
+[WARN] FAT32 read/write helpers exist but still need full boot-test coverage and corruption safety.
 [TOBE] Add ext2 read support as the next simple Linux-like filesystem target.
 [TOBE] Add filesystem corruption checks and safe failure modes.
 
@@ -272,9 +325,10 @@ Milestone 1.9 - Diagnostics, testing, and recovery:
 [TOBE] Add watchdog/recovery policy.
 [TOBE] Add kernel log levels and ring buffer export.
 [TOBE] Add module health status query through Get.
-[TOBE] Add build artifact manifest and boot artifact manifest.
+[WARN] Build artifact manifest source exists, but boot artifact manifest is not complete.
 [TOBE] Add link map and dead-code report.
 [TOBE] Add regression tests for no .inc files and source line-count limits.
+[TOBE] Add regression tests that screen output category lines are only OK, WARN, or FAIL.
 
 Milestone 2.0 - POSIX/Linux compatibility layer:
 [TOBE] Keep Oryn internal ABI as Get, Set, Event.
@@ -291,10 +345,12 @@ Milestone 2.0 - POSIX/Linux compatibility layer:
 
 Milestone 2.1 - Build system maturity:
 [ OK ] Incremental C-to-object compilation exists.
+[ OK ] Build manifest source exists.
+[WARN] LibC object preselection exists but is still not a real archive/dependency resolver.
 [TOBE] Add full dependency graph resolver for SDK modules and LibC units.
 [TOBE] Replace textual symbol preparse with an archive/dependency resolver.
 [TOBE] Build reusable static archives for stable SDK modules.
-[TOBE] Add per-module manifests.
+[WARN] Static C module manifest exists; per-module manifest files are still needed.
 [TOBE] Add generated compile database for editor tooling.
 [TOBE] Add object cache invalidation by compiler version, flags, source hash, and dependency hash.
 [TOBE] Add parallel compile worker count from project settings.
@@ -302,33 +358,72 @@ Milestone 2.1 - Build system maturity:
 [TOBE] Add package manifest for FullSource and ChangedFiles.
 [TOBE] Add update validation before copying files.
 
-Recommended implementation order:
-1. Clean KernelMain and move proof/report logic into modules.
-2. Finish kernel heap and virtual-memory APIs.
-3. Finish interrupt queues, deferred work, and monotonic clock.
-4. Build scheduler and kernel threads.
-5. Enter user mode with one test process.
-6. Build VFS and file descriptors.
-7. Build block device + FAT32 read path.
-8. Load external shell from /System/Commands or /System/Shell.
-9. Convert commands into external programs.
-10. Add process isolation, exec, wait, and stdout/stderr routing.
-11. Add storage write support.
-12. Add networking.
-13. Add security, permissions, and crash recovery.
-14. Add POSIX/Linux compatibility wrappers on top of Get/Set/Event.
+Milestone 2.2 - SDK prerequisites and host tooling:
+[ OK ] FillPrerequisites.sh exists.
+[TOBE] Turn prerequisite filling into a clear SDK app/command with checks, install hints, and final proof report.
+[TOBE] Detect clang, lld, qemu, ovmf, gcc, make, zip, unzip, git, and optional gdb.
+[TOBE] Print exact missing tool, expected path, selected provider, and remediation command.
+[TOBE] Support WSL/Linux first, then Windows host wrapper, then macOS where practical.
+[TOBE] Keep host prerequisites outside the kernel source tree.
+[TOBE] Avoid hiding failures behind generic "tool not found" messages.
+[TOBE] Add a prerequisites report artifact into Build/Reports.
 
-Immediate next 10 tasks:
-[TOBE] 1. Create KernelInit module and move stage ordering out of KernelMain.
-[TOBE] 2. Create KernelSelfTest module for boot proof checks.
-[TOBE] 3. Create Diagnostics module with ring buffer and serial/debug sinks.
-[TOBE] 4. Create KernelHeap module with kmalloc/kfree and boot proof.
-[TOBE] 5. Create KernelVmmMap module for map/unmap/protect APIs.
-[TOBE] 6. Create ClockSource module and select HPET/APIC/TSC policy.
-[TOBE] 7. Create DeferredWork module for interrupt bottom halves.
-[TOBE] 8. Create Scheduler module with kernel threads only.
-[TOBE] 9. Create VFS skeleton with mount table and ramfs.
-[TOBE] 10. Create ExecutableLoader skeleton that resolves only external command paths.
+Milestone 2.3 - Module manifests and selectable boot options:
+[ OK ] KernelModuleManifest has compiled-in module items and prerequisites.
+[ OK ] APIC is declared after PIC, CPU, and Interrupts.
+[TOBE] Create one manifest file per module directory.
+[TOBE] Add manifest fields: name, items, target, prerequisites, optional/required, starts-when, provides, consumes, test command, and report category.
+[TOBE] Generate KernelModuleManifestData.c from the per-module manifests.
+[TOBE] Generate build source inclusion from the same manifests.
+[TOBE] Ensure selected BootInfo items decide what actually starts.
+[TOBE] Ensure modules with no selected work emit WARN only when useful, and stay silent when intentionally disabled.
+[TOBE] Ensure selected required modules with missing prerequisites emit FAIL.
+[TOBE] Add manifest validation command to OrynBuild.
+[TOBE] Add boot report section listing selected, skipped, started, ready, warn, and failed modules.
+
+Recommended implementation order:
+1. Finish per-module manifests and generate the manifest C table from them.
+2. Make the runtime boot sequence start modules only from selected BootInfo/project options.
+3. Move remaining proof orchestration out of KernelRuntimeBootSequence into KernelSelfTest/BootProof modules.
+4. Complete Diagnostics/Logger ring buffer and make serial proof detail flow through it.
+5. Turn FillPrerequisites.sh into a full prerequisites app/command with proof report.
+6. Finish OrynLibC unit tests and function-level manifests.
+7. Add the real kernel heap and virtual-memory map/unmap/protect APIs.
+8. Finish interrupt queues, deferred work, and monotonic clock.
+9. Build scheduler and kernel threads.
+10. Enter user mode with one test process.
+11. Build VFS and file descriptors.
+12. Build block device + FAT32 production read path.
+13. Load external shell from /System/Commands or /System/Shell.
+14. Convert commands into external programs.
+15. Add process isolation, exec, wait, and stdout/stderr routing.
+16. Add storage write support.
+17. Add networking.
+18. Add security, permissions, and crash recovery.
+19. Add POSIX/Linux compatibility wrappers on top of Get/Set/Event.
+
+Immediate next 10 SDK tasks:
+[TOBE] 1. Add per-module manifest files beside each module and generate KernelModuleManifestData.c.
+[TOBE] 2. Add OrynBuild manifest validation so APIC/PIC/CPU/Interrupts order and all other prerequisites are checked before compile/run.
+[TOBE] 3. Make runtime start decisions come from selected BootInfo/project options, not hardcoded proof order.
+[TOBE] 4. Add WARN/FAIL policy for optional unselected modules versus required missing prerequisites.
+[TOBE] 5. Move remaining proof logic from KernelRuntimeBootSequence into KernelSelfTest/BootProof.
+[TOBE] 6. Add Diagnostics/Logger ring buffer and route serial details through it.
+[TOBE] 7. Expand FillPrerequisites into a complete command with detect/install/report phases.
+[TOBE] 8. Add OrynLibC function-level manifests and unit tests.
+[TOBE] 9. Replace LibC textual symbol preparse with archive/dependency resolution.
+[TOBE] 10. Add Build/Reports outputs for prerequisites, manifest validation, dependency graph, and boot module status.
+
+Definition of "full SDK works" for Oryn 2.x:
+[TOBE] Creates, builds, images, runs, and tests freestanding kernels from native C source.
+[TOBE] Keeps Common and Targets ownership clean.
+[TOBE] Resolves module and LibC prerequisites from manifests, not from hidden hardcoded order.
+[TOBE] Builds only changed source by default.
+[TOBE] Produces useful diagnostics for every skipped, selected, compiled, linked, and booted item.
+[TOBE] Produces update packages with FullSource and ChangedFiles that validate before copying.
+[TOBE] Supports UEFI x64 first and can add future targets without contaminating Common.
+[TOBE] Provides a growing freestanding OrynLibC as object files and reusable archives.
+[TOBE] Provides reproducible QEMU boot tests and reports.
 
 Definition of "full Kernel works like Linux" for Oryn 2.x:
 [TOBE] Boots on QEMU UEFI x64 without returning to loader.
@@ -345,4 +440,3 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [TOBE] Provides POSIX/Linux-like wrappers above the Oryn ABI.
 [TOBE] Has clear OK/WARN/FAIL screen status and detailed serial diagnostics.
 [TOBE] Has automated QEMU regression tests for every major subsystem.
-
