@@ -1,5 +1,7 @@
 #include "KernelInterrupts.h"
 #include "KernelApic.h"
+#include "KernelDeferred.h"
+#include "KernelInterruptLock.h"
 #include "KernelIo.h"
 #include "KernelModuleManifest.h"
 #include "KernelPanic.h"
@@ -7,6 +9,7 @@
 #include "KernelPic.h"
 #include "KernelPortIo.h"
 #include "KernelScreenReport.h"
+#include "KernelSmp.h"
 
 #define ORYN_PIT_CHANNEL0 0x40U
 #define ORYN_PIT_COMMAND 0x43U
@@ -48,6 +51,9 @@ static unsigned long long ReadCr2(void)
     return value;
 }
 
+static void AccountEoi(void);
+static void AccountDispatch(unsigned int vector, unsigned int exception);
+
 static const char* ExceptionName(unsigned long long vector)
 {
     static const char* names[ORYN_INTERRUPT_EXCEPTION_COUNT] =
@@ -77,6 +83,7 @@ static void SendInterruptEoi(unsigned int vector)
         OrynKernelPicSendEoi(vector - ORYN_INTERRUPT_IRQ_BASE);
         gInterruptState.PicEoiCount += 1ULL;
         gInterruptState.EoiCount += 1ULL;
+        AccountEoi();
         return;
     }
 
@@ -85,6 +92,7 @@ static void SendInterruptEoi(unsigned int vector)
         OrynKernelApicSendEoi();
         gInterruptState.ApicEoiCount += 1ULL;
         gInterruptState.EoiCount += 1ULL;
+        AccountEoi();
     }
 }
 
@@ -109,6 +117,64 @@ static void ProgramPitOneShot(unsigned int divisor)
     OrynPortOut8(ORYN_PIT_CHANNEL0, (unsigned char)((divisor >> 8) & 0xFFU));
 }
 
+static unsigned int ResolveCurrentCpuIndex(void)
+{
+    const OrynKernelSmpState* smp = OrynKernelSmpGetState();
+    unsigned int apicId = OrynKernelApicGetState()->LocalApicId;
+    if (smp != 0 && smp->DiscoveryComplete)
+    {
+        for (unsigned int index = 0U; index < smp->EnabledCpuCount &&
+            index < ORYN_INTERRUPT_CPU_ACCOUNT_LIMIT; ++index)
+        {
+            if (smp->Cpus[index].Enabled && smp->Cpus[index].LocalApicId == apicId)
+            {
+                return index;
+            }
+        }
+        if (smp->BootstrapCpuIndex < ORYN_INTERRUPT_CPU_ACCOUNT_LIMIT)
+        {
+            return smp->BootstrapCpuIndex;
+        }
+    }
+    return 0U;
+}
+
+static OrynKernelInterruptCpuAccount* CurrentCpuAccount(void)
+{
+    unsigned int cpu = ResolveCurrentCpuIndex();
+    if (cpu >= ORYN_INTERRUPT_CPU_ACCOUNT_LIMIT)
+    {
+        cpu = 0U;
+    }
+    gInterruptState.CurrentCpuIndex = cpu;
+    gInterruptState.CpuAccountsReady = 1U;
+    gInterruptState.CpuAccounts[cpu].Used = 1U;
+    gInterruptState.CpuAccounts[cpu].CpuIndex = cpu;
+    gInterruptState.CpuAccounts[cpu].LocalApicId = OrynKernelApicGetState()->LocalApicId;
+    return &gInterruptState.CpuAccounts[cpu];
+}
+
+static void AccountDispatch(unsigned int vector, unsigned int exception)
+{
+    OrynKernelInterruptCpuAccount* account = CurrentCpuAccount();
+    account->LastVector = vector;
+    account->TotalDispatches += 1ULL;
+    if (exception)
+    {
+        account->ExceptionDispatches += 1ULL;
+    }
+    else
+    {
+        account->HardwareDispatches += 1ULL;
+    }
+}
+
+static void AccountEoi(void)
+{
+    OrynKernelInterruptCpuAccount* account = CurrentCpuAccount();
+    account->EoiCount += 1ULL;
+}
+
 const OrynKernelInterruptState* OrynKernelInterruptsGetState(void)
 {
     return &gInterruptState;
@@ -126,7 +192,13 @@ int OrynKernelInterruptsInit(void)
     ClearBytes(gVectorCounters, sizeof(gVectorCounters));
     gInterruptState.Initialized = 1U;
     gInterruptState.HandlerSlots = ORYN_INTERRUPT_VECTOR_COUNT;
+    gInterruptState.CpuAccountSlots = ORYN_INTERRUPT_CPU_ACCOUNT_LIMIT;
+    gInterruptState.CpuAccountsReady = 1U;
+    gInterruptState.CpuAccounts[0].Used = 1U;
     gInterruptState.InterruptsEnabled = OrynKernelInterruptsAreEnabled();
+    OrynKernelDeferredInit();
+    (void)OrynKernelInterruptLockRunProof();
+    (void)OrynKernelDeferredRunProof();
     OrynKernelModuleManifestReady(OrynKernelModuleInterrupts);
     return 1;
 }
@@ -163,6 +235,16 @@ unsigned long long OrynKernelInterruptsGetVectorCount(unsigned int vector)
     return gVectorCounters[vector];
 }
 
+unsigned int OrynKernelInterruptsGetCurrentCpuIndex(void)
+{
+    return ResolveCurrentCpuIndex();
+}
+
+unsigned int OrynKernelInterruptsAreInInterrupt(void)
+{
+    return gInterruptState.InterruptNesting != 0U ? 1U : 0U;
+}
+
 void OrynKernelInterruptsEnable(void)
 {
     __asm__ volatile ("sti" ::: "memory");
@@ -191,6 +273,7 @@ void OrynKernelInterruptsDispatch(OrynIdtInterruptFrame* frame)
     }
 
     vector = (unsigned int)(frame->Vector & 0xFFULL);
+    gInterruptState.InterruptNesting += 1U;
     gInterruptState.TotalDispatches += 1ULL;
     gVectorCounters[vector] += 1ULL;
     gInterruptState.LastVector = vector;
@@ -201,6 +284,7 @@ void OrynKernelInterruptsDispatch(OrynIdtInterruptFrame* frame)
     {
         unsigned long long cr2 = 0ULL;
         gInterruptState.ExceptionDispatches += 1ULL;
+        AccountDispatch(vector, 1U);
         if (vector == 14U)
         {
             OrynKernelPageFaultAction action;
@@ -209,6 +293,7 @@ void OrynKernelInterruptsDispatch(OrynIdtInterruptFrame* frame)
             action = OrynKernelPageFaultPolicyHandle(frame, cr2);
             if (action != OrynKernelPageFaultActionKernelPanic)
             {
+                gInterruptState.InterruptNesting -= 1U;
                 return;
             }
         }
@@ -224,6 +309,7 @@ void OrynKernelInterruptsDispatch(OrynIdtInterruptFrame* frame)
     }
 
     gInterruptState.HardwareDispatches += 1ULL;
+    AccountDispatch(vector, 0U);
     slot = &gHandlers[vector];
     if (slot->Handler != 0)
     {
@@ -231,6 +317,10 @@ void OrynKernelInterruptsDispatch(OrynIdtInterruptFrame* frame)
     }
 
     SendInterruptEoi(vector);
+    if (gInterruptState.InterruptNesting > 0U)
+    {
+        gInterruptState.InterruptNesting -= 1U;
+    }
 }
 
 int OrynKernelInterruptsRunPicTimerProof(void)
@@ -344,6 +434,25 @@ void OrynKernelInterruptsPrintProof(void)
         "CPU interrupts are currently disabled for controlled boot.",
         "CPU interrupts are currently enabled.");
     OrynKernelInterruptsPrintDeviceProof();
+    OrynKernelInterruptsPrintCpuAccountingProof();
+    OrynKernelInterruptLockPrintProof();
+    OrynKernelDeferredPrintProof();
+}
+
+void OrynKernelInterruptsPrintCpuAccountingProof(void)
+{
+    OrynKernelScreenReportOkOrFail(
+        gInterruptState.CpuAccountSlots == ORYN_INTERRUPT_CPU_ACCOUNT_LIMIT,
+        "Per-CPU interrupt accounting slots are available.",
+        "Per-CPU interrupt accounting slots are unavailable.");
+    OrynKernelScreenReportOkOrFail(gInterruptState.CpuAccountsReady,
+        "Per-CPU interrupt accounting records active interrupt ownership.",
+        "Per-CPU interrupt accounting has not observed an interrupt yet.");
+    KernelIoWriteString("[KERNEL] Interrupt CPU account current/slots: ");
+    KernelIoWriteDec64(gInterruptState.CurrentCpuIndex);
+    KernelIoWriteString("/");
+    KernelIoWriteDec64(gInterruptState.CpuAccountSlots);
+    KernelIoWriteString("\n");
 }
 
 void OrynKernelInterruptsPrintPicRuntimeProof(void)

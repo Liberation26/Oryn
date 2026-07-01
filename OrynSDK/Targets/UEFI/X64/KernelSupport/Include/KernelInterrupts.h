@@ -8,8 +8,21 @@
 #define ORYN_INTERRUPT_IRQ_BASE 0x20U
 #define ORYN_INTERRUPT_IRQ_LIMIT 0x30U
 #define ORYN_INTERRUPT_APIC_TIMER_VECTOR 0xEEU
+#define ORYN_INTERRUPT_CPU_ACCOUNT_LIMIT 32U
 
 typedef void (*OrynKernelInterruptHandler)(OrynIdtInterruptFrame* frame, void* context);
+
+typedef struct OrynKernelInterruptCpuAccount
+{
+    unsigned int Used;
+    unsigned int CpuIndex;
+    unsigned int LocalApicId;
+    unsigned int LastVector;
+    unsigned long long TotalDispatches;
+    unsigned long long ExceptionDispatches;
+    unsigned long long HardwareDispatches;
+    unsigned long long EoiCount;
+} OrynKernelInterruptCpuAccount;
 
 typedef struct OrynKernelInterruptState
 {
@@ -39,6 +52,11 @@ typedef struct OrynKernelInterruptState
     unsigned long long ApicTimerAfter;
     unsigned int ApicTimerProofRan;
     unsigned int ApicTimerProofPassed;
+    unsigned int CpuAccountSlots;
+    unsigned int CpuAccountsReady;
+    unsigned int CurrentCpuIndex;
+    unsigned int InterruptNesting;
+    OrynKernelInterruptCpuAccount CpuAccounts[ORYN_INTERRUPT_CPU_ACCOUNT_LIMIT];
 } OrynKernelInterruptState;
 
 int OrynKernelInterruptsInit(void);
@@ -62,7 +80,10 @@ int OrynKernelInterruptsFindDeviceHandler(
     unsigned int function,
     unsigned int* vectorOut);
 void OrynKernelInterruptsPrintDeviceProof(void);
+void OrynKernelInterruptsPrintCpuAccountingProof(void);
 unsigned long long OrynKernelInterruptsGetVectorCount(unsigned int vector);
+unsigned int OrynKernelInterruptsGetCurrentCpuIndex(void);
+unsigned int OrynKernelInterruptsAreInInterrupt(void);
 void OrynKernelInterruptsEnable(void);
 void OrynKernelInterruptsDisable(void);
 unsigned int OrynKernelInterruptsAreEnabled(void);

@@ -238,9 +238,9 @@ Milestone 0.9 - Interrupt and deferred-work system:
 [ OK ] Add IOAPIC discovery and routing.
 [ OK ] Add MSI/MSI-X foundation for PCI devices.
 [ OK ] Add interrupt handler registration by vector and device.
-[TOBE] Add per-CPU interrupt accounting.
-[TOBE] Add interrupt-safe lock primitives.
-[TOBE] Add bottom halves/deferred procedure calls.
+[ OK ] Add per-CPU interrupt accounting.
+[ OK ] Add interrupt-safe lock primitives.
+[ OK ] Add bottom halves/deferred procedure calls.
 [TOBE] Add work queues for non-interrupt context device work.
 [TOBE] Add wait queues for sleeping threads.
 [TOBE] Add safe IRQ masking/unmasking APIs.
