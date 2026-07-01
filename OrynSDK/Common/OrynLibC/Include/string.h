@@ -19,7 +19,11 @@ char* strcat(char* restrict target, const char* restrict source);
 char* strncat(char* restrict target, const char* restrict source, size_t size);
 char* strchr(const char* text, int value);
 char* strrchr(const char* text, int value);
+size_t strspn(const char* text, const char* accept);
+size_t strcspn(const char* text, const char* reject);
+char* strpbrk(const char* text, const char* accept);
 char* strstr(const char* haystack, const char* needle);
+char* strtok(char* restrict text, const char* restrict delimiters);
 char* strerror(int error_number);
 
 #endif

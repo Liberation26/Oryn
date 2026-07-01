@@ -46,17 +46,24 @@ unsigned long long strtoull(const char* restrict text, char** restrict end, int 
 {
     int negative = 0;
     const char* cursor = SkipSpaceAndSign(text, &negative);
-    const char* first = cursor;
+    const char* first;
     unsigned long long value = 0ULL;
     base = ResolveBase(&cursor, base);
+    first = cursor;
     if (base < 2 || base > 36) { errno = EINVAL; if (end) *end = (char*)text; return 0ULL; }
     for (;; ++cursor)
     {
         int digit = DigitValue((unsigned char)*cursor);
         if (digit < 0 || digit >= base) { break; }
-        unsigned long long next = value * (unsigned)base + (unsigned)digit;
-        if (next < value) { errno = ERANGE; value = ULLONG_MAX; }
-        else { value = next; }
+        if (value > (ULLONG_MAX - (unsigned)digit) / (unsigned)base)
+        {
+            errno = ERANGE;
+            value = ULLONG_MAX;
+        }
+        else if (value != ULLONG_MAX)
+        {
+            value = value * (unsigned)base + (unsigned)digit;
+        }
     }
     if (end) { *end = (char*)((cursor == first) ? text : cursor); }
     return negative ? (0ULL - value) : value;
@@ -64,5 +71,7 @@ unsigned long long strtoull(const char* restrict text, char** restrict end, int 
 
 unsigned long strtoul(const char* restrict text, char** restrict end, int base)
 {
-    return (unsigned long)strtoull(text, end, base);
+    unsigned long long value = strtoull(text, end, base);
+    if (value > ULONG_MAX) { errno = ERANGE; return ULONG_MAX; }
+    return (unsigned long)value;
 }

@@ -132,12 +132,12 @@ Current OrynLibC foundation already present:
 [ OK ] Stdlib units exist for atoi/number conversion family, abs/llabs-style helpers, strtol/strtoul/strtoull, and abort foundation.
 [ OK ] Errno and assert foundations exist.
 [ OK ] OrynLibC proof source exists.
-[WARN] LibC is enough for the current kernel/SDK proof but not yet a full freestanding libc.
+[ OK ] LibC has been expanded from proof-only support into a fuller freestanding libc foundation with stdarg/stdalign/stdnoreturn/iso646/float/stdio headers, extended string/ctype/stdlib/inttypes functions, snprintf/vsnprintf, bsearch/qsort, rand/srand, and allocator hooks.
 [ OK ] LibC is included through the module/archive resolver as libOrynLibC.a.
 [TOBE] Split remaining multi-function LibC files further where practical.
 [TOBE] Add complete function-level manifests for each LibC unit.
-[TOBE] Add tests for every LibC function.
-[TOBE] Add freestanding-safe printf/snprintf family after integer/string foundation is stable.
+[WARN] Add external host-side conformance tests for every LibC function beyond the in-kernel self proof.
+[ OK ] Add freestanding-safe snprintf/vsnprintf family after integer/string foundation is stable.
 
 Milestone 0.6 - Clean kernel entry and module ownership:
 [ OK ] Reduce KernelMain to one responsibility: enter kernel runtime and start the boot sequence.
@@ -444,7 +444,7 @@ Immediate next 10 SDK tasks:
 [ OK ] 5. Move remaining proof orchestration from KernelRuntimeBootSequence into KernelBootProof.
 [TOBE] 6. Add Diagnostics/Logger ring buffer and route serial details through it.
 [ OK ] 7. Expand FillPrerequisites into a complete command with detect/install/report phases.
-[TOBE] 8. Add OrynLibC function-level manifests and unit tests.
+[WARN] 8. Add complete OrynLibC function-level manifests and external unit tests; in-kernel self proof now covers the expanded function set.
 [TOBE] 9. Replace LibC textual symbol preparse with archive/dependency resolution.
 [TOBE] 10. Add Build/Reports outputs for prerequisites, manifest validation, dependency graph, and boot module status.
 

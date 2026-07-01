@@ -356,3 +356,9 @@ Generated kernel module manifests:
 - Common/Kernel/ModuleManifests/*.module is the source of truth for kernel module ID, name, item list, and prerequisite list.
 - The native build regenerates Common/Kernel/Include/KernelModuleManifest.h and Common/Kernel/Source/Manifest/KernelModuleManifestData.c before kernel compile.
 - Build/Plan/KernelModuleManifestGeneration.txt proves the generated table source and output paths for each build.
+
+OrynLibC 0.5.92 foundation:
+- OrynLibC is built as the resolved libOrynLibC.a archive from object-ready source units.
+- The freestanding header set now includes stddef, stdint, stdbool, stdarg, stdalign, stdnoreturn, iso646, float, limits, errno, assert, string, ctype, stdlib, inttypes, and freestanding stdio formatting.
+- The libc includes extended string scanning/token support, ctype classification, robust integer conversion, inttypes conversion helpers, qsort/bsearch, rand/srand, snprintf/vsnprintf, and allocator hooks for future kernel heap binding.
+- Hosted file I/O, locale, time, signals, and process/environment APIs remain intentionally out of scope until kernel services exist behind them.
