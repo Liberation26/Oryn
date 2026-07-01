@@ -44,6 +44,7 @@ static int CheckCTypeAndNumbers(void)
         atol("-43") == -43L && atoll("-44") == -44LL &&
         strtol("0x10", &end, 0) == 16L && *end == 0 &&
         strtoll("-20", &end, 10) == -20LL && *end == 0 &&
+        strtol("-42", &end, 10) == -42L && *end == 0 &&
         strtoul("17", &end, 10) == 17UL && *end == 0 &&
         strtoull("20", &end, 10) == 20ULL && *end == 0 &&
         strtoimax("21", &end, 10) == 21 && strtoumax("22", &end, 10) == 22U;

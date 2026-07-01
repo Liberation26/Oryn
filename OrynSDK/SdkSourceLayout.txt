@@ -4,3 +4,5 @@
 - Targets/UEFI/X64/BuildModuleManifests/*.buildmodule is now the source of truth for UEFI x64 target build/archive modules.
 - Targets/UEFI/X64/OrynBuild/BuildPlanModules.c now loads build modules from manifest files instead of hard-coded ADD tables.
 - Common/Kernel/ModuleManifests/*.module remains the source of truth for kernel runtime module IDs, items, and prerequisites; generated C is rebuild output, not hand-owned manifest data.
+
+0.5.93: fixed OrynLibC signed integer conversion proof failure in strtoll/strtol.
