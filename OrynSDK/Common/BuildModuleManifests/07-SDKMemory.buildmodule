@@ -1,0 +1,6 @@
+Order=07
+Name=SDKMemory
+Root=CommonKernelSource
+RelativePath=Memory
+Recursive=yes
+Requires=SDKBootInfo

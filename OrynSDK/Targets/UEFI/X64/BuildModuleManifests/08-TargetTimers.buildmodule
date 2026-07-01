@@ -1,0 +1,6 @@
+Order=28
+Name=TargetTimers
+Root=TargetKernelSource
+RelativePath=Timers
+Recursive=yes
+Requires=SDKBootInfo,TargetInterrupts

@@ -1,0 +1,6 @@
+Order=08
+Name=SDKConsole
+Root=CommonKernelSource
+RelativePath=Console
+Recursive=yes
+Requires=SDKBootInfo,SDKKernelCore

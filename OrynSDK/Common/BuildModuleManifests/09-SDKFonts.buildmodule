@@ -1,0 +1,6 @@
+Order=09
+Name=SDKFonts
+Root=CommonKernelSource
+RelativePath=Fonts
+Recursive=yes
+Requires=SDKConsole

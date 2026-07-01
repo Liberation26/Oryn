@@ -275,7 +275,7 @@ static int WriteKernelModuleManifestHeader(const OrynProject* project, const Ory
 
     fprintf(file, "#ifndef ORYN_KERNEL_MODULE_MANIFEST_H\n");
     fprintf(file, "#define ORYN_KERNEL_MODULE_MANIFEST_H\n\n");
-    fprintf(file, "/* Generated from Common/Kernel/ModuleManifests/*.module. Do not hand-edit module tables here. */\n\n");
+    fprintf(file, "/* Generated from kernel module manifest files. Do not hand-edit module tables here. */\n\n");
     fprintf(file, "typedef enum OrynKernelModuleId\n{\n");
     for (int index = 0; index < module_count; ++index)
     {
@@ -328,7 +328,7 @@ static int WriteKernelModuleManifestData(const OrynProject* project, const OrynK
     }
 
     fprintf(file, "#include \"KernelModuleManifest.h\"\n\n");
-    fprintf(file, "/* Generated from Common/Kernel/ModuleManifests/*.module. Do not hand-edit module tables here. */\n\n");
+    fprintf(file, "/* Generated from kernel module manifest files. Do not hand-edit module tables here. */\n\n");
     fprintf(file, "static OrynKernelModuleManifestItem gKernelModuleManifest[OrynKernelModuleCount];\n\n");
     fprintf(file, "static void SetModule(\n");
     fprintf(file, "    OrynKernelModuleId id,\n");

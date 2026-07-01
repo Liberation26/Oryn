@@ -1,0 +1,6 @@
+Order=06
+Name=SDKManifest
+Root=CommonKernelSource
+RelativePath=Manifest
+Recursive=yes
+Requires=OrynLibC

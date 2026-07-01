@@ -1,0 +1,6 @@
+Order=27
+Name=TargetSmp
+Root=TargetKernelSource
+RelativePath=SMP
+Recursive=yes
+Requires=TargetInterrupts,TargetMemory

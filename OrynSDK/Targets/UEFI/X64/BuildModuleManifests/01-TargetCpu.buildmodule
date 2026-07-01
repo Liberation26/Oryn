@@ -1,0 +1,6 @@
+Order=21
+Name=TargetCpu
+Root=TargetKernelSource
+RelativePath=CPU
+Recursive=yes
+Requires=TargetKernelCore

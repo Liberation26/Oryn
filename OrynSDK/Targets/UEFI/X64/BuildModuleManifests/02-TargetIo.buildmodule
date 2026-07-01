@@ -1,0 +1,6 @@
+Order=22
+Name=TargetIo
+Root=TargetKernelSource
+RelativePath=IO
+Recursive=yes
+Requires=TargetCpu

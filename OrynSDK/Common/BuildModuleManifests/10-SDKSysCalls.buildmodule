@@ -1,0 +1,6 @@
+Order=10
+Name=SDKSysCalls
+Root=CommonKernelSource
+RelativePath=SysCalls
+Recursive=yes
+Requires=OrynLibC

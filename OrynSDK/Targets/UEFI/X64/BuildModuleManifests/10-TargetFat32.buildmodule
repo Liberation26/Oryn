@@ -1,0 +1,6 @@
+Order=30
+Name=TargetFat32
+Root=TargetKernelSource
+RelativePath=FileSystems/FAT32
+Recursive=yes
+Requires=SDKConsole

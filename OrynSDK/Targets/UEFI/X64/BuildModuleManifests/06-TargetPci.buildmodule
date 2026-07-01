@@ -1,0 +1,6 @@
+Order=26
+Name=TargetPci
+Root=TargetKernelSource
+RelativePath=PCI
+Recursive=yes
+Requires=SDKBootInfo,TargetMemory

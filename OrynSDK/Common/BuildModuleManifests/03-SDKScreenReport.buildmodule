@@ -1,0 +1,6 @@
+Order=03
+Name=SDKScreenReport
+Root=CommonKernelSource
+RelativePath=Screen
+Recursive=yes
+Requires=OrynLibC

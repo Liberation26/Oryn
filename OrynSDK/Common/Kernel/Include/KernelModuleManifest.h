@@ -1,7 +1,7 @@
 #ifndef ORYN_KERNEL_MODULE_MANIFEST_H
 #define ORYN_KERNEL_MODULE_MANIFEST_H
 
-/* Generated from Common/Kernel/ModuleManifests/*.module. Do not hand-edit module tables here. */
+/* Generated from kernel module manifest files. Do not hand-edit module tables here. */
 
 typedef enum OrynKernelModuleId
 {

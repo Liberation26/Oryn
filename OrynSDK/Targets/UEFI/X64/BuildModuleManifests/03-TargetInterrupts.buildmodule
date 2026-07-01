@@ -1,0 +1,6 @@
+Order=23
+Name=TargetInterrupts
+Root=TargetKernelSource
+RelativePath=Interrupts
+Recursive=yes
+Requires=TargetCpu,TargetIo

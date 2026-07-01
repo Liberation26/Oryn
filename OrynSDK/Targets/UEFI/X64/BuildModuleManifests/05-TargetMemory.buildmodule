@@ -1,0 +1,6 @@
+Order=25
+Name=TargetMemory
+Root=TargetKernelSource
+RelativePath=Memory
+Recursive=yes
+Requires=SDKMemory,TargetCpu

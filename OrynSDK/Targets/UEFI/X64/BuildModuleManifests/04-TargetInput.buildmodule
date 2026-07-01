@@ -1,0 +1,6 @@
+Order=24
+Name=TargetInput
+Root=TargetKernelSource
+RelativePath=Input
+Recursive=yes
+Requires=SDKConsole,TargetInterrupts

@@ -1,0 +1,6 @@
+Order=31
+Name=TargetVfs
+Root=TargetKernelSource
+RelativePath=FileSystems/VFS
+Recursive=yes
+Requires=TargetFat32

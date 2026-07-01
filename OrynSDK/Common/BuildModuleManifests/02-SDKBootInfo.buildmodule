@@ -1,0 +1,6 @@
+Order=02
+Name=SDKBootInfo
+Root=CommonKernelSource
+RelativePath=BootInfo
+Recursive=yes
+Requires=OrynLibC

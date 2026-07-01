@@ -1,0 +1,6 @@
+Order=04
+Name=SDKLifecycle
+Root=CommonKernelSource
+RelativePath=Lifecycle
+Recursive=yes
+Requires=OrynLibC

@@ -1,0 +1,6 @@
+Order=01
+Name=SDKKernelCore
+Root=CommonKernelSource
+RelativePath=.
+Recursive=no
+Requires=OrynLibC

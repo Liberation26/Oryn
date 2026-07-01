@@ -1,0 +1,6 @@
+Order=05
+Name=SDKPanic
+Root=CommonKernelSource
+RelativePath=Panic
+Recursive=yes
+Requires=SDKBootInfo,SDKScreenReport

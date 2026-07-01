@@ -61,6 +61,10 @@ RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildArchivePaths.c"
 RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildArchiveCompile.c"
 RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildArchiveManifest.c"
 RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildModuleAdd.c"
+RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildPlanModules.c"
+RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildKernelModuleManifests.c"
+RequireBuildSource "Common/BuildModuleManifests/00-OrynLibC.buildmodule"
+RequireBuildSource "Targets/UEFI/X64/BuildModuleManifests/12-TargetRuntime.buildmodule"
 
 clang \
   -std=c11 \

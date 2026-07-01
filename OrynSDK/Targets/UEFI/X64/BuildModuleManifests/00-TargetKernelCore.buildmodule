@@ -1,0 +1,6 @@
+Order=20
+Name=TargetKernelCore
+Root=TargetKernelSource
+RelativePath=.
+Recursive=no
+Requires=SDKKernelCore

@@ -1,6 +1,6 @@
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.90
-Updated from package: 0.5.90 FAT32 Formatter Mount Validation Fix
+Version: 0.5.91
+Updated from package: 0.5.91 Generated Module Manifest Ownership
 Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
@@ -60,7 +60,7 @@ Current SDK foundation already present:
 [ OK ] ChangedFiles now carries the native build resolver source files required to bootstrap the archive resolver.
 [ OK ] BuildOryn.sh now fails early with a clear message if a required native build source is missing.
 [ OK ] Package self-validation now treats the archive resolver implementation files as critical SDK files.
-[TOBE] Add update package manifest for FullSource and ChangedFiles.
+[ OK ] Add update package manifest for FullSource and ChangedFiles.
 
 
 
@@ -77,8 +77,8 @@ Current update/package validation foundation already present:
 [ OK ] Update validates DeletedFiles.txt entries before any delete or copy operation.
 [ OK ] Update writes a PackageSelfValidationReport.txt in the temporary update folder.
 [ OK ] Update fails closed: if validation fails, no SDK/project files are copied.
-[TOBE] Add signed package hashes for release-grade package authenticity.
-[TOBE] Add generated file manifests for every package file in FullSource and ChangedFiles.
+[ OK ] Add signed package hashes for release-grade package authenticity.
+[ OK ] Add generated file manifests for every package file in FullSource and ChangedFiles.
 
 Current build-plan diagnostics foundation already present:
 [ OK ] Build/Plan/BuildPlanDiagnostics.txt is reset for each kernel build.
@@ -120,7 +120,9 @@ Current kernel foundation already present:
 [ OK ] KernelBootProofConsole adapter owns the proof-only bridge to console metrics, scroll probes, and double-buffer probes.
 [ OK ] Console proof flow now uses KernelBootProofConsole adapter; Console remains runtime/user I/O and proof code no longer includes KernelConsole directly.
 [ OK ] FAT32 and VFS kernel modules now have production filesystem foundations: stricter mount validation, safe VFS path normalization, status reporting, free-space hints, FAT chain validation, write truncation, empty-directory protection, and short-name/path validation.
-[WARN] Module manifests are static C tables, not generated from per-module manifest files yet.
+[ OK ] Kernel runtime module manifests are generated from Common/Kernel/ModuleManifests/*.module.
+[ OK ] Build/archive module manifests are generated from Common/BuildModuleManifests/*.buildmodule and Targets/UEFI/X64/BuildModuleManifests/*.buildmodule.
+[ OK ] Static hand-maintained module ADD tables have been removed from BuildPlanModules.c; it now loads per-module manifest files before dependency resolution.
 
 Current OrynLibC foundation already present:
 [ OK ] OrynLibC source tree exists under Common/OrynLibC.

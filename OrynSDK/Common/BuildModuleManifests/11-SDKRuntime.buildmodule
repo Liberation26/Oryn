@@ -1,0 +1,6 @@
+Order=11
+Name=SDKRuntime
+Root=CommonKernelSource
+RelativePath=Runtime
+Recursive=yes
+Requires=SDKBootInfo,SDKLifecycle,SDKPanic,SDKManifest

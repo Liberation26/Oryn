@@ -1,0 +1,6 @@
+Order=00
+Name=OrynLibC
+Root=SdkRoot
+RelativePath=Common/OrynLibC/Source
+Recursive=yes
+Requires=

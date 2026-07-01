@@ -1,0 +1,6 @@
+Order=29
+Name=TargetDiagnostics
+Root=TargetKernelSource
+RelativePath=Diagnostics
+Recursive=yes
+Requires=SDKScreenReport,TargetTimers,TargetPci
