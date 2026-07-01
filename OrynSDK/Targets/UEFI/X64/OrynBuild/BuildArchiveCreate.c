@@ -2,9 +2,19 @@
 #include <stdio.h>
 #include <string.h>
 
+static void RemoveExistingArchiveBeforeCreate(const OrynProject* project, const OrynBuildModule* module)
+{
+    if (OrynFileExists(module->ArchivePath))
+    {
+        char detail[ORYN_MAX_PATH + 160];
+        snprintf(detail, sizeof(detail), "module=%s stale-archive=%s", module->Name, module->ArchivePath);
+        LogBuildPlanDecision(project, "archive-remove-stale-before-create", detail);
+        remove(module->ArchivePath);
+    }
+}
+
 int ArchiveKernelModule(const OrynProject* project, OrynBuildModule* module)
 {
-    (void)project;
     if (module->Objects->count == 0)
     {
         char detail[256];
@@ -12,6 +22,8 @@ int ArchiveKernelModule(const OrynProject* project, OrynBuildModule* module)
         LogBuildPlanSkip(project, "archive-skipped-no-objects", detail);
         return 1;
     }
+
+    RemoveExistingArchiveBeforeCreate(project, module);
 
     char command[ORYN_MAX_PATH * 8];
     snprintf(command, sizeof(command), "llvm-ar rcs \"%s\"", module->ArchivePath);

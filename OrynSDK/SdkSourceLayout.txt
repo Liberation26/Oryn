@@ -12,3 +12,7 @@
 - Most public LibC functions now compile from individual source files under Common/OrynLibC/Source.
 - Shared allocator and rand state live in small private state units.
 - Private helpers remain file-local where they support one public entry point.
+
+0.5.95 archive rebuild rule:
+- Module archives are deleted before llvm-ar recreates them.
+- This prevents stale archive members from removed/split source files causing duplicate symbols after ChangedFiles updates.

@@ -532,3 +532,8 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
        OrynLibC now keeps public C library entry points in separate object-ready source units where practical.
        Split ctype, inttypes, stdlib conversion wrappers, allocator hooks, rand/srand, bsearch/qsort, stdio snprintf/vsnprintf, paired string functions, and OrynString wrappers.
        Kept small private helpers inside the one public function file that owns them when splitting would add noise or unsafe shared state.
+
+[ OK ] 0.5.95 LibC split-source stale archive fix.
+       Fixed split-source duplicate symbol failures by rebuilding module archives from a clean archive file on every module archive pass.
+       Old archive members from removed grouped LibC files can no longer survive inside libOrynLibC.a.
+       DeletedFiles also removes the old LibC grouped source files and known stale object/archive outputs from existing Kernel-5 builds.
