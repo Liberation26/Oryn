@@ -675,3 +675,9 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 0.5.113 - COW and DMA-safe allocation foundations
 [ OK ] Add copy-on-write foundation for fork-like process creation later.
 [ OK ] Add DMA-safe physical allocation constraints.
+
+0.5.114 - Permanent README refresh
+[ OK ] Wrote the top-level README.md as the permanent Oryn SDK overview.
+[ OK ] Added horizontal documentation links at the top and bottom.
+[ OK ] Documented what Oryn SDK does for OS developers.
+[ OK ] Documented currently provided language support and planned language direction.
