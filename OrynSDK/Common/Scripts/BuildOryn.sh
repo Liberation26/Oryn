@@ -46,6 +46,22 @@ if ! command -v clang >/dev/null 2>&1; then
     exit 1
 fi
 
+
+RequireBuildSource()
+{
+    local relative="$1"
+    if [ ! -f "${SDK_ROOT}/${relative}" ]; then
+        Fail "Bootstrap source missing: ${relative}"
+        Info "Run ./update or ./update.sh with the latest OrynWsl package, or apply a full update."
+        exit 1
+    fi
+}
+
+RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildArchivePaths.c"
+RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildArchiveCompile.c"
+RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildArchiveManifest.c"
+RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildModuleAdd.c"
+
 clang \
   -std=c11 \
   -D_DEFAULT_SOURCE \

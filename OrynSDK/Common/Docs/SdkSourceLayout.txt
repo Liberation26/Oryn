@@ -299,3 +299,10 @@ Package self-validation:
 - Validation checks the zip entry list, extracted path safety, symlinks, package roots, critical SDK files, mode payload, version agreement, and DeletedFiles.txt safety.
 - A failed validation stops the update before any SDK or project copy operation.
 - The validation report is written as PackageSelfValidationReport.txt in the temporary updater folder for that run.
+
+
+0.5.82 bootstrap archive resolver fix:
+- ChangedFiles must include the native build resolver source files, not only updater files.
+- BuildArchivePaths.c is required because BuildArchiveCompile.c, BuildArchiveManifest.c, and BuildModuleAdd.c call BuildArchiveDirectory/BuildArchivePath during native tool bootstrap.
+- BuildOryn.sh now checks for critical archive resolver sources before invoking clang so missing update payloads fail with a clear SDK diagnostic instead of an undefined linker symbol.
+- Package self-validation now requires the archive resolver implementation files in FullSource before any copy step.

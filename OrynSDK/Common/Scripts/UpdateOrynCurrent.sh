@@ -277,6 +277,11 @@ ValidateCriticalSdkFiles()
     RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/Scripts/BuildOryn.sh"
     RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/OrynBuild/Main.c"
     RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/OrynBuild/OrynBuild.h"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/Targets/UEFI/X64/OrynBuild/TargetBuildInternal.h"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/Targets/UEFI/X64/OrynBuild/BuildArchivePaths.c"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/Targets/UEFI/X64/OrynBuild/BuildArchiveCompile.c"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/Targets/UEFI/X64/OrynBuild/BuildArchiveManifest.c"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/Targets/UEFI/X64/OrynBuild/BuildModuleAdd.c"
 }
 
 ValidatePackageBeforeCopy()

@@ -39,6 +39,8 @@ static void OrynLogTag(FILE* stream, const char* color, const char* tag, const c
     {
         fprintf(stream, "%s %s\n", tag, message);
     }
+
+    fflush(stream);
 }
 
 void OrynLogInfo(const char* message)
@@ -76,6 +78,8 @@ void OrynLogKeyValue(const char* key, const char* value)
     {
         printf("[INFO] %-16s %s\n", key, value);
     }
+
+    fflush(stdout);
 }
 
 void OrynLogCommand(const char* command)
@@ -88,4 +92,6 @@ void OrynLogCommand(const char* command)
     {
         printf("[CMD ] %s\n", command);
     }
+
+    fflush(stdout);
 }

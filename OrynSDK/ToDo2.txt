@@ -1,6 +1,6 @@
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.81
-Updated from package: 0.5.81 Package Self Validation
+Version: 0.5.82
+Updated from package: 0.5.82 Bootstrap Archive Resolver Fix
 Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
@@ -57,6 +57,9 @@ Current SDK foundation already present:
 [ OK ] Prerequisite filling is now owned by the native oryn prerequisites app with cross-platform provider planning.
 [ OK ] Add stronger diagnostics for every build-plan decision and skipped source.
 [ OK ] Add package self-validation before update copies files.
+[ OK ] ChangedFiles now carries the native build resolver source files required to bootstrap the archive resolver.
+[ OK ] BuildOryn.sh now fails early with a clear message if a required native build source is missing.
+[ OK ] Package self-validation now treats the archive resolver implementation files as critical SDK files.
 [TOBE] Add update package manifest for FullSource and ChangedFiles.
 
 
