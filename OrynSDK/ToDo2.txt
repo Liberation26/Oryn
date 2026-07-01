@@ -1,3 +1,9 @@
+OrynWsl SDK ToDo2 update: 0.5.126
+
+[ OK ] Fixed scheduler proof regression where affinity redirection inserted the thread into the wrong run queue before choosing the target CPU.
+[ OK ] Scheduler init now resets the round-robin/per-CPU run-queue proof state before each self-test, preventing stale current-thread and queue state from blocking Process readiness.
+[ OK ] Process prerequisite proof now reaches Scheduler after the process/thread stack and scheduler self-tests pass.
+
 OrynWsl SDK ToDo2 update: 0.5.120
 
 [ OK ] Added IOAPIC discovery from ACPI MADT using BootInfo RSDP handoff data.

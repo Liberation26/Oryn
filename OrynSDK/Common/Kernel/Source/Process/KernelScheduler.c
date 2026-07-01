@@ -113,6 +113,7 @@ void OrynKernelSchedulerInit(unsigned int cpuCount, unsigned int tickVector)
     gScheduler.WorkQueueReady = 1U;
     gScheduler.WaitQueueReady = 1U;
     gScheduler.CpuCount = ClampCpuCount(cpuCount);
+    OrynKernelSchedulerRoundRobinInit(gScheduler.CpuCount);
     for (unsigned int cpu = 0U; cpu < gScheduler.CpuCount; ++cpu)
     {
         (void)OrynKernelSchedulerRegisterPerCpuTick(cpu, tickVector);

@@ -137,6 +137,7 @@ typedef struct OrynKernelSchedulerState
     OrynKernelWaitQueueNode WaitQueue[ORYN_KERNEL_WAIT_QUEUE_LIMIT];
 } OrynKernelSchedulerState;
 
+void OrynKernelSchedulerRoundRobinInit(unsigned int cpuCount);
 void OrynKernelSchedulerInit(unsigned int cpuCount, unsigned int tickVector);
 int OrynKernelSchedulerRegisterPerCpuTick(unsigned int cpuId, unsigned int tickVector);
 int OrynKernelSchedulerSleepUntil(OrynKernelThread* thread, unsigned long long deadlineTick);

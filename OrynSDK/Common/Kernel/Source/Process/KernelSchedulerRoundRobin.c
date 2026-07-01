@@ -14,7 +14,7 @@ static unsigned int ClampCpu(unsigned int cpuId)
     return cpuId;
 }
 
-static void RoundRobinInit(unsigned int cpuCount)
+void OrynKernelSchedulerRoundRobinInit(unsigned int cpuCount)
 {
     (void)memset(&gRoundRobin, 0, sizeof(gRoundRobin));
     if (cpuCount == 0U)
@@ -45,7 +45,7 @@ static OrynKernelRunQueue* GetQueue(unsigned int cpuId)
     cpuId = ClampCpu(cpuId);
     if (gRoundRobin.Initialized == 0U)
     {
-        RoundRobinInit(cpuId + 1U);
+        OrynKernelSchedulerRoundRobinInit(cpuId + 1U);
     }
     return &gRoundRobin.RunQueues[cpuId];
 }
@@ -53,13 +53,10 @@ static OrynKernelRunQueue* GetQueue(unsigned int cpuId)
 int OrynKernelSchedulerAddRunnableThread(unsigned int cpuId, OrynKernelThread* thread)
 {
     OrynKernelRunQueue* queue = GetQueue(cpuId);
-    if (thread == 0 || queue->Count >= ORYN_KERNEL_RUN_QUEUE_LIMIT)
+    if (thread == 0)
     {
         return 0;
     }
-    queue->Threads[queue->Tail] = thread;
-    queue->Tail = (queue->Tail + 1U) % ORYN_KERNEL_RUN_QUEUE_LIMIT;
-    queue->Count += 1U;
     if (thread->AffinitySet != 0U &&
         (thread->CpuAffinityMask & (1U << queue->CpuId)) == 0U)
     {
@@ -78,6 +75,13 @@ int OrynKernelSchedulerAddRunnableThread(unsigned int cpuId, OrynKernelThread* t
             return 0;
         }
     }
+    if (queue->Count >= ORYN_KERNEL_RUN_QUEUE_LIMIT)
+    {
+        return 0;
+    }
+    queue->Threads[queue->Tail] = thread;
+    queue->Tail = (queue->Tail + 1U) % ORYN_KERNEL_RUN_QUEUE_LIMIT;
+    queue->Count += 1U;
     thread->AssignedCpu = queue->CpuId;
     thread->RemainingQuantumTicks = ORYN_KERNEL_ROUND_ROBIN_QUANTUM_TICKS;
     thread->State = OrynKernelThreadStateSchedulerReady;
@@ -144,7 +148,7 @@ int OrynKernelSchedulerRegisterIdleThread(unsigned int cpuId, OrynKernelThread* 
     }
     if (gRoundRobin.Initialized == 0U)
     {
-        RoundRobinInit(cpu + 1U);
+        OrynKernelSchedulerRoundRobinInit(cpu + 1U);
     }
     thread->AssignedCpu = cpu;
     thread->Priority = ORYN_KERNEL_THREAD_PRIORITY_MIN;
@@ -163,7 +167,7 @@ OrynKernelThread* OrynKernelSchedulerPreemptCurrent(unsigned int cpuId)
     OrynKernelThread* next;
     if (gRoundRobin.Initialized == 0U)
     {
-        RoundRobinInit(cpu + 1U);
+        OrynKernelSchedulerRoundRobinInit(cpu + 1U);
     }
     current = gRoundRobin.Current[cpu];
     if (current != 0)
