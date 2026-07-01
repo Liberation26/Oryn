@@ -3,6 +3,7 @@
 #include "KernelVirtualMemory.h"
 
 static OrynKernelPageFaultPolicyState gPageFaultPolicy;
+static const OrynKernelAddressSpace* gFaultProcessAddressSpace;
 
 static void ClearPolicy(void)
 {
@@ -11,6 +12,7 @@ static void ClearPolicy(void)
     {
         bytes[index] = 0U;
     }
+    gFaultProcessAddressSpace = 0;
 }
 
 void OrynKernelPageFaultPolicyInit(void)
@@ -19,17 +21,46 @@ void OrynKernelPageFaultPolicyInit(void)
     gPageFaultPolicy.Initialized = 1U;
 }
 
+void OrynKernelPageFaultPolicySetProcessContext(const OrynKernelAddressSpace* addressSpace)
+{
+    if (!gPageFaultPolicy.Initialized)
+    {
+        OrynKernelPageFaultPolicyInit();
+    }
+
+    if (addressSpace != 0 && addressSpace->Initialized != 0U && addressSpace->ProcessOwned != 0U)
+    {
+        gFaultProcessAddressSpace = addressSpace;
+    }
+    else
+    {
+        gFaultProcessAddressSpace = 0;
+    }
+}
+
 const OrynKernelPageFaultPolicyState* OrynKernelPageFaultPolicyGetState(void)
 {
     return &gPageFaultPolicy;
 }
 
-static int IsGuardFault(unsigned long long address)
+static int IsGuardFault(unsigned long long address, unsigned long long errorCode)
 {
-    if ((address & (ORYN_VIRTUAL_PAGE_SIZE - 1ULL)) == 0ULL)
+    if (OrynVirtualMemoryIsUserAddress(address))
+    {
+        return 0;
+    }
+
+    if ((errorCode & ORYN_PAGE_FAULT_USER) != 0ULL)
+    {
+        return 0;
+    }
+
+    if (OrynVirtualMemoryIsKernelAddress(address) &&
+        (address & (ORYN_VIRTUAL_PAGE_SIZE - 1ULL)) == 0ULL)
     {
         return 1;
     }
+
     return 0;
 }
 
@@ -38,6 +69,8 @@ OrynKernelPageFaultAction OrynKernelPageFaultPolicyHandle(
     unsigned long long faultAddress)
 {
     unsigned long long errorCode = frame != 0 ? frame->ErrorCode : 0ULL;
+    int userFault;
+    int guardFault;
     OrynKernelPageFaultAction action;
 
     if (!gPageFaultPolicy.Initialized)
@@ -50,16 +83,9 @@ OrynKernelPageFaultAction OrynKernelPageFaultPolicyHandle(
     gPageFaultPolicy.LastErrorCode = errorCode;
     gPageFaultPolicy.LastRip = frame != 0 ? frame->Rip : 0ULL;
 
-    if ((errorCode & ORYN_PAGE_FAULT_USER) != 0ULL || OrynVirtualMemoryIsUserAddress(faultAddress))
-    {
-        gPageFaultPolicy.UserFaults += 1ULL;
-        action = OrynKernelPageFaultActionKillProcess;
-    }
-    else
-    {
-        gPageFaultPolicy.KernelFaults += 1ULL;
-        action = OrynKernelPageFaultActionKernelPanic;
-    }
+    userFault = ((errorCode & ORYN_PAGE_FAULT_USER) != 0ULL) ||
+        OrynVirtualMemoryIsUserAddress(faultAddress);
+    guardFault = IsGuardFault(faultAddress, errorCode);
 
     if ((errorCode & ORYN_PAGE_FAULT_PRESENT) != 0ULL)
     {
@@ -70,9 +96,29 @@ OrynKernelPageFaultAction OrynKernelPageFaultPolicyHandle(
         gPageFaultPolicy.NonPresentFaults += 1ULL;
     }
 
-    if (IsGuardFault(faultAddress))
+    if (guardFault)
     {
         gPageFaultPolicy.GuardPageFaults += 1ULL;
+        gPageFaultPolicy.KernelFaults += 1ULL;
+        action = OrynKernelPageFaultActionKernelPanic;
+    }
+    else if (userFault)
+    {
+        gPageFaultPolicy.UserFaults += 1ULL;
+        if (gFaultProcessAddressSpace != 0)
+        {
+            gPageFaultPolicy.UserProcessFaults += 1ULL;
+            action = OrynKernelPageFaultActionKillProcess;
+        }
+        else
+        {
+            gPageFaultPolicy.InvalidUserFaultContexts += 1ULL;
+            action = OrynKernelPageFaultActionKernelPanic;
+        }
+    }
+    else
+    {
+        gPageFaultPolicy.KernelFaults += 1ULL;
         action = OrynKernelPageFaultActionKernelPanic;
     }
 
@@ -89,27 +135,59 @@ OrynKernelPageFaultAction OrynKernelPageFaultPolicyHandle(
     return action;
 }
 
+static void ClearFrame(OrynIdtInterruptFrame* frame)
+{
+    unsigned char* bytes = (unsigned char*)frame;
+    for (unsigned long long index = 0; index < sizeof(*frame); ++index)
+    {
+        bytes[index] = 0U;
+    }
+}
+
 int OrynKernelPageFaultPolicyRunSelfTest(void)
 {
     OrynIdtInterruptFrame userFrame;
     OrynIdtInterruptFrame kernelFrame;
-    unsigned char* userBytes = (unsigned char*)&userFrame;
-    unsigned char* kernelBytes = (unsigned char*)&kernelFrame;
-    for (unsigned long long index = 0; index < sizeof(userFrame); ++index)
+    OrynKernelAddressSpace processSpace;
+    unsigned char* processBytes = (unsigned char*)&processSpace;
+    int invalidUserIsFatal;
+    int validUserIsProcessFault;
+    int kernelIsFatal;
+
+    ClearFrame(&userFrame);
+    ClearFrame(&kernelFrame);
+    for (unsigned long long index = 0; index < sizeof(processSpace); ++index)
     {
-        userBytes[index] = 0U;
+        processBytes[index] = 0U;
     }
-    for (unsigned long long index = 0; index < sizeof(kernelFrame); ++index)
-    {
-        kernelBytes[index] = 0U;
-    }
+
     OrynKernelPageFaultPolicyInit();
     userFrame.ErrorCode = ORYN_PAGE_FAULT_USER | ORYN_PAGE_FAULT_WRITE;
     kernelFrame.ErrorCode = ORYN_PAGE_FAULT_PRESENT | ORYN_PAGE_FAULT_WRITE;
-    return OrynKernelPageFaultPolicyHandle(&userFrame, ORYN_VIRTUAL_USER_BASE + 0x1000ULL) ==
-            OrynKernelPageFaultActionKillProcess &&
-        OrynKernelPageFaultPolicyHandle(&kernelFrame, ORYN_VIRTUAL_KERNEL_BASE) ==
-            OrynKernelPageFaultActionKernelPanic;
+
+    invalidUserIsFatal = OrynKernelPageFaultPolicyHandle(
+        &userFrame,
+        ORYN_VIRTUAL_USER_BASE + 0x1234ULL) == OrynKernelPageFaultActionKernelPanic;
+
+    processSpace.Initialized = 1U;
+    processSpace.ProcessOwned = 1U;
+    processSpace.AddressSpaceId = 1U;
+    processSpace.UserBase = ORYN_VIRTUAL_USER_BASE;
+    processSpace.UserLimit = ORYN_VIRTUAL_USER_LIMIT;
+    processSpace.KernelBase = ORYN_VIRTUAL_KERNEL_BASE;
+    processSpace.KernelLimit = ORYN_VIRTUAL_KERNEL_LIMIT;
+    OrynKernelPageFaultPolicySetProcessContext(&processSpace);
+
+    validUserIsProcessFault = OrynKernelPageFaultPolicyHandle(
+        &userFrame,
+        ORYN_VIRTUAL_USER_BASE + 0x2234ULL) == OrynKernelPageFaultActionKillProcess;
+
+    OrynKernelPageFaultPolicySetProcessContext(0);
+    kernelIsFatal = OrynKernelPageFaultPolicyHandle(
+        &kernelFrame,
+        ORYN_VIRTUAL_KERNEL_BASE) == OrynKernelPageFaultActionKernelPanic;
+
+    return invalidUserIsFatal && validUserIsProcessFault && kernelIsFatal;
 }
 
 void OrynKernelPageFaultPolicyPrintProof(void)
@@ -120,8 +198,11 @@ void OrynKernelPageFaultPolicyPrintProof(void)
     OrynKernelScreenReportOkOrFail(gPageFaultPolicy.FatalFaults != 0ULL,
         "Kernel page faults are fatal by policy.",
         "Kernel page-fault fatal policy did not run.");
-    OrynKernelScreenReportOkOrFail(gPageFaultPolicy.NonFatalFaults != 0ULL,
-        "User page faults use non-fatal process policy.",
+    OrynKernelScreenReportOkOrFail(gPageFaultPolicy.InvalidUserFaultContexts != 0ULL,
+        "User page faults without process context are fatal by policy.",
+        "Invalid user page-fault context policy did not run.");
+    OrynKernelScreenReportOkOrFail(gPageFaultPolicy.UserProcessFaults != 0ULL && gPageFaultPolicy.NonFatalFaults != 0ULL,
+        "User page faults with process context use non-fatal process policy.",
         "User page-fault process policy did not run.");
     OrynKernelScreenReportOkOrFail(gPageFaultPolicy.GuardPageFaults != 0ULL,
         "Guard-page page faults are classified as fatal.",

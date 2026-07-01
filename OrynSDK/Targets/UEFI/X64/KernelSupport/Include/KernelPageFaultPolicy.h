@@ -3,6 +3,8 @@
 
 #include "KernelIdt.h"
 
+struct OrynKernelAddressSpace;
+
 #define ORYN_PAGE_FAULT_PRESENT 0x01ULL
 #define ORYN_PAGE_FAULT_WRITE 0x02ULL
 #define ORYN_PAGE_FAULT_USER 0x04ULL
@@ -22,6 +24,8 @@ typedef struct OrynKernelPageFaultPolicyState
     unsigned long long TotalFaults;
     unsigned long long KernelFaults;
     unsigned long long UserFaults;
+    unsigned long long UserProcessFaults;
+    unsigned long long InvalidUserFaultContexts;
     unsigned long long GuardPageFaults;
     unsigned long long ProtectionFaults;
     unsigned long long NonPresentFaults;
@@ -34,6 +38,7 @@ typedef struct OrynKernelPageFaultPolicyState
 } OrynKernelPageFaultPolicyState;
 
 void OrynKernelPageFaultPolicyInit(void);
+void OrynKernelPageFaultPolicySetProcessContext(const struct OrynKernelAddressSpace* addressSpace);
 OrynKernelPageFaultAction OrynKernelPageFaultPolicyHandle(
     OrynIdtInterruptFrame* frame,
     unsigned long long faultAddress);
