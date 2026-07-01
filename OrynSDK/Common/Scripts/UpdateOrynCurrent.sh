@@ -42,6 +42,27 @@ HashFileSha256()
     return 127
 }
 
+
+HashStdinSha256()
+{
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum | awk '{ print $1 }'
+        return ${PIPESTATUS[0]}
+    fi
+
+    if command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 | awk '{ print $1 }'
+        return ${PIPESTATUS[0]}
+    fi
+
+    if command -v openssl >/dev/null 2>&1; then
+        openssl dgst -sha256 | awk '{ print $NF }'
+        return ${PIPESTATUS[0]}
+    fi
+
+    return 127
+}
+
 FileSizeBytes()
 {
     local file_path="$1"
@@ -248,6 +269,202 @@ ValidateDeletedFilesManifest()
     ValidationOk "DeletedFiles.txt checked with $count delete entr$( [ "$count" -eq 1 ] && printf 'y' || printf 'ies' )."
 }
 
+
+ValidateSignedPackageHashes()
+{
+    local extract_root="$1"
+    local selected_version="$2"
+    local expected
+    local hashes_path="$extract_root/PackageHashes.txt"
+    local signature_path="$extract_root/PackageHashes.sig"
+    local extracted_public_key="$extract_root/FullSource/OrynSDK/Common/Security/OrynReleasePublicKey.pem"
+    local trusted_public_key="$SdkRoot/Common/Security/OrynReleasePublicKey.pem"
+    local verify_key=""
+    local declared_version=""
+    local declared_algorithm=""
+    local declared_key_id=""
+    local actual_key_id=""
+    local listed_file="$TempRoot/PackageHashes.listed"
+    local actual_file="$TempRoot/PackageHashes.actual"
+    local batch_hash_file="$TempRoot/PackageHashes.sha256"
+    local use_batch_hash_check=0
+    local relative_path
+    local rest
+    local size_text
+    local hash_text
+    local payload_file
+    local actual_size
+    local actual_hash
+    local duplicate
+    local missing
+    local extra
+    local manifest_failed=0
+
+    expected="$(SelectedPackageBaseVersion "$selected_version")"
+
+    if [ ! -f "$hashes_path" ]; then
+        ValidationFail "PackageHashes.txt is missing; signed release authenticity cannot be verified."
+        return 0
+    fi
+
+    if [ ! -f "$signature_path" ]; then
+        ValidationFail "PackageHashes.sig is missing; signed release authenticity cannot be verified."
+        return 0
+    fi
+
+    if [ -f "$trusted_public_key" ]; then
+        verify_key="$trusted_public_key"
+        ValidationOk "using installed trusted release public key: ${trusted_public_key#$WorkspaceRoot/}"
+    elif [ -f "$extracted_public_key" ]; then
+        verify_key="$extracted_public_key"
+        ValidationWarn "installed release public key not found; using package public key for first trust bootstrap only."
+    else
+        ValidationFail "release public key missing from installed SDK and package."
+        return 0
+    fi
+
+    if ! command -v openssl >/dev/null 2>&1; then
+        ValidationFail "openssl is required to verify signed package hashes."
+        return 0
+    fi
+
+    if openssl dgst -sha256 -verify "$verify_key" -signature "$signature_path" "$hashes_path" >/dev/null 2>&1; then
+        ValidationOk "PackageHashes.txt signature verified."
+    else
+        ValidationFail "PackageHashes.txt signature verification failed."
+        return 0
+    fi
+
+    declared_version="$(sed -n 's/^PackageVersion=//p' "$hashes_path" | head -n 1 | tr -d '\r')"
+    declared_algorithm="$(sed -n 's/^SignatureAlgorithm=//p' "$hashes_path" | head -n 1 | tr -d '\r')"
+    declared_key_id="$(sed -n 's/^PublicKeyId=//p' "$hashes_path" | head -n 1 | tr -d '\r')"
+
+    if [ -n "$expected" ] && [ "$declared_version" != "$expected" ]; then
+        ValidationFail "signed hash manifest version is '$declared_version', expected '$expected'."
+        manifest_failed=1
+    fi
+
+    if [ "$declared_algorithm" != "RSA-SHA256" ]; then
+        ValidationFail "signed hash manifest algorithm is '$declared_algorithm', expected 'RSA-SHA256'."
+        manifest_failed=1
+    fi
+
+    actual_key_id="$(openssl pkey -pubin -in "$verify_key" -outform DER 2>/dev/null | HashStdinSha256 2>/dev/null || true)"
+    if [ -z "$actual_key_id" ]; then
+        ValidationFail "could not compute release public key id."
+        manifest_failed=1
+    elif [ -n "$declared_key_id" ] && [ "$actual_key_id" != "$declared_key_id" ]; then
+        ValidationFail "release public key id mismatch."
+        manifest_failed=1
+    else
+        ValidationOk "release public key id verified: $actual_key_id"
+    fi
+
+    : > "$listed_file"
+    : > "$batch_hash_file"
+    if command -v sha256sum >/dev/null 2>&1; then
+        use_batch_hash_check=1
+    fi
+
+    while IFS= read -r line || [ -n "$line" ]; do
+        line="${line%$'\r'}"
+        [ -n "$line" ] || continue
+        relative_path="${line%%$'\t'*}"
+        rest="${line#*$'\t'}"
+        size_text="${rest%%$'\t'*}"
+        hash_text="${rest#*$'\t'}"
+
+        if [ -z "$relative_path" ] || [ "$relative_path" = "$line" ] || [ "$size_text" = "$rest" ] || [ -z "$hash_text" ]; then
+            ValidationFail "signed hash manifest contains malformed file row: $line"
+            manifest_failed=1
+            continue
+        fi
+
+        case "$relative_path" in
+            PackageHashes.txt|PackageHashes.sig)
+                ValidationFail "signed hash manifest must not list its own hash/signature file: $relative_path"
+                manifest_failed=1
+                continue
+                ;;
+        esac
+
+        if PackagePathIsUnsafe "$relative_path"; then
+            ValidationFail "signed hash manifest contains unsafe file path: $relative_path"
+            manifest_failed=1
+            continue
+        fi
+
+        payload_file="$extract_root/$relative_path"
+        if [ ! -f "$payload_file" ]; then
+            ValidationFail "signed hash manifest lists missing file: $relative_path"
+            manifest_failed=1
+            continue
+        fi
+
+        actual_size="$(FileSizeBytes "$payload_file")"
+        if [ "$actual_size" != "$size_text" ]; then
+            ValidationFail "signed hash manifest size mismatch for $relative_path: manifest $size_text, actual $actual_size"
+            manifest_failed=1
+            continue
+        fi
+
+        if [ "$use_batch_hash_check" -eq 1 ]; then
+            printf '%s  %s
+' "$hash_text" "$relative_path" >> "$batch_hash_file"
+        else
+            actual_hash="$(HashFileSha256 "$payload_file" 2>/dev/null || true)"
+            if [ -z "$actual_hash" ]; then
+                ValidationFail "signed hash check could not run for $relative_path. Install sha256sum, shasum, or openssl."
+                manifest_failed=1
+                continue
+            fi
+
+            if [ "$actual_hash" != "$hash_text" ]; then
+                ValidationFail "signed hash mismatch for $relative_path."
+                manifest_failed=1
+                continue
+            fi
+        fi
+
+        printf '%s\n' "$relative_path" >> "$listed_file"
+    done < <(awk 'BEGIN { in_files = 0 } { sub(/\r$/, "") } /^Files:$/ { in_files = 1; next } in_files == 1 { print }' "$hashes_path")
+
+    sort "$listed_file" -o "$listed_file"
+    duplicate="$(uniq -d "$listed_file" | head -n 1)"
+    if [ -n "$duplicate" ]; then
+        ValidationFail "signed hash manifest contains duplicate file row: $duplicate"
+        manifest_failed=1
+    fi
+
+    (cd "$extract_root" && find . -type f ! -path './PackageHashes.txt' ! -path './PackageHashes.sig' -printf '%P\n' | sort) > "$actual_file"
+    missing="$(comm -23 "$actual_file" "$listed_file" | head -n 1)"
+    extra="$(comm -13 "$actual_file" "$listed_file" | head -n 1)"
+
+    if [ -n "$missing" ]; then
+        ValidationFail "signed hash manifest does not list package file: $missing"
+        manifest_failed=1
+    fi
+
+    if [ -n "$extra" ]; then
+        ValidationFail "signed hash manifest lists file not present in package scan: $extra"
+        manifest_failed=1
+    fi
+
+    if [ "$manifest_failed" -eq 0 ] && [ "$use_batch_hash_check" -eq 1 ]; then
+        if (cd "$extract_root" && sha256sum -c "$batch_hash_file" >/dev/null 2>&1); then
+            ValidationOk "signed package SHA256 batch check passed."
+        else
+            ValidationFail "signed package SHA256 batch check failed."
+            manifest_failed=1
+        fi
+    fi
+
+    if [ "$manifest_failed" -eq 0 ]; then
+        SignedPackageHashesVerified=1
+        ValidationOk "signed package hashes verified for $(wc -l < "$actual_file" | tr -d ' ') files."
+    fi
+}
+
 ValidatePackageTreeManifest()
 {
     local extract_root="$1"
@@ -320,6 +537,12 @@ ValidatePackageTreeManifest()
             continue
         fi
 
+        if [ "${SignedPackageHashesVerified:-0}" = "1" ]; then
+            printf '%s
+' "$relative_path" >> "$listed_file"
+            continue
+        fi
+
         payload_file="$tree_root/$relative_path"
         if [ ! -f "$payload_file" ]; then
             ValidationFail "$tree_name manifest lists missing file: $relative_path"
@@ -334,17 +557,19 @@ ValidatePackageTreeManifest()
             continue
         fi
 
-        actual_hash="$(HashFileSha256 "$payload_file" 2>/dev/null || true)"
-        if [ -z "$actual_hash" ]; then
-            ValidationFail "$tree_name manifest hash check could not run for $relative_path. Install sha256sum, shasum, or openssl."
-            manifest_failed=1
-            continue
-        fi
+        if [ "${SignedPackageHashesVerified:-0}" != "1" ]; then
+            actual_hash="$(HashFileSha256 "$payload_file" 2>/dev/null || true)"
+            if [ -z "$actual_hash" ]; then
+                ValidationFail "$tree_name manifest hash check could not run for $relative_path. Install sha256sum, shasum, or openssl."
+                manifest_failed=1
+                continue
+            fi
 
-        if [ "$actual_hash" != "$hash_text" ]; then
-            ValidationFail "$tree_name manifest sha256 mismatch for $relative_path."
-            manifest_failed=1
-            continue
+            if [ "$actual_hash" != "$hash_text" ]; then
+                ValidationFail "$tree_name manifest sha256 mismatch for $relative_path."
+                manifest_failed=1
+                continue
+            fi
         fi
 
         printf '%s\n' "$relative_path" >> "$listed_file"
@@ -466,6 +691,7 @@ ValidateCriticalSdkFiles()
     RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/Scripts/UpdateOryn.sh"
     RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/Scripts/UpdateOrynCurrent.sh"
     RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/Scripts/BuildOryn.sh"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/Security/OrynReleasePublicKey.pem"
     RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/OrynBuild/Main.c"
     RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/OrynBuild/OrynBuild.h"
     RequirePackageFile "$extract_root" "FullSource/OrynSDK/Targets/UEFI/X64/OrynBuild/TargetBuildInternal.h"
@@ -484,6 +710,7 @@ ValidatePackageBeforeCopy()
     local entries_file="$5"
 
     PackageValidationFailed=0
+    SignedPackageHashesVerified=0
     PackageValidationReport="$TempRoot/PackageSelfValidationReport.txt"
     : > "$PackageValidationReport"
 
@@ -498,6 +725,12 @@ ValidatePackageBeforeCopy()
     ValidateNoExtractedSymlinks "$extract_root"
     ValidateExtractedPathSafety "$extract_root"
     ValidateCriticalSdkFiles "$extract_root"
+    ValidateSignedPackageHashes "$extract_root" "$selected_version"
+    if [ "$PackageValidationFailed" -ne 0 ]; then
+        Fail "Package authenticity validation failed. No files were copied."
+        Fail "Validation report: $PackageValidationReport"
+        exit 1
+    fi
     ValidateModePayload "$extract_root" "$mode"
     ValidateVersionFiles "$extract_root" "$selected_version"
     ValidateUpdatePackageManifests "$extract_root" "$selected_version"

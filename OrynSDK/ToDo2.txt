@@ -1,6 +1,6 @@
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.83
-Updated from package: 0.5.83 Bootstrap Archive Resolver Fix
+Version: 0.5.84
+Updated from package: 0.5.84 Signed Package Hashes
 Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
@@ -483,3 +483,4 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
        FullSource/PackageManifest.txt and ChangedFiles/PackageManifest.txt are generated for each package tree.
        Updater validates manifest tree name, package version, file count, byte count, listed paths, file sizes, and sha256 values before copy.
        Missing, extra, duplicate, unsafe, or corrupted payload files now fail closed before SDK/project updates.
+[ OK ] 0.5.84 Add signed package hashes for release-grade package authenticity.

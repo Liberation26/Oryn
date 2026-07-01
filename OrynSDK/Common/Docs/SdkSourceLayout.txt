@@ -315,3 +315,9 @@ Every update package now carries two root manifests:
 - ChangedFiles/PackageManifest.txt
 
 Each manifest records the package version, owning tree, file count, total payload bytes, and one row for every regular payload file in that tree. The updater validates both manifests before copying any file. A mismatch in path safety, missing files, extra files, duplicate rows, file size, or sha256 stops the update before the SDK tree is touched.
+0.5.84 signed package authenticity rule
+- Every release package carries a root PackageHashes.txt and PackageHashes.sig.
+- PackageHashes.txt is signed with the Oryn release private key and verified with the installed OrynReleasePublicKey.pem before copy.
+- The signed root hash manifest covers every package file except PackageHashes.txt and PackageHashes.sig.
+- FullSource/PackageManifest.txt and ChangedFiles/PackageManifest.txt remain per-tree file manifests and are now themselves protected by the signed root hash manifest.
+- Update fails closed if signature verification, public-key identity, file size, or SHA256 validation fails.
