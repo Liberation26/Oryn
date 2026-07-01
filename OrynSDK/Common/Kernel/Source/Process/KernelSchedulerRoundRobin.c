@@ -28,6 +28,7 @@ static void RoundRobinInit(unsigned int cpuCount)
     gRoundRobin.CpuCount = cpuCount;
     gRoundRobin.RunQueueReady = 1U;
     gRoundRobin.PreemptiveRoundRobinReady = 1U;
+    gRoundRobin.PrioritySchedulingReady = 1U;
     gRoundRobin.QuantumTicks = ORYN_KERNEL_ROUND_ROBIN_QUANTUM_TICKS;
     for (unsigned int cpu = 0U; cpu < cpuCount; ++cpu)
     {
@@ -58,30 +59,80 @@ int OrynKernelSchedulerAddRunnableThread(unsigned int cpuId, OrynKernelThread* t
     queue->Count += 1U;
     thread->AssignedCpu = queue->CpuId;
     thread->RemainingQuantumTicks = ORYN_KERNEL_ROUND_ROBIN_QUANTUM_TICKS;
+    thread->State = OrynKernelThreadStateSchedulerReady;
+    thread->SchedulerReady = 1U;
     gRoundRobin.ThreadsEnqueued += 1U;
     return 1;
+}
+
+static OrynKernelThread* PopQueueHead(OrynKernelRunQueue* queue)
+{
+    OrynKernelThread* thread = queue->Threads[queue->Head];
+    queue->Threads[queue->Head] = 0;
+    queue->Head = (queue->Head + 1U) % ORYN_KERNEL_RUN_QUEUE_LIMIT;
+    queue->Count -= 1U;
+    return thread;
 }
 
 OrynKernelThread* OrynKernelSchedulerPickNext(unsigned int cpuId)
 {
     OrynKernelRunQueue* queue = GetQueue(cpuId);
-    OrynKernelThread* thread;
+    OrynKernelThread* best = 0;
+    unsigned int originalCount = queue->Count;
     if (queue->Count == 0U)
+    {
+        return gRoundRobin.IdleThreads[queue->CpuId];
+    }
+    for (unsigned int seen = 0U; seen < originalCount; ++seen)
+    {
+        OrynKernelThread* candidate = PopQueueHead(queue);
+        if (candidate == 0)
+        {
+            continue;
+        }
+        if (best == 0 || candidate->Priority > best->Priority)
+        {
+            if (best != 0)
+            {
+                (void)OrynKernelSchedulerAddRunnableThread(queue->CpuId, best);
+            }
+            best = candidate;
+        }
+        else
+        {
+            (void)OrynKernelSchedulerAddRunnableThread(queue->CpuId, candidate);
+        }
+    }
+    gRoundRobin.ThreadsDequeued += 1U;
+    gRoundRobin.PrioritySelections += 1U;
+    gRoundRobin.Current[queue->CpuId] = best;
+    if (best != 0)
+    {
+        best->State = OrynKernelThreadStateRunning;
+        best->SchedulerReady = 0U;
+    }
+    return best;
+}
+
+int OrynKernelSchedulerRegisterIdleThread(unsigned int cpuId, OrynKernelThread* thread)
+{
+    unsigned int cpu = ClampCpu(cpuId);
+    if (thread == 0)
     {
         return 0;
     }
-    thread = queue->Threads[queue->Head];
-    queue->Threads[queue->Head] = 0;
-    queue->Head = (queue->Head + 1U) % ORYN_KERNEL_RUN_QUEUE_LIMIT;
-    queue->Count -= 1U;
-    gRoundRobin.ThreadsDequeued += 1U;
-    gRoundRobin.Current[queue->CpuId] = thread;
-    if (thread != 0)
+    if (gRoundRobin.Initialized == 0U)
     {
-        thread->State = OrynKernelThreadStateRunning;
-        thread->SchedulerReady = 0U;
+        RoundRobinInit(cpu + 1U);
     }
-    return thread;
+    thread->AssignedCpu = cpu;
+    thread->Priority = ORYN_KERNEL_THREAD_PRIORITY_MIN;
+    thread->State = OrynKernelThreadStateRunning;
+    thread->SchedulerReady = 0U;
+    gRoundRobin.IdleThreads[cpu] = thread;
+    gRoundRobin.IdleThreadReady = 1U;
+    gRoundRobin.IdleThreadCount += 1U;
+    return 1;
 }
 
 OrynKernelThread* OrynKernelSchedulerPreemptCurrent(unsigned int cpuId)

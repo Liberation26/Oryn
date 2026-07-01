@@ -5,7 +5,7 @@
 
 #define ORYN_SCHEDULER_DEFAULT_VECTOR 0xEFU
 
-static OrynKernelSchedulerState gScheduler;
+OrynKernelSchedulerState gScheduler;
 static unsigned int gNextTimerId = 1U;
 static unsigned long long gSchedulerJiffies;
 static unsigned int gSchedulerProofWorkCount;
@@ -230,9 +230,9 @@ unsigned int OrynKernelSchedulerRunDeviceWork(unsigned int budget, unsigned int 
     return ran;
 }
 
-int OrynKernelSchedulerWaitQueueSleep(OrynKernelThread* thread, const char* reason)
+int OrynKernelSchedulerWait(OrynKernelThread* thread, const void* channel, const char* reason)
 {
-    if (gScheduler.Initialized == 0U || thread == 0)
+    if (gScheduler.Initialized == 0U || thread == 0 || channel == 0)
     {
         return 0;
     }
@@ -245,8 +245,10 @@ int OrynKernelSchedulerWaitQueueSleep(OrynKernelThread* thread, const char* reas
             node->WaitId = index + 1U;
             node->Thread = thread;
             node->Reason = reason;
+            node->Channel = channel;
             thread->State = OrynKernelThreadStateBlocked;
             thread->SchedulerReady = 0U;
+            thread->WaitChannel = channel;
             gScheduler.WaitQueueCount += 1U;
             return 1;
         }
@@ -254,30 +256,55 @@ int OrynKernelSchedulerWaitQueueSleep(OrynKernelThread* thread, const char* reas
     return 0;
 }
 
-unsigned int OrynKernelSchedulerWaitQueueWakeOne(const char* reason)
+static unsigned int WakeMatchingWaiter(const void* channel, unsigned int all)
 {
+    unsigned int woken = 0U;
     for (unsigned int index = 0U; index < ORYN_KERNEL_WAIT_QUEUE_LIMIT; ++index)
     {
         OrynKernelWaitQueueNode* node = &gScheduler.WaitQueue[index];
-        if (node->Used != 0U)
+        if (node->Used != 0U && (channel == 0 || node->Channel == channel))
         {
             OrynKernelThread* thread = node->Thread;
-            (void)reason;
             (void)memset(node, 0, sizeof(*node));
             if (thread != 0)
             {
                 thread->State = OrynKernelThreadStateSchedulerReady;
                 thread->SchedulerReady = 1U;
+                thread->WaitChannel = 0;
             }
             if (gScheduler.WaitQueueCount > 0U)
             {
                 gScheduler.WaitQueueCount -= 1U;
             }
             gScheduler.WaitQueueWakeCount += 1U;
-            return 1U;
+            woken += 1U;
+            if (all == 0U)
+            {
+                return woken;
+            }
         }
     }
-    return 0U;
+    return woken;
+}
+
+int OrynKernelSchedulerWaitQueueSleep(OrynKernelThread* thread, const char* reason)
+{
+    return OrynKernelSchedulerWait(thread, (const void*)reason, reason);
+}
+
+unsigned int OrynKernelSchedulerWaitQueueWakeOne(const char* reason)
+{
+    return WakeMatchingWaiter((const void*)reason, 0U);
+}
+
+unsigned int OrynKernelSchedulerWakeOne(const void* channel)
+{
+    return WakeMatchingWaiter(channel, 0U);
+}
+
+unsigned int OrynKernelSchedulerWakeAll(const void* channel)
+{
+    return WakeMatchingWaiter(channel, 1U);
 }
 
 void OrynKernelSchedulerTick(unsigned int cpuId, unsigned long long nowTick)
@@ -334,6 +361,10 @@ int OrynKernelSchedulerRunSelfTest(OrynKernelThread* thread)
         return 0;
     }
     OrynKernelSchedulerInit(2U, ORYN_SCHEDULER_DEFAULT_VECTOR);
+    if (!OrynKernelSchedulerRegisterIdleThread(1U, thread))
+    {
+        return 0;
+    }
     if (!OrynKernelSchedulerSleepUntil(thread, 5ULL))
     {
         return 0;
@@ -361,11 +392,12 @@ int OrynKernelSchedulerRunSelfTest(OrynKernelThread* thread)
     {
         return 0;
     }
-    if (!OrynKernelSchedulerWaitQueueSleep(thread, "proof-wait"))
+    static const unsigned int waitChannel = 1U;
+    if (!OrynKernelSchedulerWait(thread, &waitChannel, "proof-wait"))
     {
         return 0;
     }
-    if (OrynKernelSchedulerWaitQueueWakeOne("proof-wait") != 1U)
+    if (OrynKernelSchedulerWakeOne(&waitChannel) != 1U)
     {
         return 0;
     }
@@ -411,8 +443,8 @@ void OrynKernelSchedulerPrintProof(void)
         "Scheduler work queues run device work outside interrupt context.",
         "Scheduler work queue proof failed.");
     OrynKernelScreenReportOkOrFail(gScheduler.WaitQueueReady && gScheduler.WaitQueueWakeCount > 0U,
-        "Scheduler wait queues block and wake sleeping threads.",
-        "Scheduler wait queue proof failed.");
+        "Scheduler wait/wake primitives block and wake sleeping threads by channel.",
+        "Scheduler wait/wake primitive proof failed.");
     const OrynKernelRoundRobinStats* rr = OrynKernelSchedulerGetRoundRobinStats();
     OrynKernelScreenReportOkOrFail(rr->RunQueueReady && rr->ThreadsEnqueued > 0U,
         "Per-CPU scheduler run queues are implemented.",
@@ -420,4 +452,10 @@ void OrynKernelSchedulerPrintProof(void)
     OrynKernelScreenReportOkOrFail(rr->PreemptiveRoundRobinReady && rr->Preemptions > 0U,
         "Pre-emptive round-robin scheduler foundation is implemented.",
         "Pre-emptive round-robin scheduler proof failed.");
+    OrynKernelScreenReportOkOrFail(rr->PrioritySchedulingReady && rr->PrioritySelections > 0U,
+        "Scheduler priorities are layered after stable round-robin selection.",
+        "Scheduler priority proof failed.");
+    OrynKernelScreenReportOkOrFail(rr->IdleThreadReady && rr->IdleThreadCount > 0U,
+        "Kernel idle thread registration exists for each CPU run queue.",
+        "Kernel idle thread proof failed.");
 }

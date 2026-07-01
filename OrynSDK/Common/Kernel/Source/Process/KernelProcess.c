@@ -6,7 +6,7 @@
 
 static unsigned int gNextProcessId = 1U;
 static unsigned int gNextThreadId = 1U;
-static OrynKernelProcessStats gProcessStats;
+OrynKernelProcessStats gProcessStats;
 static const char* gProcessProofFailure;
 
 static void ProcessClear(void* pointer, unsigned long long bytes)
@@ -36,6 +36,19 @@ static void ProcessCopyName(char* target, unsigned int capacity, const char* sou
     target[index] = 0;
 }
 
+static void LinkParentChild(OrynKernelProcess* parent, OrynKernelProcess* child)
+{
+    if (parent == 0 || child == 0)
+    {
+        return;
+    }
+    child->Parent = parent;
+    child->ParentProcessId = parent->ProcessId;
+    child->NextSibling = parent->FirstChild;
+    parent->FirstChild = child;
+    parent->ChildCount += 1U;
+}
+
 static unsigned long long AlignStackBytes(unsigned long long bytes)
 {
     if (bytes < ORYN_KERNEL_THREAD_DEFAULT_STACK_BYTES)
@@ -53,6 +66,11 @@ void OrynKernelProcessSystemInit(void)
     gProcessStats.KernelThreadStructureReady = 1U;
     gProcessStats.UserProcessStructureReady = 1U;
     gProcessStats.UserThreadStructureReady = 1U;
+    gProcessStats.ProcessIdReady = 1U;
+    gProcessStats.ThreadIdReady = 1U;
+    gProcessStats.ThreadStateReady = 1U;
+    gProcessStats.ParentChildReady = 1U;
+    gProcessStats.ExitWaitReady = 1U;
     gNextProcessId = 1U;
     gNextThreadId = 1U;
     gProcessProofFailure = 0;
@@ -139,6 +157,7 @@ OrynKernelProcess* OrynKernelProcessCreateCopyOnWriteChild(
     child->Kind = parentProcess->Kind;
     child->UserMode = parentProcess->UserMode;
     child->AddressSpace = childAddressSpace;
+    LinkParentChild(parentProcess, child);
     ProcessCopyName(child->Name, ORYN_KERNEL_PROCESS_NAME_LENGTH, name);
     gProcessStats.ProcessCreatedCount += 1U;
     gProcessStats.AddressSpaceBoundProcessCount += 1U;
@@ -202,6 +221,7 @@ static OrynKernelThread* AllocateThread(OrynKernelProcess* process,
     thread->GuardBytes = ORYN_KERNEL_THREAD_STACK_GUARD_BYTES;
     thread->StackTop = (void*)((unsigned long long)stack + alignedStackBytes);
     thread->SchedulerReady = 1U;
+    thread->Priority = ORYN_KERNEL_THREAD_PRIORITY_DEFAULT;
     thread->QuantumTicks = 4U;
     thread->RemainingQuantumTicks = thread->QuantumTicks;
     ProcessCopyName(thread->Name, ORYN_KERNEL_THREAD_NAME_LENGTH, name);
@@ -309,6 +329,7 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
     OrynKernelThread* userThread;
     OrynKernelProcess* child;
     OrynKernelUserProcess userProcess;
+    int childStatus = 0;
     const OrynKernelHeapStats* heapBefore;
     const OrynKernelHeapStats* heapAfter;
     unsigned long long stackGuardPagesBefore;
@@ -338,7 +359,8 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
     thread = OrynKernelThreadCreateKernel(
         process, "init-main", DummyKernelThreadEntry, process,
         ORYN_KERNEL_THREAD_DEFAULT_STACK_BYTES);
-    if (child == 0 || !OrynKernelThreadIsSchedulerReady(thread) ||
+    if (child == 0 || child->Parent != process || process->ChildCount == 0U ||
+        !OrynKernelThreadIsSchedulerReady(thread) ||
         !OrynKernelThreadIsSchedulerReady(userThread) || userThread->IsUserThread == 0U)
     {
         gProcessProofFailure = "process/thread structure proof failed";
@@ -352,6 +374,19 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
     if (heapAfter == 0 || heapAfter->StackGuardPages <= stackGuardPagesBefore)
     {
         gProcessProofFailure = "stack guard page accounting did not advance";
+        OrynKernelThreadDestroy(userThread);
+        OrynKernelThreadDestroy(thread);
+        OrynKernelProcessDestroy(child);
+        OrynKernelProcessDestroy(process);
+        return 0;
+    }
+    if (!OrynKernelThreadSetPriority(thread, 12U) ||
+        !OrynKernelThreadExit(userThread, 3) ||
+        !OrynKernelProcessExit(child, 77) ||
+        !OrynKernelProcessWait(process, child->ProcessId, &childStatus) ||
+        childStatus != 77)
+    {
+        gProcessProofFailure = "priority, exit, or wait proof failed";
         OrynKernelThreadDestroy(userThread);
         OrynKernelThreadDestroy(thread);
         OrynKernelProcessDestroy(child);
@@ -407,6 +442,15 @@ void OrynKernelProcessPrintProof(void)
     OrynKernelScreenReportOkOrFail(gProcessStats.CopyOnWriteChildProcessCount > 0U,
         "Process creation has a copy-on-write child foundation for fork-like creation.",
         "Process copy-on-write child foundation proof failed.");
+    OrynKernelScreenReportOkOrFail(gProcessStats.ProcessIdReady && gProcessStats.ThreadIdReady,
+        "Process IDs and thread IDs are assigned by kernel process management.",
+        "Process/thread ID proof failed.");
+    OrynKernelScreenReportOkOrFail(gProcessStats.ThreadStateReady,
+        "Thread states include running, ready, sleeping, blocked, zombie, and stopped.",
+        "Thread state definition proof failed.");
+    OrynKernelScreenReportOkOrFail(gProcessStats.ParentChildReady && gProcessStats.ProcessWaitCount > 0U,
+        "Parent/child process relationships support exit status and wait semantics.",
+        "Parent/child exit-wait proof failed.");
     OrynKernelContextSwitchPrintProof();
     OrynKernelSchedulerPrintProof();
 }

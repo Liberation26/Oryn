@@ -10,6 +10,9 @@
 #define ORYN_KERNEL_THREAD_NAME_LENGTH 32U
 #define ORYN_KERNEL_THREAD_DEFAULT_STACK_BYTES 16384ULL
 #define ORYN_KERNEL_THREAD_STACK_GUARD_BYTES 4096ULL
+#define ORYN_KERNEL_THREAD_PRIORITY_MIN 0U
+#define ORYN_KERNEL_THREAD_PRIORITY_DEFAULT 8U
+#define ORYN_KERNEL_THREAD_PRIORITY_MAX 15U
 
 typedef enum OrynKernelProcessKind
 {
@@ -22,17 +25,23 @@ typedef enum OrynKernelProcessState
     OrynKernelProcessStateUnused = 0,
     OrynKernelProcessStateCreated = 1,
     OrynKernelProcessStateReady = 2,
-    OrynKernelProcessStateTerminated = 3
+    OrynKernelProcessStateRunning = 3,
+    OrynKernelProcessStateZombie = 4,
+    OrynKernelProcessStateStopped = 5,
+    OrynKernelProcessStateTerminated = 4
 } OrynKernelProcessState;
 
 typedef enum OrynKernelThreadState
 {
     OrynKernelThreadStateUnused = 0,
     OrynKernelThreadStateCreated = 1,
+    OrynKernelThreadStateReady = 2,
     OrynKernelThreadStateSchedulerReady = 2,
     OrynKernelThreadStateRunning = 3,
-    OrynKernelThreadStateBlocked = 4,
-    OrynKernelThreadStateSleeping = 5,
+    OrynKernelThreadStateSleeping = 4,
+    OrynKernelThreadStateBlocked = 5,
+    OrynKernelThreadStateZombie = 6,
+    OrynKernelThreadStateStopped = 7,
     OrynKernelThreadStateTerminated = 6
 } OrynKernelThreadState;
 
@@ -44,6 +53,13 @@ typedef struct OrynKernelProcess
     unsigned int Kind;
     unsigned int UserMode;
     unsigned int ThreadCount;
+    int ExitStatus;
+    unsigned int Exited;
+    unsigned int Waited;
+    struct OrynKernelProcess* Parent;
+    struct OrynKernelProcess* FirstChild;
+    struct OrynKernelProcess* NextSibling;
+    unsigned int ChildCount;
     char Name[ORYN_KERNEL_PROCESS_NAME_LENGTH];
     OrynKernelAddressSpace* AddressSpace;
 } OrynKernelProcess;
@@ -62,6 +78,10 @@ typedef struct OrynKernelThread
     unsigned long long GuardBytes;
     unsigned int SchedulerReady;
     unsigned int IsUserThread;
+    unsigned int Priority;
+    int ExitStatus;
+    unsigned int Exited;
+    const void* WaitChannel;
     unsigned int AssignedCpu;
     unsigned int QuantumTicks;
     unsigned int RemainingQuantumTicks;
@@ -99,6 +119,14 @@ typedef struct OrynKernelProcessStats
     unsigned long long KernelThreadGuardBytes;
     unsigned int AddressSpaceBoundProcessCount;
     unsigned int CopyOnWriteChildProcessCount;
+    unsigned int ProcessIdReady;
+    unsigned int ThreadIdReady;
+    unsigned int ParentChildReady;
+    unsigned int ExitWaitReady;
+    unsigned int ProcessExitCount;
+    unsigned int ProcessWaitCount;
+    unsigned int ThreadStateReady;
+    unsigned int FailedWaits;
     unsigned long long CopyOnWriteSharedPages;
     unsigned long long CopyOnWriteResolvedPages;
     unsigned int FailedAllocations;
@@ -127,6 +155,11 @@ OrynKernelThread* OrynKernelThreadCreateUser(
     unsigned long long userEntry,
     unsigned long long userStackTop);
 void OrynKernelThreadDestroy(OrynKernelThread* thread);
+int OrynKernelProcessExit(OrynKernelProcess* process, int exitStatus);
+int OrynKernelProcessWait(OrynKernelProcess* parent, unsigned int childProcessId, int* exitStatus);
+int OrynKernelThreadExit(OrynKernelThread* thread, int exitStatus);
+int OrynKernelThreadStop(OrynKernelThread* thread);
+int OrynKernelThreadSetPriority(OrynKernelThread* thread, unsigned int priority);
 int OrynKernelThreadIsSchedulerReady(const OrynKernelThread* thread);
 const OrynKernelProcessStats* OrynKernelProcessGetStats(void);
 int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory);

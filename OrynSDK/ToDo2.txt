@@ -255,13 +255,14 @@ Milestone 1.0 - Threads, processes, and scheduler:
 [ OK ] Implement per-CPU run queues.
 [ OK ] Implement pre-emptive round-robin scheduler first.
        0.5.123 proof: Process now defines kernel thread, user process, and user thread records; x86_64 context switch state is saved/restored; scheduler has per-CPU run queues and first pre-emptive round-robin proof output.
-[TOBE] Add priorities after round-robin is stable.
-[TOBE] Add thread states: running, ready, sleeping, blocked, zombie, stopped.
-[TOBE] Add wait/wake primitives.
-[TOBE] Add kernel idle thread per CPU.
-[TOBE] Add process IDs and thread IDs.
-[TOBE] Add parent/child relationships.
-[TOBE] Add exit status and wait semantics.
+[ OK ] Add priorities after round-robin is stable.
+[ OK ] Add thread states: running, ready, sleeping, blocked, zombie, stopped.
+[ OK ] Add wait/wake primitives.
+[ OK ] Add kernel idle thread per CPU.
+[ OK ] Add process IDs and thread IDs.
+[ OK ] Add parent/child relationships.
+[ OK ] Add exit status and wait semantics.
+       0.5.124 proof: Scheduler priorities are layered over round-robin; threads expose running/ready/sleeping/blocked/zombie/stopped states; wait/wake primitives use wait channels; per-CPU idle thread registration is present; process/thread IDs, parent-child links, exit status, and parent wait semantics are proven.
 [TOBE] Add signal/event delivery design mapped onto Oryn Event.
 [TOBE] Add CPU affinity later, after stable SMP scheduling.
 [TOBE] Add scheduler diagnostics and run-queue dumps.

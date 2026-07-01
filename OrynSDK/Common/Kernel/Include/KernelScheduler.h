@@ -10,6 +10,9 @@
 #define ORYN_KERNEL_WAIT_QUEUE_LIMIT 64U
 #define ORYN_KERNEL_RUN_QUEUE_LIMIT 64U
 #define ORYN_KERNEL_ROUND_ROBIN_QUANTUM_TICKS 4U
+#define ORYN_KERNEL_THREAD_PRIORITY_MIN 0U
+#define ORYN_KERNEL_THREAD_PRIORITY_DEFAULT 8U
+#define ORYN_KERNEL_THREAD_PRIORITY_MAX 15U
 
 
 typedef struct OrynKernelRunQueue
@@ -33,7 +36,12 @@ typedef struct OrynKernelRoundRobinStats
     unsigned int ContextSwitchRequests;
     unsigned int Preemptions;
     unsigned int QuantumTicks;
+    unsigned int PrioritySchedulingReady;
+    unsigned int PrioritySelections;
+    unsigned int IdleThreadReady;
+    unsigned int IdleThreadCount;
     OrynKernelThread* Current[ORYN_KERNEL_SCHEDULER_CPU_LIMIT];
+    OrynKernelThread* IdleThreads[ORYN_KERNEL_SCHEDULER_CPU_LIMIT];
     OrynKernelRunQueue RunQueues[ORYN_KERNEL_SCHEDULER_CPU_LIMIT];
 } OrynKernelRoundRobinStats;
 
@@ -82,6 +90,7 @@ typedef struct OrynKernelWaitQueueNode
     unsigned int WaitId;
     OrynKernelThread* Thread;
     const char* Reason;
+    const void* Channel;
 } OrynKernelWaitQueueNode;
 
 typedef struct OrynKernelCpuSchedulerTick
@@ -134,6 +143,10 @@ int OrynKernelSchedulerQueueDeviceWork(unsigned int deviceId,
 unsigned int OrynKernelSchedulerRunDeviceWork(unsigned int budget, unsigned int inInterruptContext);
 int OrynKernelSchedulerWaitQueueSleep(OrynKernelThread* thread, const char* reason);
 unsigned int OrynKernelSchedulerWaitQueueWakeOne(const char* reason);
+int OrynKernelSchedulerWait(OrynKernelThread* thread, const void* channel, const char* reason);
+unsigned int OrynKernelSchedulerWakeOne(const void* channel);
+unsigned int OrynKernelSchedulerWakeAll(const void* channel);
+int OrynKernelSchedulerRegisterIdleThread(unsigned int cpuId, OrynKernelThread* thread);
 int OrynKernelSchedulerAddRunnableThread(unsigned int cpuId, OrynKernelThread* thread);
 OrynKernelThread* OrynKernelSchedulerPickNext(unsigned int cpuId);
 OrynKernelThread* OrynKernelSchedulerPreemptCurrent(unsigned int cpuId);
