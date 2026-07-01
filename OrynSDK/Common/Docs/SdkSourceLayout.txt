@@ -328,7 +328,14 @@ Each manifest records the package version, owning tree, file count, total payloa
 - The updater validates both generated file manifests before any copy operation.
 - The signed PackageHashes.txt covers the generated manifests so tree file inventories are authenticity-protected.
 
-0.5.86 boot proof ownership:
+0.5.87 boot proof ownership:
 - Targets/UEFI/X64/KernelSupport/Include/KernelBootProof.h declares the boot proof runner boundary.
 - Targets/UEFI/X64/KernelSupport/Source/Diagnostics/Proofs/KernelBootProofOrchestrator.c owns proof orchestration after runtime entry.
 - Targets/UEFI/X64/KernelSupport/Source/Runtime/KernelRuntimeBootSequence.c only enters runtime, hands off to KernelBootProof, exits for non-interactive VM, and halts.
+
+## Kernel boot proof console separation
+
+- Kernel boot proof sources must not include KernelConsole.h directly.
+- Proof code talks to KernelBootProofConsole.h, which is the only proof-owned adapter allowed to call KConsole.
+- Console remains the runtime/user I/O module; boot proof code only receives readiness, metrics, scroll, and double-buffer probe operations through the adapter.
+- This keeps KernelRuntimeBootSequence -> KernelBootProof -> BootProofConsole as the proof path and keeps Shell/Console runtime ownership separate.

@@ -1,6 +1,6 @@
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.86
-Updated from package: 0.5.86 Kernel Boot Proof Ownership
+Version: 0.5.87
+Updated from package: 0.5.87 Kernel Boot Proof Ownership
 Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
@@ -117,7 +117,8 @@ Current kernel foundation already present:
 [ OK ] Physical memory allocator foundation exists.
 [ OK ] Higher-half virtual-memory foundation exists.
 [ OK ] KernelRuntimeBootSequence no longer owns proof orchestration; it enters runtime and calls KernelBootProof only.
-[WARN] Console exists but is still too close to the kernel proof flow.
+[ OK ] KernelBootProofConsole adapter owns the proof-only bridge to console metrics, scroll probes, and double-buffer probes.
+[ OK ] Console proof flow now uses KernelBootProofConsole adapter; Console remains runtime/user I/O and proof code no longer includes KernelConsole directly.
 [WARN] FAT32 and VFS kernel modules exist, but they are not production-ready filesystems yet.
 [WARN] Module manifests are static C tables, not generated from per-module manifest files yet.
 
@@ -487,7 +488,7 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 
 [ OK ] 0.5.85 Add generated file manifests for every package file in FullSource and ChangedFiles.
 
-0.5.86 Kernel boot proof ownership:
+0.5.87 Kernel boot proof ownership:
 [ OK ] KernelRuntimeBootSequence now has one runtime duty: enter the kernel runtime and hand off to the boot proof runner.
 [ OK ] Added KernelBootProof.h as the ownership boundary for boot proof sequencing.
 [ OK ] Added KernelBootProofOrchestrator.c to own boot proof execution, panic handoff, running-state transition, and halt proofs.

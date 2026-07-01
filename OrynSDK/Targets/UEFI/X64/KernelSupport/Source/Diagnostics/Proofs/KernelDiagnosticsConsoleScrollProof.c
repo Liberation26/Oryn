@@ -1,9 +1,9 @@
 #include "KernelDiagnosticsProofsInternal.h"
 #include "KernelScreenReport.h"
 
-static unsigned int OrynKernelDiagnosticsMaximumViewTop(const KConsoleMetrics* metrics)
+static unsigned int OrynKernelDiagnosticsMaximumViewTop(const OrynBootProofConsoleMetrics* metrics)
 {
-    unsigned int rows = KConsole.VisibleRows();
+    unsigned int rows = OrynBootProofConsoleVisibleRows();
 
     if (metrics->TotalLines <= rows)
     {
@@ -15,22 +15,22 @@ static unsigned int OrynKernelDiagnosticsMaximumViewTop(const KConsoleMetrics* m
 
 static int OrynKernelDiagnosticsExerciseScrollState(void)
 {
-    KConsoleMetrics metrics;
+    OrynBootProofConsoleMetrics metrics;
     int ok;
 
-    KConsole.GetMetrics(&metrics);
-    if (metrics.TotalLines <= KConsole.VisibleRows())
+    OrynBootProofConsoleGetMetrics(&metrics);
+    if (metrics.TotalLines <= OrynBootProofConsoleVisibleRows())
     {
         return 0;
     }
 
-    ok = KConsole.ScrollUpLines(1U) &&
-        KConsole.ScrollDownLines(1U) &&
-        KConsole.PageUp() &&
-        KConsole.PageDown();
+    ok = OrynBootProofConsoleScrollUpLines(1U) &&
+        OrynBootProofConsoleScrollDownLines(1U) &&
+        OrynBootProofConsolePageUp() &&
+        OrynBootProofConsolePageDown();
 
-    KConsole.ScrollToBottom();
-    KConsole.GetMetrics(&metrics);
+    OrynBootProofConsoleScrollToBottom();
+    OrynBootProofConsoleGetMetrics(&metrics);
 
     return ok && metrics.ViewFollowsTail &&
         metrics.ViewTopLine == OrynKernelDiagnosticsMaximumViewTop(&metrics);
@@ -38,22 +38,22 @@ static int OrynKernelDiagnosticsExerciseScrollState(void)
 
 static void OrynKernelDiagnosticsWriteScrollProbeLines(void)
 {
-    unsigned int lines = KConsole.VisibleRows() + 4U;
+    unsigned int lines = OrynBootProofConsoleVisibleRows() + 4U;
 
     if (lines > 80U)
     {
         lines = 80U;
     }
 
-    KConsole.SetForegroundColour(KCONSOLE_COLOUR_STEP);
+    OrynBootProofConsoleSetColour(ORYN_BOOT_PROOF_CONSOLE_COLOUR_STEP);
     for (unsigned int index = 0U; index < lines; ++index)
     {
-        KConsole.WriteString("[SCROLL] proof line ");
-        KConsole.WriteUnsignedDec(index + 1U);
-        KConsole.WriteChar('\n');
+        OrynBootProofConsoleWriteString("[SCROLL] proof line ");
+        OrynBootProofConsoleWriteUnsignedDec(index + 1U);
+        OrynBootProofConsoleWriteChar('\n');
     }
 
-    KConsole.ResetForegroundColour();
+    OrynBootProofConsoleResetColour();
 }
 
 int OrynKernelDiagnosticsConsoleRunScrollProbe(void)
@@ -63,27 +63,27 @@ int OrynKernelDiagnosticsConsoleRunScrollProbe(void)
 
     KernelIoWriteString("[KERNEL] Kernel screen scrolling: starting proof.\n");
     KernelIoWriteString("[KERNEL] Kernel screen visible rows: ");
-    KernelIoWriteDec64(KConsole.VisibleRows());
+    KernelIoWriteDec64(OrynBootProofConsoleVisibleRows());
     KernelIoWriteString("\n");
     KernelIoWriteString("[KERNEL] Kernel screen visible columns: ");
-    KernelIoWriteDec64(KConsole.VisibleColumns());
+    KernelIoWriteDec64(OrynBootProofConsoleVisibleColumns());
     KernelIoWriteString("\n");
     KernelIoWriteString("[KERNEL] Kernel screen scrollback rows: ");
-    KernelIoWriteDec64(KConsole.ScrollbackRows());
+    KernelIoWriteDec64(OrynBootProofConsoleScrollbackRows());
     KernelIoWriteString("\n");
 
-    if (!KConsole.IsAvailable() || KConsole.VisibleRows() == 0U || KConsole.VisibleColumns() == 0U)
+    if (!OrynBootProofConsoleIsAvailable() || OrynBootProofConsoleVisibleRows() == 0U || OrynBootProofConsoleVisibleColumns() == 0U)
     {
         OrynKernelScreenReportFail(0, "Kernel screen scrolling proof failed.");
         return 0;
     }
 
-    savedState = KConsole.BeginDeferredPresent();
+    savedState = OrynBootProofConsoleBeginDeferredPresent();
     OrynKernelDiagnosticsWriteScrollProbeLines();
     ok = OrynKernelDiagnosticsExerciseScrollState();
-    KConsole.ClearScreen();
-    KConsole.EndDeferredPresent(savedState);
-    KConsole.ClearScreen();
+    OrynBootProofConsoleClear();
+    OrynBootProofConsoleEndDeferredPresent(savedState);
+    OrynBootProofConsoleClear();
 
     if (!ok)
     {

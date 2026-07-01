@@ -7,22 +7,22 @@ static void OrynKernelDiagnosticsPrintConsoleHeader(void)
     KernelIoWriteString("[KERNEL] Target: uefi-x64\n");
     KernelIoWriteString("[KERNEL] Toolchain: clang + lld\n");
     OrynKernelScreenReportOk(0, "Kernel console initialized.");
-    OrynKernelScreenReportOk(0, "Console runtime separated from diagnostics proof flow.");
-    KernelIoWriteString(KConsole.IsTtfActive() ?
+    OrynKernelScreenReportOk(0, "Console runtime separated from boot proof flow by BootProofConsole adapter.");
+    KernelIoWriteString(OrynBootProofConsoleIsTtfActive() ?
         "[KERNEL] TTF renderer: active\n" :
         "[KERNEL] TTF renderer: fallback bitmap glyphs\n");
 }
 
 void OrynKernelDiagnosticsRunConsoleProofs(const OrynBootInfo* kernelBootInfo)
 {
-    KConsoleInit(kernelBootInfo);
-    (void)OrynKernelLifecycleTransition(OrynKernelLifecycleConsoleReady);
-    KConsole.ClearScreen();
+    OrynBootProofConsoleInitialize(kernelBootInfo);
+    OrynBootProofConsoleMarkRuntimeReady();
+    OrynBootProofConsoleClear();
     OrynKernelDiagnosticsPrintConsoleHeader();
 
     (void)OrynKernelDiagnosticsConsoleRunScrollProbe();
 
-    if (KConsole.IsDoubleBuffered() &&
+    if (OrynBootProofConsoleIsDoubleBuffered() &&
         OrynKernelDiagnosticsConsoleRunDoubleBufferProbe() &&
         OrynKernelDiagnosticsConsoleRunLineBufferedProbe() &&
         OrynKernelDiagnosticsConsoleRunFastRefreshProbe())

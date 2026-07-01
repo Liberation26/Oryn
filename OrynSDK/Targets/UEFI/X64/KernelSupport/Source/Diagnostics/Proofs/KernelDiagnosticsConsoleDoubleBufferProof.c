@@ -3,22 +3,22 @@
 
 static int OrynKernelDiagnosticsConsoleCanUseBackBuffer(void)
 {
-    return KConsole.IsAvailable() && KConsole.IsDoubleBuffered() &&
-        KConsole.BackBufferBytes() != 0ULL;
+    return OrynBootProofConsoleIsAvailable() && OrynBootProofConsoleIsDoubleBuffered() &&
+        OrynBootProofConsoleBackBufferBytes() != 0ULL;
 }
 
 int OrynKernelDiagnosticsConsoleRunDoubleBufferProbe(void)
 {
-    KConsoleMetrics before;
-    KConsoleMetrics after;
+    OrynBootProofConsoleMetrics before;
+    OrynBootProofConsoleMetrics after;
     unsigned int savedState;
 
     KernelIoWriteString("[KERNEL] Kernel screen double buffer: starting proof.\n");
     KernelIoWriteString("[KERNEL] Kernel screen back buffer bytes: ");
-    KernelIoWriteDec64(KConsole.BackBufferBytes());
+    KernelIoWriteDec64(OrynBootProofConsoleBackBufferBytes());
     KernelIoWriteString("\n");
     KernelIoWriteString("[KERNEL] Kernel screen present count: ");
-    KernelIoWriteDec64(KConsole.PresentCount());
+    KernelIoWriteDec64(OrynBootProofConsolePresentCount());
     KernelIoWriteString("\n");
 
     if (!OrynKernelDiagnosticsConsoleCanUseBackBuffer())
@@ -26,11 +26,11 @@ int OrynKernelDiagnosticsConsoleRunDoubleBufferProbe(void)
         return 0;
     }
 
-    savedState = KConsole.BeginDeferredPresent();
-    KConsole.GetMetrics(&before);
-    KConsole.ClearScreen();
-    KConsole.GetMetrics(&after);
-    KConsole.EndDeferredPresent(savedState);
+    savedState = OrynBootProofConsoleBeginDeferredPresent();
+    OrynBootProofConsoleGetMetrics(&before);
+    OrynBootProofConsoleClear();
+    OrynBootProofConsoleGetMetrics(&after);
+    OrynBootProofConsoleEndDeferredPresent(savedState);
 
     if (after.FullPresentCount <= before.FullPresentCount)
     {
@@ -44,9 +44,9 @@ int OrynKernelDiagnosticsConsoleRunDoubleBufferProbe(void)
 
 int OrynKernelDiagnosticsConsoleRunLineBufferedProbe(void)
 {
-    KConsoleMetrics before;
-    KConsoleMetrics afterCharacters;
-    KConsoleMetrics afterLine;
+    OrynBootProofConsoleMetrics before;
+    OrynBootProofConsoleMetrics afterCharacters;
+    OrynBootProofConsoleMetrics afterLine;
     unsigned int savedState;
     int ok;
 
@@ -55,24 +55,24 @@ int OrynKernelDiagnosticsConsoleRunLineBufferedProbe(void)
         return 0;
     }
 
-    savedState = KConsole.BeginDeferredPresent();
-    KConsole.ScrollToBottom();
-    KConsole.WriteChar('\n');
-    KConsole.GetMetrics(&before);
+    savedState = OrynBootProofConsoleBeginDeferredPresent();
+    OrynBootProofConsoleScrollToBottom();
+    OrynBootProofConsoleWriteChar('\n');
+    OrynBootProofConsoleGetMetrics(&before);
 
-    KConsole.SetForegroundColour(KCONSOLE_COLOUR_STEP);
-    KConsole.WriteChar('L');
-    KConsole.WriteChar('B');
-    KConsole.GetMetrics(&afterCharacters);
-    KConsole.WriteChar('\n');
-    KConsole.GetMetrics(&afterLine);
-    KConsole.ResetForegroundColour();
+    OrynBootProofConsoleSetColour(ORYN_BOOT_PROOF_CONSOLE_COLOUR_STEP);
+    OrynBootProofConsoleWriteChar('L');
+    OrynBootProofConsoleWriteChar('B');
+    OrynBootProofConsoleGetMetrics(&afterCharacters);
+    OrynBootProofConsoleWriteChar('\n');
+    OrynBootProofConsoleGetMetrics(&afterLine);
+    OrynBootProofConsoleResetColour();
 
     ok = afterCharacters.LinePresentCount == before.LinePresentCount &&
         afterLine.LinePresentCount > afterCharacters.LinePresentCount;
-    KConsole.ClearScreen();
-    KConsole.EndDeferredPresent(savedState);
-    KConsole.ClearScreen();
+    OrynBootProofConsoleClear();
+    OrynBootProofConsoleEndDeferredPresent(savedState);
+    OrynBootProofConsoleClear();
 
     if (!ok)
     {
@@ -87,11 +87,11 @@ int OrynKernelDiagnosticsConsoleRunLineBufferedProbe(void)
 
 int OrynKernelDiagnosticsConsoleRunFastRefreshProbe(void)
 {
-    KConsoleMetrics before;
-    KConsoleMetrics afterCharacters;
-    KConsoleMetrics afterLines;
+    OrynBootProofConsoleMetrics before;
+    OrynBootProofConsoleMetrics afterCharacters;
+    OrynBootProofConsoleMetrics afterLines;
     unsigned int savedState;
-    unsigned int lines = KConsole.VisibleRows() + 2U;
+    unsigned int lines = OrynBootProofConsoleVisibleRows() + 2U;
     int ok;
 
     if (!OrynKernelDiagnosticsConsoleCanUseBackBuffer())
@@ -104,25 +104,25 @@ int OrynKernelDiagnosticsConsoleRunFastRefreshProbe(void)
         lines = 80U;
     }
 
-    savedState = KConsole.BeginDeferredPresent();
-    KConsole.GetMetrics(&before);
-    KConsole.ScrollToBottom();
-    KConsole.SetForegroundColour(KCONSOLE_COLOUR_STEP);
-    KConsole.WriteString("[FAST] dirty line proof");
-    KConsole.GetMetrics(&afterCharacters);
-    KConsole.WriteChar('\n');
+    savedState = OrynBootProofConsoleBeginDeferredPresent();
+    OrynBootProofConsoleGetMetrics(&before);
+    OrynBootProofConsoleScrollToBottom();
+    OrynBootProofConsoleSetColour(ORYN_BOOT_PROOF_CONSOLE_COLOUR_STEP);
+    OrynBootProofConsoleWriteString("[FAST] dirty line proof");
+    OrynBootProofConsoleGetMetrics(&afterCharacters);
+    OrynBootProofConsoleWriteChar('\n');
 
     for (unsigned int index = 0U; index < lines; ++index)
     {
-        KConsole.WriteString("[FAST] scroll proof line");
-        KConsole.WriteChar('\n');
+        OrynBootProofConsoleWriteString("[FAST] scroll proof line");
+        OrynBootProofConsoleWriteChar('\n');
     }
 
-    KConsole.GetMetrics(&afterLines);
-    KConsole.ResetForegroundColour();
-    KConsole.ClearScreen();
-    KConsole.EndDeferredPresent(savedState);
-    KConsole.ClearScreen();
+    OrynBootProofConsoleGetMetrics(&afterLines);
+    OrynBootProofConsoleResetColour();
+    OrynBootProofConsoleClear();
+    OrynBootProofConsoleEndDeferredPresent(savedState);
+    OrynBootProofConsoleClear();
 
     ok = afterCharacters.LinePresentCount == before.LinePresentCount &&
         afterLines.FastScrollPresentCount > before.FastScrollPresentCount;

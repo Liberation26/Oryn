@@ -3,7 +3,7 @@
 
 #include "KernelApic.h"
 #include "KernelBootInfo.h"
-#include "KernelConsole.h"
+#include "KernelBootProofConsole.h"
 #include "KernelCpu.h"
 #include "KernelGdt.h"
 #include "KernelHpet.h"
