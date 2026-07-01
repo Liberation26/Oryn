@@ -9,6 +9,91 @@ static char Fat32Upper(char value)
     return value;
 }
 
+static int Fat32ValidShortChar(char value)
+{
+    const char* extra = "$%'-_@~`!(){}^#&";
+    uint32_t index;
+    if ((value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z') ||
+        (value >= '0' && value <= '9'))
+    {
+        return 1;
+    }
+    for (index = 0U; extra[index] != 0; ++index)
+    {
+        if (value == extra[index])
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int Fat32PartLength(const char* text, uint32_t* name_length, uint32_t* ext_length)
+{
+    uint32_t index;
+    uint32_t dot = 0xFFFFFFFFU;
+    *name_length = 0U;
+    *ext_length = 0U;
+    if (text == 0 || text[0] == 0 || Fat32NamesEqual(text, ".") || Fat32NamesEqual(text, ".."))
+    {
+        return 0;
+    }
+    for (index = 0U; text[index] != 0; ++index)
+    {
+        if (text[index] == '.')
+        {
+            if (dot != 0xFFFFFFFFU)
+            {
+                return 0;
+            }
+            dot = index;
+        }
+        else if (!Fat32ValidShortChar(text[index]))
+        {
+            return 0;
+        }
+    }
+    if (dot == 0xFFFFFFFFU)
+    {
+        *name_length = index;
+    }
+    else
+    {
+        *name_length = dot;
+        *ext_length = index - dot - 1U;
+    }
+    return *name_length > 0U && *name_length <= 8U && *ext_length <= 3U;
+}
+
+int Fat32PathIsSafeShortName(const char* path)
+{
+    const char* cursor = path;
+    Fat32PathPart part;
+    uint32_t name_length;
+    uint32_t ext_length;
+    if (path == 0 || path[0] == 0)
+    {
+        return 0;
+    }
+    if (Fat32NamesEqual(path, "/"))
+    {
+        return 1;
+    }
+    while (Fat32NextPathPart(&cursor, &part))
+    {
+        if (!Fat32PartLength(part.Text, &name_length, &ext_length))
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int OrynFat32ValidatePath(const char* path)
+{
+    return Fat32PathIsSafeShortName(path);
+}
+
 static void Fat32CopyShortPart(const char* input, uint8_t* output, uint32_t max_count)
 {
     uint32_t index;

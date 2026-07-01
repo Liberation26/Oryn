@@ -38,6 +38,16 @@ static int Fat32WriteChain(OrynFat32Volume* volume, uint32_t start_cluster, cons
     return 1;
 }
 
+static uint32_t Fat32ClustersNeeded(OrynFat32Volume* volume, uint32_t size)
+{
+    uint32_t cluster_size = Fat32ClusterSize(volume);
+    if (size == 0U)
+    {
+        return 0U;
+    }
+    return (size + cluster_size - 1U) / cluster_size;
+}
+
 int OrynFat32WriteFile(OrynFat32Volume* volume, const char* path, const void* buffer, uint32_t size)
 {
     OrynFat32FileInfo info;
@@ -45,18 +55,33 @@ int OrynFat32WriteFile(OrynFat32Volume* volume, const char* path, const void* bu
     uint32_t current;
     uint32_t count;
 
+    if (volume == 0 || path == 0 || (size > 0U && buffer == 0) || !Fat32PathIsSafeShortName(path))
+    {
+        return Fat32SetStatus(volume, OrynFat32StatusPathInvalid);
+    }
     if (!OrynFat32FindPath(volume, path, &info) ||
         (info.Attributes & ORYN_FAT32_ATTR_DIRECTORY) != 0U)
     {
-        return 0;
+        return Fat32SetStatus(volume, OrynFat32StatusNotFound);
     }
 
-    if (info.FirstCluster < 2U && size > 0U && !Fat32AllocateCluster(volume, &info.FirstCluster))
+    clusters_needed = Fat32ClustersNeeded(volume, size);
+    if (clusters_needed == 0U)
+    {
+        if (info.FirstCluster >= 2U && !Fat32FreeClusterChain(volume, info.FirstCluster))
+        {
+            return 0;
+        }
+        info.FirstCluster = 0U;
+        info.SizeBytes = 0U;
+        return Fat32WriteDirectoryEntry(volume, info.DirectoryCluster, info.DirectoryOffset, &info);
+    }
+
+    if (info.FirstCluster < 2U && !Fat32AllocateCluster(volume, &info.FirstCluster))
     {
         return 0;
     }
 
-    clusters_needed = (size + Fat32ClusterSize(volume) - 1U) / Fat32ClusterSize(volume);
     current = info.FirstCluster;
     for (count = 1U; count < clusters_needed; ++count)
     {
@@ -75,7 +100,11 @@ int OrynFat32WriteFile(OrynFat32Volume* volume, const char* path, const void* bu
         current = next;
     }
 
-    if (size > 0U && !Fat32WriteChain(volume, info.FirstCluster, (const uint8_t*)buffer, size))
+    if (!Fat32TruncateChain(volume, info.FirstCluster, clusters_needed))
+    {
+        return 0;
+    }
+    if (!Fat32WriteChain(volume, info.FirstCluster, (const uint8_t*)buffer, size))
     {
         return 0;
     }
@@ -92,13 +121,17 @@ int OrynFat32CreateFile(OrynFat32Volume* volume, const char* path, const void* b
     uint8_t sector[ORYN_FAT32_SECTOR_SIZE];
     OrynFat32FileInfo info;
 
+    if (volume == 0 || path == 0 || (size > 0U && buffer == 0) || !Fat32PathIsSafeShortName(path))
+    {
+        return Fat32SetStatus(volume, OrynFat32StatusPathInvalid);
+    }
     if (!Fat32ResolveParent(volume, path, &parent, leaf, sizeof(leaf)))
     {
-        return 0;
+        return Fat32SetStatus(volume, OrynFat32StatusNotFound);
     }
     if (Fat32FindInDirectory(volume, parent, leaf, 0))
     {
-        return 0;
+        return Fat32SetStatus(volume, OrynFat32StatusAlreadyExists);
     }
     if (!Fat32FindFreeDirectoryEntry(volume, parent, &offset, sector))
     {
@@ -117,6 +150,10 @@ int OrynFat32CreateFile(OrynFat32Volume* volume, const char* path, const void* b
     }
     if (!Fat32WriteDirectoryEntry(volume, parent, offset, &info))
     {
+        if (info.FirstCluster >= 2U)
+        {
+            (void)Fat32FreeClusterChain(volume, info.FirstCluster);
+        }
         return 0;
     }
     return size == 0U || OrynFat32WriteFile(volume, path, buffer, size);

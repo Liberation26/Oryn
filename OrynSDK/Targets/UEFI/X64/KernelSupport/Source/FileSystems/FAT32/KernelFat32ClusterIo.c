@@ -6,9 +6,9 @@ int OrynFat32ReadCluster(OrynFat32Volume* volume, uint32_t cluster, void* buffer
     uint32_t sector_index;
     uint8_t* output = (uint8_t*)buffer;
 
-    if (volume == 0 || buffer == 0 || cluster < 2U)
+    if (volume == 0 || buffer == 0 || !Fat32ClusterIsValid(volume, cluster))
     {
-        return 0;
+        return Fat32SetStatus(volume, OrynFat32StatusInvalidCluster);
     }
 
     first_sector = Fat32ClusterToSector(volume, cluster);
@@ -17,10 +17,11 @@ int OrynFat32ReadCluster(OrynFat32Volume* volume, uint32_t cluster, void* buffer
         if (!OrynKernelBlockReadSector(volume->Device, first_sector + sector_index,
             output + (sector_index * ORYN_FAT32_SECTOR_SIZE)))
         {
-            return 0;
+            return Fat32SetStatus(volume, OrynFat32StatusIoError);
         }
     }
 
+    volume->LastStatus = OrynFat32StatusOk;
     return 1;
 }
 
@@ -30,9 +31,13 @@ int OrynFat32WriteCluster(OrynFat32Volume* volume, uint32_t cluster, const void*
     uint32_t sector_index;
     const uint8_t* input = (const uint8_t*)buffer;
 
-    if (volume == 0 || buffer == 0 || cluster < 2U)
+    if (volume == 0 || buffer == 0 || !Fat32ClusterIsValid(volume, cluster))
     {
-        return 0;
+        return Fat32SetStatus(volume, OrynFat32StatusInvalidCluster);
+    }
+    if (volume->ReadOnly != 0U)
+    {
+        return Fat32SetStatus(volume, OrynFat32StatusReadOnly);
     }
 
     first_sector = Fat32ClusterToSector(volume, cluster);
@@ -41,9 +46,10 @@ int OrynFat32WriteCluster(OrynFat32Volume* volume, uint32_t cluster, const void*
         if (!OrynKernelBlockWriteSector(volume->Device, first_sector + sector_index,
             input + (sector_index * ORYN_FAT32_SECTOR_SIZE)))
         {
-            return 0;
+            return Fat32SetStatus(volume, OrynFat32StatusIoError);
         }
     }
 
+    volume->LastStatus = OrynFat32StatusOk;
     return 1;
 }

@@ -10,6 +10,9 @@
 #define FAT32_DIR_ENTRY_SIZE 32U
 #define ORYN_FAT32_MAX_CLUSTER_BYTES 4096U
 #define FAT32_MAX_PATH_PART 255U
+#define FAT32_FSINFO_SIGNATURE1 0x41615252U
+#define FAT32_FSINFO_SIGNATURE2 0x61417272U
+#define FAT32_FSINFO_SIGNATURE3 0xAA550000U
 
 typedef struct Fat32PathPart
 {
@@ -35,5 +38,11 @@ int Fat32AllocateCluster(OrynFat32Volume* volume, uint32_t* cluster);
 int Fat32FreeClusterChain(OrynFat32Volume* volume, uint32_t start_cluster);
 int Fat32AppendCluster(OrynFat32Volume* volume, uint32_t chain_start, uint32_t* new_cluster);
 int Fat32ResolveParent(OrynFat32Volume* volume, const char* path, uint32_t* parent_cluster, char* leaf, uint32_t leaf_size);
+int Fat32SetStatus(OrynFat32Volume* volume, uint32_t status);
+int Fat32ClusterIsValid(const OrynFat32Volume* volume, uint32_t cluster);
+int Fat32PathIsSafeShortName(const char* path);
+int Fat32DirectoryIsEmpty(OrynFat32Volume* volume, uint32_t directory_cluster);
+int Fat32TruncateChain(OrynFat32Volume* volume, uint32_t start_cluster, uint32_t keep_count);
+int Fat32UpdateFsInfo(OrynFat32Volume* volume);
 
 #endif

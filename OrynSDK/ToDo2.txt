@@ -1,6 +1,6 @@
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.87
-Updated from package: 0.5.87 Kernel Boot Proof Ownership
+Version: 0.5.88
+Updated from package: 0.5.88 FAT32 VFS Production Foundation
 Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
@@ -119,7 +119,7 @@ Current kernel foundation already present:
 [ OK ] KernelRuntimeBootSequence no longer owns proof orchestration; it enters runtime and calls KernelBootProof only.
 [ OK ] KernelBootProofConsole adapter owns the proof-only bridge to console metrics, scroll probes, and double-buffer probes.
 [ OK ] Console proof flow now uses KernelBootProofConsole adapter; Console remains runtime/user I/O and proof code no longer includes KernelConsole directly.
-[WARN] FAT32 and VFS kernel modules exist, but they are not production-ready filesystems yet.
+[ OK ] FAT32 and VFS kernel modules now have production filesystem foundations: stricter mount validation, safe VFS path normalization, status reporting, free-space hints, FAT chain validation, write truncation, empty-directory protection, and short-name/path validation.
 [WARN] Module manifests are static C tables, not generated from per-module manifest files yet.
 
 Current OrynLibC foundation already present:
@@ -268,7 +268,7 @@ Milestone 1.3 - VFS and file descriptor model:
 Milestone 1.4 - Storage stack:
 [WARN] PCI storage-class discovery exists.
 [WARN] KernelBlockDevice source exists as a foundation.
-[WARN] FAT32 source exists for BPB, FAT, cluster I/O, directory, file read/write, format, mutate, names, and path helpers.
+[ OK ] FAT32 source is split into BPB/mount, FAT table, cluster I/O, directory, file read/write, format, mutate, names, path, validation, and free-space accounting helpers.
 [TOBE] Define production block device abstraction: sector size, block count, read, write, flush.
 [TOBE] Add partition table parser: MBR first, GPT next.
 [TOBE] Add AHCI/SATA driver.
@@ -278,7 +278,7 @@ Milestone 1.4 - Storage stack:
 [TOBE] Add block cache.
 [TOBE] Add request queue and completion events.
 [TOBE] Add read-only mount mode for unsafe drivers.
-[WARN] FAT32 read/write helpers exist but still need full boot-test coverage and corruption safety.
+[ OK ] FAT32 read/write helpers now reject invalid paths, preserve FAT high bits, mirror FAT writes, truncate freed chains on shrink, protect non-empty directories, and expose check/flush/free-space/status APIs.
 [TOBE] Add ext2 read support as the next simple Linux-like filesystem target.
 [TOBE] Add filesystem corruption checks and safe failure modes.
 
@@ -493,3 +493,16 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [ OK ] Added KernelBootProof.h as the ownership boundary for boot proof sequencing.
 [ OK ] Added KernelBootProofOrchestrator.c to own boot proof execution, panic handoff, running-state transition, and halt proofs.
 [ OK ] KernelRuntimeBootSequence no longer includes KernelDiagnostics, KernelLifecycle, KernelPanic, or KernelIo.
+
+
+0.5.88 FAT32 and VFS production filesystem foundation:
+[ OK ] FAT32 mount validation now checks BPB layout, sector count, reserved sectors, FAT count, cluster sizing, root cluster, total sectors, and unsupported FAT12/FAT16 root-entry layouts.
+[ OK ] FAT32 volume state now exposes Mounted, ReadOnly, LastStatus, FsInfoSector, BackupBootSector, free-cluster hint, and next-free hint.
+[ OK ] FAT writes now preserve the high nibble, mirror all FAT copies, and return explicit status failures.
+[ OK ] FAT allocation now uses next-free hints and maintains free-cluster estimates when FSInfo is valid.
+[ OK ] FAT chain safety now validates cluster links and rejects out-of-range chains.
+[ OK ] File writes now free old clusters when a file shrinks or becomes zero bytes.
+[ OK ] Create/write/delete now reject invalid 8.3 paths, root deletion, duplicate creation, missing parents, and non-empty directory deletion.
+[ OK ] VFS now normalizes paths, rejects backslash and dot/dot-dot traversal, chooses the longest matching mount prefix, blocks duplicate mounts, and exposes VFS status reporting.
+[ OK ] Added OrynFat32CheckVolume, OrynFat32Flush, OrynFat32GetFreeClusterEstimate, OrynFat32ValidatePath, OrynFat32LastStatus, OrynVfsNormalizePath, and OrynVfsLastStatus.
+[WARN] Long filename support, journaling, permissions, caching, real device hotplug, fsck repair, and full POSIX file descriptors are still future filesystem layers, not claimed complete in this step.
