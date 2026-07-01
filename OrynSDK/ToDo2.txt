@@ -248,12 +248,13 @@ Milestone 0.9 - Interrupt and deferred-work system:
        0.5.122 proof: Scheduler work/wait queues, interrupt-safe IRQ masking APIs, and panic crash-detail exception policy are implemented and covered by proof output.
 
 Milestone 1.0 - Threads, processes, and scheduler:
-[TOBE] Define kernel thread structure.
-[TOBE] Define user process structure.
-[TOBE] Define user thread structure.
-[TOBE] Implement x86_64 context switch.
-[TOBE] Implement per-CPU run queues.
-[TOBE] Implement pre-emptive round-robin scheduler first.
+[ OK ] Define kernel thread structure.
+[ OK ] Define user process structure.
+[ OK ] Define user thread structure.
+[ OK ] Implement x86_64 context switch.
+[ OK ] Implement per-CPU run queues.
+[ OK ] Implement pre-emptive round-robin scheduler first.
+       0.5.123 proof: Process now defines kernel thread, user process, and user thread records; x86_64 context switch state is saved/restored; scheduler has per-CPU run queues and first pre-emptive round-robin proof output.
 [TOBE] Add priorities after round-robin is stable.
 [TOBE] Add thread states: running, ready, sleeping, blocked, zombie, stopped.
 [TOBE] Add wait/wake primitives.

@@ -369,7 +369,19 @@ int OrynKernelSchedulerRunSelfTest(OrynKernelThread* thread)
     {
         return 0;
     }
-    return thread->SchedulerReady != 0U && thread->State == OrynKernelThreadStateSchedulerReady &&
+    if (!OrynKernelSchedulerAddRunnableThread(0U, thread))
+    {
+        return 0;
+    }
+    if (OrynKernelSchedulerPickNext(0U) != thread)
+    {
+        return 0;
+    }
+    if (OrynKernelSchedulerPreemptCurrent(0U) == 0)
+    {
+        return 0;
+    }
+    return thread->SchedulerReady == 0U && thread->State == OrynKernelThreadStateRunning &&
         gScheduler.WakeCount > 0U && gScheduler.ExpiredTimers > 0U &&
         gScheduler.CpuTicks[0].TickCount > 0ULL && gScheduler.CpuTicks[1].TickCount > 0ULL;
 }
@@ -401,4 +413,11 @@ void OrynKernelSchedulerPrintProof(void)
     OrynKernelScreenReportOkOrFail(gScheduler.WaitQueueReady && gScheduler.WaitQueueWakeCount > 0U,
         "Scheduler wait queues block and wake sleeping threads.",
         "Scheduler wait queue proof failed.");
+    const OrynKernelRoundRobinStats* rr = OrynKernelSchedulerGetRoundRobinStats();
+    OrynKernelScreenReportOkOrFail(rr->RunQueueReady && rr->ThreadsEnqueued > 0U,
+        "Per-CPU scheduler run queues are implemented.",
+        "Per-CPU scheduler run queue proof failed.");
+    OrynKernelScreenReportOkOrFail(rr->PreemptiveRoundRobinReady && rr->Preemptions > 0U,
+        "Pre-emptive round-robin scheduler foundation is implemented.",
+        "Pre-emptive round-robin scheduler proof failed.");
 }

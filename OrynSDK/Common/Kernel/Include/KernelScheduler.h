@@ -8,6 +8,34 @@
 #define ORYN_KERNEL_TIMER_LIMIT 128U
 #define ORYN_KERNEL_WORK_QUEUE_LIMIT 64U
 #define ORYN_KERNEL_WAIT_QUEUE_LIMIT 64U
+#define ORYN_KERNEL_RUN_QUEUE_LIMIT 64U
+#define ORYN_KERNEL_ROUND_ROBIN_QUANTUM_TICKS 4U
+
+
+typedef struct OrynKernelRunQueue
+{
+    unsigned int Ready;
+    unsigned int CpuId;
+    unsigned int Count;
+    unsigned int Head;
+    unsigned int Tail;
+    OrynKernelThread* Threads[ORYN_KERNEL_RUN_QUEUE_LIMIT];
+} OrynKernelRunQueue;
+
+typedef struct OrynKernelRoundRobinStats
+{
+    unsigned int Initialized;
+    unsigned int CpuCount;
+    unsigned int RunQueueReady;
+    unsigned int PreemptiveRoundRobinReady;
+    unsigned int ThreadsEnqueued;
+    unsigned int ThreadsDequeued;
+    unsigned int ContextSwitchRequests;
+    unsigned int Preemptions;
+    unsigned int QuantumTicks;
+    OrynKernelThread* Current[ORYN_KERNEL_SCHEDULER_CPU_LIMIT];
+    OrynKernelRunQueue RunQueues[ORYN_KERNEL_SCHEDULER_CPU_LIMIT];
+} OrynKernelRoundRobinStats;
 
 typedef enum OrynKernelTimerState
 {
@@ -106,6 +134,10 @@ int OrynKernelSchedulerQueueDeviceWork(unsigned int deviceId,
 unsigned int OrynKernelSchedulerRunDeviceWork(unsigned int budget, unsigned int inInterruptContext);
 int OrynKernelSchedulerWaitQueueSleep(OrynKernelThread* thread, const char* reason);
 unsigned int OrynKernelSchedulerWaitQueueWakeOne(const char* reason);
+int OrynKernelSchedulerAddRunnableThread(unsigned int cpuId, OrynKernelThread* thread);
+OrynKernelThread* OrynKernelSchedulerPickNext(unsigned int cpuId);
+OrynKernelThread* OrynKernelSchedulerPreemptCurrent(unsigned int cpuId);
+const OrynKernelRoundRobinStats* OrynKernelSchedulerGetRoundRobinStats(void);
 void OrynKernelSchedulerTick(unsigned int cpuId, unsigned long long nowTick);
 const OrynKernelSchedulerState* OrynKernelSchedulerGetState(void);
 int OrynKernelSchedulerRunSelfTest(OrynKernelThread* thread);

@@ -4,11 +4,18 @@
 
 #include "KernelHeap.h"
 #include "KernelVirtualMemory.h"
+#include "KernelContextSwitch.h"
 
 #define ORYN_KERNEL_PROCESS_NAME_LENGTH 32U
 #define ORYN_KERNEL_THREAD_NAME_LENGTH 32U
 #define ORYN_KERNEL_THREAD_DEFAULT_STACK_BYTES 16384ULL
 #define ORYN_KERNEL_THREAD_STACK_GUARD_BYTES 4096ULL
+
+typedef enum OrynKernelProcessKind
+{
+    OrynKernelProcessKindKernel = 1,
+    OrynKernelProcessKindUser = 2
+} OrynKernelProcessKind;
 
 typedef enum OrynKernelProcessState
 {
@@ -34,6 +41,8 @@ typedef struct OrynKernelProcess
     unsigned int ProcessId;
     unsigned int ParentProcessId;
     unsigned int State;
+    unsigned int Kind;
+    unsigned int UserMode;
     unsigned int ThreadCount;
     char Name[ORYN_KERNEL_PROCESS_NAME_LENGTH];
     OrynKernelAddressSpace* AddressSpace;
@@ -44,6 +53,7 @@ typedef struct OrynKernelThread
     unsigned int ThreadId;
     unsigned int State;
     OrynKernelProcess* OwnerProcess;
+    OrynKernelCpuContext CpuContext;
     void (*EntryPoint)(void* context);
     void* Context;
     void* StackBase;
@@ -51,14 +61,38 @@ typedef struct OrynKernelThread
     unsigned long long StackBytes;
     unsigned long long GuardBytes;
     unsigned int SchedulerReady;
+    unsigned int IsUserThread;
+    unsigned int AssignedCpu;
+    unsigned int QuantumTicks;
+    unsigned int RemainingQuantumTicks;
+    unsigned long long PreemptionCount;
     char Name[ORYN_KERNEL_THREAD_NAME_LENGTH];
 } OrynKernelThread;
+
+
+typedef struct OrynKernelUserProcess
+{
+    OrynKernelProcess* Process;
+    unsigned int UserProcessId;
+    OrynKernelAddressSpace* AddressSpace;
+} OrynKernelUserProcess;
+
+typedef struct OrynKernelUserThread
+{
+    OrynKernelThread* Thread;
+    OrynKernelUserProcess* UserProcess;
+    unsigned long long UserStackTop;
+    unsigned long long UserEntry;
+} OrynKernelUserThread;
 
 typedef struct OrynKernelProcessStats
 {
     unsigned int Initialized;
     unsigned int ProcessCreatedCount;
     unsigned int ThreadCreatedCount;
+    unsigned int KernelThreadStructureReady;
+    unsigned int UserProcessStructureReady;
+    unsigned int UserThreadStructureReady;
     unsigned int SchedulerReadyThreadCount;
     unsigned int KernelThreadStackCount;
     unsigned long long KernelThreadStackBytes;
@@ -80,12 +114,18 @@ OrynKernelProcess* OrynKernelProcessCreateCopyOnWriteChild(
     OrynKernelPhysicalMemory* physicalMemory,
     OrynKernelProcess* parentProcess,
     const char* name);
+OrynKernelUserProcess OrynKernelUserProcessFromProcess(OrynKernelProcess* process);
 OrynKernelThread* OrynKernelThreadCreateKernel(
     OrynKernelProcess* process,
     const char* name,
     void (*entryPoint)(void* context),
     void* context,
     unsigned long long stackBytes);
+OrynKernelThread* OrynKernelThreadCreateUser(
+    OrynKernelUserProcess* userProcess,
+    const char* name,
+    unsigned long long userEntry,
+    unsigned long long userStackTop);
 void OrynKernelThreadDestroy(OrynKernelThread* thread);
 int OrynKernelThreadIsSchedulerReady(const OrynKernelThread* thread);
 const OrynKernelProcessStats* OrynKernelProcessGetStats(void);
