@@ -23,7 +23,7 @@ static void OrynKernelBootProofEnterRunningState(void)
 
 void OrynKernelBootProofRunSequence(const OrynBootInfo* kernelBootInfo)
 {
-    OrynKernelDiagnosticsRunBootProofs(kernelBootInfo);
+    OrynKernelBootProofRunCategoryChecks(kernelBootInfo);
     OrynKernelBootProofHandleActivePanic();
     OrynKernelBootProofEnterRunningState();
     OrynKernelDiagnosticsRunHaltProofs();

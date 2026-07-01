@@ -4,5 +4,6 @@
 #include "OrynBootInfo.h"
 
 void OrynKernelBootProofRunSequence(const OrynBootInfo* kernelBootInfo);
+void OrynKernelBootProofRunCategoryChecks(const OrynBootInfo* kernelBootInfo);
 
 #endif

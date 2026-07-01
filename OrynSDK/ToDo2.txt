@@ -1,6 +1,6 @@
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.91
-Updated from package: 0.5.91 Generated Module Manifest Ownership
+Version: 0.5.98
+Updated from package: 0.5.98 BootProof Category Ownership
 Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
@@ -141,7 +141,7 @@ Current OrynLibC foundation already present:
 
 Milestone 0.6 - Clean kernel entry and module ownership:
 [ OK ] Reduce KernelMain to one responsibility: enter kernel runtime and start the boot sequence.
-[WARN] Move all boot proof category checks out of the runtime boot sequence into KernelSelfTest or BootProof modules.
+[ OK ] Move all boot proof category checks out of the runtime boot sequence into KernelSelfTest or BootProof modules.
 [ OK ] Move screen status category emission into KernelScreenReport only for category lines.
 [WARN] Move serial proof detail into Diagnostics/Logger only.
 [WARN] Add a KernelInit graph with ordered stages and explicit dependencies.
@@ -558,3 +558,10 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
        Host test validates public symbol inventory through nm.
        Host test runs behavioral checks for ctype, errno, string, OrynString wrappers, stdlib conversions, div family, inttypes, allocator hooks, malloc/calloc/realloc/free, bsearch, qsort, rand/srand, snprintf, and vsnprintf.
        Reports are written to Common/Reports/LibCConformance/.
+0.5.98 - BootProof category ownership
+[ OK ] Runtime boot sequence contains no boot proof category checks.
+[ OK ] KernelBootProofOrchestrator dispatches to BootProof-owned category checks instead of Diagnostics-owned boot sequence logic.
+[ OK ] Added KernelBootProofCategories.c as the owner of entry, manifest, LibC, descriptor, interrupt/timer, PCI, console, FAT32/VFS, memory, and invalid BootInfo proof ordering.
+[ OK ] KernelDiagnosticsBootProofs.c now only owns reusable diagnostic proof helpers, not the boot category orchestration path.
+[ OK ] KernelDiagnostics.h no longer exposes a boot proof sequence runner.
+

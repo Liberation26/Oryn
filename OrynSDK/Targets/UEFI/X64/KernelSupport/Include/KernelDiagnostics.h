@@ -3,7 +3,6 @@
 
 #include "OrynBootInfo.h"
 
-void OrynKernelDiagnosticsRunBootProofs(const OrynBootInfo* kernelBootInfo);
 void OrynKernelDiagnosticsRunHaltProofs(void);
 
 #endif

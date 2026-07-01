@@ -29,3 +29,9 @@ OrynLibC function-unit manifests
 - Common/Scripts/RunLibCHostConformance.sh compiles and runs the host conformance executable and writes reports.
 - Common/OrynBuild/LibCConformanceCommand.c exposes the test as oryn libc-test.
 - Common/Reports/LibCConformance/ is generated output and not package source.
+0.5.98 BootProof category ownership layout:
+- Targets/UEFI/X64/KernelSupport/Source/Runtime/KernelRuntimeBootSequence.c remains runtime-only and contains no category proof decisions.
+- KernelBootProofOrchestrator.c owns boot-proof phase dispatch, panic handoff, running-state transition, and halt proof dispatch.
+- KernelBootProofCategories.c owns boot proof category ordering and optional-module category checks.
+- KernelDiagnosticsBootProofs.c owns reusable proof helper output only, not boot sequence orchestration.
+
