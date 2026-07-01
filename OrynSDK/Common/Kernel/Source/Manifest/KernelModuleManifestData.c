@@ -43,20 +43,21 @@ void OrynKernelModuleManifestInit(void)
     static const OrynKernelModuleId requires_OrynKernelModulePanic[] = { OrynKernelModuleBootInfo };
     static const OrynKernelModuleId requires_OrynKernelModuleGdt[] = { OrynKernelModuleCount };
     static const OrynKernelModuleId requires_OrynKernelModuleIdt[] = { OrynKernelModuleGdt };
-    static const OrynKernelModuleId requires_OrynKernelModuleInterrupts[] = { OrynKernelModuleGdt,OrynKernelModuleIdt };
-    static const OrynKernelModuleId requires_OrynKernelModuleSysCalls[] = { OrynKernelModuleGdt,OrynKernelModuleIdt };
+    static const OrynKernelModuleId requires_OrynKernelModuleInterrupts[] = { OrynKernelModuleGdt, OrynKernelModuleIdt };
+    static const OrynKernelModuleId requires_OrynKernelModuleSysCalls[] = { OrynKernelModuleGdt, OrynKernelModuleIdt };
     static const OrynKernelModuleId requires_OrynKernelModuleCpu[] = { OrynKernelModuleCount };
-    static const OrynKernelModuleId requires_OrynKernelModulePic[] = { OrynKernelModuleCpu,OrynKernelModuleInterrupts };
-    static const OrynKernelModuleId requires_OrynKernelModuleApic[] = { OrynKernelModuleCpu,OrynKernelModuleInterrupts,OrynKernelModulePic };
+    static const OrynKernelModuleId requires_OrynKernelModulePic[] = { OrynKernelModuleCpu, OrynKernelModuleInterrupts };
+    static const OrynKernelModuleId requires_OrynKernelModuleApic[] = { OrynKernelModuleCpu, OrynKernelModuleInterrupts, OrynKernelModulePic };
     static const OrynKernelModuleId requires_OrynKernelModuleSmp[] = { OrynKernelModuleApic };
-    static const OrynKernelModuleId requires_OrynKernelModuleHpet[] = { OrynKernelModuleBootInfo,OrynKernelModuleInterrupts };
+    static const OrynKernelModuleId requires_OrynKernelModuleHpet[] = { OrynKernelModuleBootInfo, OrynKernelModuleInterrupts };
     static const OrynKernelModuleId requires_OrynKernelModulePci[] = { OrynKernelModuleBootInfo };
     static const OrynKernelModuleId requires_OrynKernelModuleConsole[] = { OrynKernelModuleBootInfo };
-    static const OrynKernelModuleId requires_OrynKernelModuleKeyboard[] = { OrynKernelModuleConsole,OrynKernelModuleInterrupts,OrynKernelModulePic };
+    static const OrynKernelModuleId requires_OrynKernelModuleKeyboard[] = { OrynKernelModuleConsole, OrynKernelModuleInterrupts, OrynKernelModulePic };
     static const OrynKernelModuleId requires_OrynKernelModuleFat32[] = { OrynKernelModuleConsole };
     static const OrynKernelModuleId requires_OrynKernelModuleVfs[] = { OrynKernelModuleFat32 };
     static const OrynKernelModuleId requires_OrynKernelModulePhysicalMemory[] = { OrynKernelModuleBootInfo };
-    static const OrynKernelModuleId requires_OrynKernelModuleVirtualMemory[] = { OrynKernelModulePhysicalMemory };
+    static const OrynKernelModuleId requires_OrynKernelModuleHeap[] = { OrynKernelModulePhysicalMemory };
+    static const OrynKernelModuleId requires_OrynKernelModuleVirtualMemory[] = { OrynKernelModuleHeap };
 
     SetModule(OrynKernelModuleBootInfo, "BootInfo", "ABI, checksum, command line, memory map, framebuffer", "Always", requires_OrynKernelModuleBootInfo, 0U, 1, 1, 1);
     SetModule(OrynKernelModuleScreenReport, "KernelScreenReport", "OK, WARN, FAIL, category emission, colour", "Always", requires_OrynKernelModuleScreenReport, 0U, 1, 1, 1);
@@ -78,6 +79,7 @@ void OrynKernelModuleManifestInit(void)
     SetModule(OrynKernelModuleFat32, "FAT32", "BPB, FSInfo, FAT, clusters, directories, files", "BootInfoFramebuffer", requires_OrynKernelModuleFat32, 1U, 1, 0, 0);
     SetModule(OrynKernelModuleVfs, "VFS", "root mount, stat, read, write, delete, list", "BootInfoFramebuffer", requires_OrynKernelModuleVfs, 1U, 1, 0, 0);
     SetModule(OrynKernelModulePhysicalMemory, "PhysicalMemory", "usable pages, free list, allocation proof", "BootInfoMemoryMap", requires_OrynKernelModulePhysicalMemory, 1U, 1, 0, 1);
+    SetModule(OrynKernelModuleHeap, "Heap", "kmalloc, kfree, krealloc, kcalloc, stats, leak counters, slab caches, guard pages", "BootInfoMemoryMap", requires_OrynKernelModuleHeap, 1U, 1, 0, 1);
     SetModule(OrynKernelModuleVirtualMemory, "VirtualMemory", "PML4, CR3 switch, identity and higher-half maps", "BootInfoMemoryMap,BootInfoKernelRange", requires_OrynKernelModuleVirtualMemory, 1U, 1, 0, 1);
 }
 

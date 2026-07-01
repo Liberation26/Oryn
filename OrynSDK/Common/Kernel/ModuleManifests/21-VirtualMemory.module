@@ -1,8 +1,8 @@
-Order=20
+Order=21
 Id=OrynKernelModuleVirtualMemory
 Name=VirtualMemory
 Items=PML4, CR3 switch, identity and higher-half maps
-Requires=OrynKernelModulePhysicalMemory
+Requires=OrynKernelModuleHeap
 CompiledIn=Yes
 Required=No
 FatalOnMissingPrerequisite=Yes

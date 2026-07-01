@@ -41,3 +41,11 @@ OrynLibC function-unit manifests
 - Targets/UEFI/X64/KernelSupport/Source/Diagnostics/KernelDiagnosticsLogger.c owns the only Diagnostics/BootProof bridge to KernelIo serial detail output.
 - Targets/UEFI/X64/KernelSupport/Include/KernelInitGraph.h defines ordered kernel init stages and dependencies.
 - Targets/UEFI/X64/KernelSupport/Source/Diagnostics/Proofs/KernelInitGraph.c contains the KernelInit graph data and validation.
+
+0.5.101 Kernel heap layout:
+- Common/Kernel/Include/KernelHeap.h exposes kmalloc, kfree, krealloc, kcalloc, heap stats, leak counters, slab cache stats, and guard-page proof APIs.
+- Common/Kernel/Source/Memory/KernelHeap.c owns the physical-page backed kernel heap, fixed-size slab caches, critical allocation guard accounting, and self-test.
+- Common/Kernel/ModuleManifests/20-Heap.module is the generated manifest source for the Heap module.
+- Common/Kernel/ModuleManifests/21-VirtualMemory.module now depends on Heap, making Heap the explicit stage between PhysicalMemory and VirtualMemory.
+- Targets/UEFI/X64/KernelSupport/Source/Diagnostics/Proofs/KernelDiagnosticsMemoryProofs.c owns heap init/start proof as part of memory proof flow.
+- Targets/UEFI/X64/KernelSupport/Source/Memory/KernelVirtualMemory.c exposes OrynVirtualMemoryUnmapGuardPage for stack and critical-heap guard-page support.

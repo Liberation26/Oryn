@@ -1,0 +1,9 @@
+Order=20
+Id=OrynKernelModuleHeap
+Name=Heap
+Items=kmalloc, kfree, krealloc, kcalloc, stats, leak counters, slab caches, guard pages
+Requires=OrynKernelModulePhysicalMemory
+CompiledIn=Yes
+Required=No
+FatalOnMissingPrerequisite=Yes
+Select=BootInfoMemoryMap

@@ -56,6 +56,53 @@ static void OrynVirtualMemoryWriteCr3(unsigned long long value)
     __asm__ volatile ("mov %0, %%cr3" :: "r"(value) : "memory");
 }
 
+static OrynPageTableEntry* GetExistingNextTable(OrynPageTableEntry* table, unsigned int index)
+{
+    OrynPageTableEntry entry = table[index];
+    if ((entry & ORYN_PAGE_PRESENT) == 0ULL)
+    {
+        return 0;
+    }
+    return (OrynPageTableEntry*)(entry & ORYN_PAGE_ADDRESS_MASK);
+}
+
+int OrynVirtualMemoryUnmapGuardPage(unsigned long long virtualAddress)
+{
+    unsigned long long cr3 = OrynVirtualMemoryReadCr3();
+    OrynPageTableEntry* pml4 = (OrynPageTableEntry*)(cr3 & ORYN_PAGE_ADDRESS_MASK);
+    unsigned int pml4Index = (unsigned int)((virtualAddress >> 39) & 0x1FFULL);
+    unsigned int pdptIndex = (unsigned int)((virtualAddress >> 30) & 0x1FFULL);
+    unsigned int pdIndex = (unsigned int)((virtualAddress >> 21) & 0x1FFULL);
+    unsigned int ptIndex = (unsigned int)((virtualAddress >> 12) & 0x1FFULL);
+
+    if (pml4 == 0)
+    {
+        return 0;
+    }
+
+    OrynPageTableEntry* pdpt = GetExistingNextTable(pml4, pml4Index);
+    if (pdpt == 0)
+    {
+        return 0;
+    }
+
+    OrynPageTableEntry* pd = GetExistingNextTable(pdpt, pdptIndex);
+    if (pd == 0)
+    {
+        return 0;
+    }
+
+    OrynPageTableEntry* pt = GetExistingNextTable(pd, pdIndex);
+    if (pt == 0)
+    {
+        return 0;
+    }
+
+    pt[ptIndex] = 0ULL;
+    __asm__ volatile ("invlpg (%0)" :: "r"(virtualAddress) : "memory");
+    return 1;
+}
+
 static OrynPageTableEntry* AllocateTable(
     OrynKernelPhysicalMemory* physicalMemory,
     OrynKernelVirtualMemory* virtualMemory)

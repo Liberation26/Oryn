@@ -58,6 +58,23 @@ static void OrynKernelDiagnosticsReserveBootHandoffRanges(
     OrynKernelDiagnosticsReserveRangeIfPresent(physicalMemory, ORYN_SMP_TRAMPOLINE_BASE, 4096ULL);
 }
 
+static void OrynKernelDiagnosticsRunHeapGuardProof(void)
+{
+    if (!OrynKernelModuleManifestIsReady(OrynKernelModuleHeap))
+    {
+        return;
+    }
+
+    OrynKernelHeapAttachVirtualMemory(&gVirtualMemory);
+    OrynKernelHeapInstallStackGuard(gVirtualMemory.StackMapStart, gVirtualMemory.StackMapEnd - gVirtualMemory.StackMapStart);
+    void* critical = OrynKernelHeapAllocCritical(96ULL);
+    if (critical != 0)
+    {
+        kfree(critical);
+    }
+    OrynKernelHeapPrintProof();
+}
+
 static void OrynKernelDiagnosticsRunVirtualMemoryProof(const OrynBootInfo* kernelBootInfo)
 {
     if (!OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleVirtualMemory))
@@ -70,6 +87,7 @@ static void OrynKernelDiagnosticsRunVirtualMemoryProof(const OrynBootInfo* kerne
         OrynVirtualMemoryPrintProof(&gVirtualMemory);
         (void)OrynKernelLifecycleTransition(OrynKernelLifecycleVirtualMemoryReady);
         OrynKernelModuleManifestReady(OrynKernelModuleVirtualMemory);
+        OrynKernelDiagnosticsRunHeapGuardProof();
     }
     else
     {
@@ -93,6 +111,23 @@ static void OrynKernelDiagnosticsRunPhysicalMemoryProof(const OrynBootInfo* kern
         (void)OrynKernelLifecycleTransition(OrynKernelLifecycleMemoryReady);
         OrynPhysicalMemoryRunSelfTest(&gPhysicalMemory);
         OrynKernelModuleManifestReady(OrynKernelModulePhysicalMemory);
+
+        if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleHeap))
+        {
+            if (OrynKernelHeapInit(&gPhysicalMemory) && OrynKernelHeapRunSelfTest())
+            {
+                OrynKernelScreenReportOk(0, "Kernel heap supports kmalloc, kfree, krealloc, and kcalloc.");
+                OrynKernelScreenReportOk(0, "Kernel heap statistics and leak counters are active.");
+                OrynKernelScreenReportOk(0, "Kernel slab/object caches are active for fixed-size structures.");
+                OrynKernelModuleManifestReady(OrynKernelModuleHeap);
+            }
+            else
+            {
+                OrynKernelScreenReportFail(0, "Kernel heap proof failed.");
+                OrynKernelModuleManifestFailed(OrynKernelModuleHeap);
+            }
+        }
+
         OrynKernelDiagnosticsRunVirtualMemoryProof(kernelBootInfo);
         OrynPhysicalMemoryPrintFinalState(&gPhysicalMemory);
     }

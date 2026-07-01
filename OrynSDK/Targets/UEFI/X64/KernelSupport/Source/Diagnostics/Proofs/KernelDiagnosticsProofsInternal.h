@@ -7,6 +7,7 @@
 #include "KernelCpu.h"
 #include "KernelGdt.h"
 #include "KernelHpet.h"
+#include "KernelHeap.h"
 #include "KernelDiagnosticsLogger.h"
 #include "KernelFat32.h"
 #include "KernelVfs.h"

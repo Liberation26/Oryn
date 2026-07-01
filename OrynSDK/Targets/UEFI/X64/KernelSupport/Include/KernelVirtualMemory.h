@@ -51,6 +51,7 @@ typedef struct OrynKernelVirtualMemory
 } OrynKernelVirtualMemory;
 
 unsigned long long OrynVirtualMemoryReadCr3(void);
+int OrynVirtualMemoryUnmapGuardPage(unsigned long long virtualAddress);
 int OrynVirtualMemoryInit(
     const OrynBootInfo* bootInfo,
     const OrynKernelMemoryMap* memoryMap,

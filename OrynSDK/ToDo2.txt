@@ -573,3 +573,15 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [ OK ] 0.5.100: Add a KernelInit graph with ordered stages and explicit dependencies.
        KernelInitGraph defines Entry, BootInfo, ModuleManifest, LibC, Descriptors, Interrupts, Timers, PCI, Console, FAT32/VFS, Memory, and Running stages.
        BootProof validates the graph and logs each stage dependency before category proof execution.
+
+0.5.101 - Real kernel heap foundation
+[ OK ] Added KernelHeap module with kmalloc, kfree, krealloc, and kcalloc.
+[ OK ] Added heap statistics for total/free/allocated bytes, peak allocation, active allocations, failures, and page usage.
+[ OK ] Added leak counter tracking through active allocation accounting.
+[ OK ] Added fixed-size slab/object caches for 32, 64, 128, and 256 byte kernel structures.
+[ OK ] Added critical heap allocation path with guard-page accounting and virtual unmap hook when paging is active.
+[ OK ] Added kernel stack guard-page proof hook after virtual memory activation.
+[ OK ] Added Heap as a generated kernel module manifest between PhysicalMemory and VirtualMemory.
+[ OK ] Updated KernelInit graph so Heap explicitly depends on Memory and VirtualMemory explicitly depends on Heap.
+[ OK ] Boot proof now emits OK for heap API, statistics/leak counters, slab caches, and guard-page support.
+[WARN] Full dynamic virtual-address heap growth, per-CPU magazines, poisoning/redzones, and demand-paged heap arenas remain future hardening steps.

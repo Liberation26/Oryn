@@ -12,7 +12,9 @@ static const OrynKernelInitStage gKernelInitStages[] =
     { OrynKernelInitStagePci, "PCI", "Discover PCI devices when requested", 1U, { OrynKernelInitStageTimers } },
     { OrynKernelInitStageConsole, "Console", "Start runtime console when requested", 2U, { OrynKernelInitStageBootInfo, OrynKernelInitStageTimers } },
     { OrynKernelInitStageFat32Vfs, "FAT32/VFS", "Mount filesystem modules when requested", 2U, { OrynKernelInitStageBootInfo, OrynKernelInitStageConsole } },
-    { OrynKernelInitStageMemory, "Memory", "Start memory map, physical allocator, and virtual memory", 2U, { OrynKernelInitStageBootInfo, OrynKernelInitStageDescriptors } },
+    { OrynKernelInitStageMemory, "Memory", "Start memory map and physical allocator", 2U, { OrynKernelInitStageBootInfo, OrynKernelInitStageDescriptors } },
+    { OrynKernelInitStageHeap, "Heap", "Start kmalloc/kfree heap, slab caches, stats, and leak counters", 1U, { OrynKernelInitStageMemory } },
+    { OrynKernelInitStageVirtualMemory, "VirtualMemory", "Start paging, virtual mappings, and guard-page support", 1U, { OrynKernelInitStageHeap } },
     { OrynKernelInitStageRunning, "Running", "Enter runtime running state after required proofs", 3U, { OrynKernelInitStageDescriptors, OrynKernelInitStageInterrupts, OrynKernelInitStageTimers } }
 };
 
