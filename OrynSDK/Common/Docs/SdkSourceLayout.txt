@@ -321,3 +321,9 @@ Each manifest records the package version, owning tree, file count, total payloa
 - The signed root hash manifest covers every package file except PackageHashes.txt and PackageHashes.sig.
 - FullSource/PackageManifest.txt and ChangedFiles/PackageManifest.txt remain per-tree file manifests and are now themselves protected by the signed root hash manifest.
 - Update fails closed if signature verification, public-key identity, file size, or SHA256 validation fails.
+
+0.5.85 generated file manifest rule
+- Release packages include FullSourceFileManifest.txt and ChangedFilesFileManifest.txt at the package root.
+- Each generated file manifest lists every file inside its tree, including PackageManifest.txt, with size and SHA256.
+- The updater validates both generated file manifests before any copy operation.
+- The signed PackageHashes.txt covers the generated manifests so tree file inventories are authenticity-protected.
