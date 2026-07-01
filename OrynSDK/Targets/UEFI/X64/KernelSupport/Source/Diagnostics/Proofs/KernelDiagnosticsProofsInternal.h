@@ -25,6 +25,7 @@
 #include "KernelProcess.h"
 #include "KernelPic.h"
 #include "KernelScreenReport.h"
+#include "KernelScheduler.h"
 #include "KernelSmp.h"
 #include "KernelSysCallInterrupts.h"
 #include "KernelVirtualMemory.h"

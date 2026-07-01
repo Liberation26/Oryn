@@ -211,9 +211,14 @@ Milestone 0.8 - Timers, clocks, and scheduler base:
 [ OK ] Add clocksource registration and priority.
 [ OK ] Add clockevent/tick registration.
 [ OK ] Add calibration between TSC, APIC timer, and HPET where available.
-[TOBE] Add sleep queues that do not busy-wait.
-[TOBE] Add timer wheel or red-black tree timer queue.
-[TOBE] Add per-CPU scheduler tick.
+
+[ OK ] 0.5.118: Scheduler sleep/timer/tick foundations.
+       Sleep requests enqueue blocked threads instead of busy-waiting.
+       Timer wheel queues and expires timers by kernel tick deadline.
+       Per-CPU scheduler tick records are registered and advanced by tick delivery.
+[ OK ] Add sleep queues that do not busy-wait.
+[ OK ] Add timer wheel or red-black tree timer queue.
+[ OK ] Add per-CPU scheduler tick.
 [TOBE] Add jiffies/tick counter only as an implementation detail, not the public clock API.
 [TOBE] Add RTC read path for wall-clock time.
 [TOBE] Treat UEFI boot time as boot handoff data only.

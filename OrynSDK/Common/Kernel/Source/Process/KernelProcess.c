@@ -1,5 +1,6 @@
 
 #include "KernelProcess.h"
+#include "KernelScheduler.h"
 #include "KernelDiagnosticsLogger.h"
 #include "KernelScreenReport.h"
 #include "string.h"
@@ -318,6 +319,14 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
         OrynKernelProcessDestroy(process);
         return 0;
     }
+    if (!OrynKernelSchedulerRunSelfTest(thread))
+    {
+        gProcessProofFailure = "scheduler sleep queue, timer wheel, or per-CPU tick proof failed";
+        OrynKernelThreadDestroy(thread);
+        OrynKernelProcessDestroy(child);
+        OrynKernelProcessDestroy(process);
+        return 0;
+    }
     OrynKernelThreadDestroy(thread);
     OrynKernelProcessDestroy(child);
     OrynKernelProcessDestroy(process);
@@ -360,4 +369,5 @@ void OrynKernelProcessPrintProof(void)
         gProcessStats.CopyOnWriteChildProcessCount > 0U,
         "Process creation has a copy-on-write child foundation for fork-like creation.",
         "Process copy-on-write child foundation proof failed.");
+    OrynKernelSchedulerPrintProof();
 }

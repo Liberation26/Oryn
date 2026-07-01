@@ -25,7 +25,8 @@ typedef enum OrynKernelThreadState
     OrynKernelThreadStateSchedulerReady = 2,
     OrynKernelThreadStateRunning = 3,
     OrynKernelThreadStateBlocked = 4,
-    OrynKernelThreadStateTerminated = 5
+    OrynKernelThreadStateSleeping = 5,
+    OrynKernelThreadStateTerminated = 6
 } OrynKernelThreadState;
 
 typedef struct OrynKernelProcess
