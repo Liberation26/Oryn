@@ -27,6 +27,8 @@ typedef enum OrynKernelModuleId
     OrynKernelModulePhysicalMemory = 19,
     OrynKernelModuleHeap = 20,
     OrynKernelModuleVirtualMemory = 21,
+    OrynKernelModuleProcess = 22,
+    OrynKernelModuleScheduler = 23,
     OrynKernelModuleCount
 } OrynKernelModuleId;
 

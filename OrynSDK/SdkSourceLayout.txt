@@ -62,3 +62,10 @@ OrynLibC function-unit manifests
 - Targets/UEFI/X64/KernelSupport/Source/Memory/KernelVirtualMemoryUser.c owns user-copy validation, anonymous user regions, and demand user-page allocation helpers.
 - KernelVirtualMemory.h exposes copy_from_user/copy_to_user-style helpers as OrynCopyFromUser and OrynCopyToUser.
 - KernelPhysicalMemory now tracks page ownership and reference diagnostics for page-table, heap, user, reserved, and generic page use.
+
+0.5.105 layout additions:
+- Common/Kernel/Include/KernelProcess.h
+- Common/Kernel/Source/Process/KernelProcess.c
+- Common/Kernel/ModuleManifests/22-Process.module
+- Common/Kernel/ModuleManifests/23-Scheduler.module
+- Common/BuildModuleManifests/12-SDKProcess.buildmodule

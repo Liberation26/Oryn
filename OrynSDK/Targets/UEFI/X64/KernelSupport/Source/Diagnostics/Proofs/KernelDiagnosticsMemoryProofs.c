@@ -95,6 +95,22 @@ static void OrynKernelDiagnosticsRunVirtualMemoryProof(const OrynBootInfo* kerne
             OrynKernelScreenReportOk(0, "User/kernel address split is active.");
             OrynKernelScreenReportOk(0, "copy_from_user and copy_to_user safety helpers passed proof.");
             OrynKernelScreenReportOk(0, "Demand allocation for user anonymous pages passed proof.");
+            if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleProcess) &&
+                OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleScheduler))
+            {
+                if (OrynKernelProcessRunSelfTest(&gPhysicalMemory))
+                {
+                    OrynKernelModuleManifestReady(OrynKernelModuleProcess);
+                    OrynKernelModuleManifestReady(OrynKernelModuleScheduler);
+                    OrynKernelProcessPrintProof();
+                }
+                else
+                {
+                    OrynKernelModuleManifestFailed(OrynKernelModuleProcess);
+                    OrynKernelModuleManifestFailed(OrynKernelModuleScheduler);
+                    OrynKernelScreenReportFail(0, "Process/thread scheduler stack proof failed.");
+                }
+            }
         }
         else
         {

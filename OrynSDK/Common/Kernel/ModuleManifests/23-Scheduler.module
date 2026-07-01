@@ -1,0 +1,10 @@
+
+Order=23
+Id=OrynKernelModuleScheduler
+Name=Scheduler
+Items=kernel thread records, scheduler-ready stacks, guarded stack allocation
+Requires=OrynKernelModuleProcess,OrynKernelModuleHeap
+CompiledIn=Yes
+Required=No
+FatalOnMissingPrerequisite=Yes
+Select=BootInfoMemoryMap,BootInfoKernelRange

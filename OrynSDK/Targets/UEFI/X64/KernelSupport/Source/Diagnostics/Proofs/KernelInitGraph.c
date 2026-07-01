@@ -15,6 +15,8 @@ static const OrynKernelInitStage gKernelInitStages[] =
     { OrynKernelInitStageMemory, "Memory", "Start memory map and physical allocator", 2U, { OrynKernelInitStageBootInfo, OrynKernelInitStageDescriptors } },
     { OrynKernelInitStageHeap, "Heap", "Start kmalloc/kfree heap, slab caches, stats, and leak counters", 1U, { OrynKernelInitStageMemory } },
     { OrynKernelInitStageVirtualMemory, "VirtualMemory", "Start paging, virtual mappings, and guard-page support", 1U, { OrynKernelInitStageHeap } },
+    { OrynKernelInitStageProcess, "Process", "Bind process records to per-process address spaces", 1U, { OrynKernelInitStageVirtualMemory } },
+    { OrynKernelInitStageScheduler, "Scheduler", "Prepare scheduler-ready kernel threads with guarded stacks", 2U, { OrynKernelInitStageProcess, OrynKernelInitStageHeap } },
     { OrynKernelInitStageRunning, "Running", "Enter runtime running state after required proofs", 3U, { OrynKernelInitStageDescriptors, OrynKernelInitStageInterrupts, OrynKernelInitStageTimers } }
 };
 

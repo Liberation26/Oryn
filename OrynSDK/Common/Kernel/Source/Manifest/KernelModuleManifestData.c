@@ -58,6 +58,8 @@ void OrynKernelModuleManifestInit(void)
     static const OrynKernelModuleId requires_OrynKernelModulePhysicalMemory[] = { OrynKernelModuleBootInfo };
     static const OrynKernelModuleId requires_OrynKernelModuleHeap[] = { OrynKernelModulePhysicalMemory };
     static const OrynKernelModuleId requires_OrynKernelModuleVirtualMemory[] = { OrynKernelModuleHeap };
+    static const OrynKernelModuleId requires_OrynKernelModuleProcess[] = { OrynKernelModuleVirtualMemory };
+    static const OrynKernelModuleId requires_OrynKernelModuleScheduler[] = { OrynKernelModuleProcess, OrynKernelModuleHeap };
 
     SetModule(OrynKernelModuleBootInfo, "BootInfo", "ABI, checksum, command line, memory map, framebuffer", "Always", requires_OrynKernelModuleBootInfo, 0U, 1, 1, 1);
     SetModule(OrynKernelModuleScreenReport, "KernelScreenReport", "OK, WARN, FAIL, category emission, colour", "Always", requires_OrynKernelModuleScreenReport, 0U, 1, 1, 1);
@@ -81,6 +83,8 @@ void OrynKernelModuleManifestInit(void)
     SetModule(OrynKernelModulePhysicalMemory, "PhysicalMemory", "usable pages, free list, allocation proof", "BootInfoMemoryMap", requires_OrynKernelModulePhysicalMemory, 1U, 1, 0, 1);
     SetModule(OrynKernelModuleHeap, "Heap", "kmalloc, kfree, krealloc, kcalloc, stats, leak counters, slab caches, guard pages", "BootInfoMemoryMap", requires_OrynKernelModuleHeap, 1U, 1, 0, 1);
     SetModule(OrynKernelModuleVirtualMemory, "VirtualMemory", "PML4, CR3 switch, identity and higher-half maps", "BootInfoMemoryMap,BootInfoKernelRange", requires_OrynKernelModuleVirtualMemory, 1U, 1, 0, 1);
+    SetModule(OrynKernelModuleProcess, "Process", "process structures, per-process address spaces, ownership, lifecycle state", "BootInfoMemoryMap,BootInfoKernelRange", requires_OrynKernelModuleProcess, 1U, 1, 0, 1);
+    SetModule(OrynKernelModuleScheduler, "Scheduler", "kernel thread records, scheduler-ready stacks, guarded stack allocation", "BootInfoMemoryMap,BootInfoKernelRange", requires_OrynKernelModuleScheduler, 2U, 1, 0, 1);
 }
 
 OrynKernelModuleManifestItem* OrynKernelModuleManifestMutable(OrynKernelModuleId id)

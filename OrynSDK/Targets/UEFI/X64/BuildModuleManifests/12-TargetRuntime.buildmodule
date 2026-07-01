@@ -3,4 +3,4 @@ Name=TargetRuntime
 Root=TargetKernelSource
 RelativePath=Runtime
 Recursive=yes
-Requires=SDKRuntime,TargetInterrupts,TargetMemory,TargetTimers,TargetPci,TargetInput,TargetVfs,TargetDiagnostics
+Requires=SDKRuntime,SDKProcess,TargetInterrupts,TargetMemory,TargetTimers,TargetPci,TargetInput,TargetVfs,TargetDiagnostics

@@ -22,6 +22,7 @@
 #include "KernelPageFaultPolicy.h"
 #include "KernelPci.h"
 #include "KernelPhysicalMemory.h"
+#include "KernelProcess.h"
 #include "KernelPic.h"
 #include "KernelScreenReport.h"
 #include "KernelSmp.h"

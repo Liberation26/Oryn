@@ -16,8 +16,10 @@ typedef enum OrynKernelInitStageId
     OrynKernelInitStageMemory = 10,
     OrynKernelInitStageHeap = 11,
     OrynKernelInitStageVirtualMemory = 12,
-    OrynKernelInitStageRunning = 13,
-    OrynKernelInitStageCount = 14
+    OrynKernelInitStageProcess = 13,
+    OrynKernelInitStageScheduler = 14,
+    OrynKernelInitStageRunning = 15,
+    OrynKernelInitStageCount = 16
 } OrynKernelInitStageId;
 
 typedef struct OrynKernelInitStage
