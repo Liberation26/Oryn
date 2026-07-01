@@ -1,5 +1,6 @@
 #include "KernelVirtualMemory.h"
 #include "KernelIo.h"
+#include "KernelScreenReport.h"
 
 static void WriteRange(const char* label, unsigned long long start, unsigned long long end)
 {
@@ -162,6 +163,19 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
     KernelIoWriteString("[KERNEL] User copy bytes to user: ");
     KernelIoWriteDec64(virtualMemory->UserCopyBytesOut);
     KernelIoWriteString("\n");
+
+    KernelIoWriteString("[KERNEL] Copy-on-write clones: ");
+    KernelIoWriteDec64(virtualMemory->CopyOnWriteCloneCount);
+    KernelIoWriteString(" shared pages=");
+    KernelIoWriteDec64(virtualMemory->CopyOnWriteSharedPages);
+    KernelIoWriteString(" resolved pages=");
+    KernelIoWriteDec64(virtualMemory->CopyOnWriteResolvedPages);
+    KernelIoWriteString("\n");
+    OrynKernelScreenReportOkOrFail(virtualMemory->CopyOnWriteCloneCount != 0ULL &&
+        virtualMemory->CopyOnWriteSharedPages != 0ULL &&
+        virtualMemory->CopyOnWriteResolvedPages != 0ULL,
+        "Copy-on-write foundation can clone and privatize user pages.",
+        "Copy-on-write foundation proof failed.");
 
     KernelIoWriteString("[KERNEL] Page-fault policy: ");
     KernelIoWriteString(virtualMemory->PageFaultPolicyReady ? "ready\n" : "not proven\n");

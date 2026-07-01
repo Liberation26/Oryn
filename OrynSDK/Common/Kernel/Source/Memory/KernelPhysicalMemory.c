@@ -142,6 +142,7 @@ unsigned long long OrynPhysicalMemoryAllocatePageBelow(
     return ORYN_PHYSICAL_ALLOC_FAIL;
 }
 
+
 unsigned long long OrynPhysicalMemoryAllocatePage(OrynKernelPhysicalMemory* allocator)
 {
     if (allocator == 0 || allocator->Initialized == 0U || allocator->FreePageCount == 0U)
@@ -330,6 +331,10 @@ int OrynPhysicalMemoryGetOwnershipStats(
     stats->RecordsCapacity = ORYN_PHYSICAL_MAX_OWNERSHIP_RECORDS;
     stats->OwnershipRecordOverflows = allocator->OwnershipRecordOverflows;
     stats->OwnershipMismatches = allocator->OwnershipMismatches;
+    stats->ConstrainedAllocations = allocator->ConstrainedAllocations;
+    stats->ConstrainedAllocationFailures = allocator->ConstrainedAllocationFailures;
+    stats->DmaSafeAllocations = allocator->DmaSafeAllocations;
+    stats->ContiguousAllocationPages = allocator->ContiguousAllocationPages;
     for (unsigned int index = 0U; index < allocator->PageRecordCount; ++index)
     {
         const OrynPhysicalPageRecord* record = &allocator->PageRecords[index];
@@ -343,6 +348,7 @@ int OrynPhysicalMemoryGetOwnershipStats(
         else if (record->Owner == OrynPhysicalPageOwnerKernelHeap) stats->KernelHeapPages += 1ULL;
         else if (record->Owner == OrynPhysicalPageOwnerUserPage) stats->UserPages += 1ULL;
         else if (record->Owner == OrynPhysicalPageOwnerReserved) stats->ReservedPages += 1ULL;
+        else if (record->Owner == OrynPhysicalPageOwnerDma) stats->DmaPages += 1ULL;
     }
     return 1;
 }

@@ -137,7 +137,18 @@ OrynKernelPageFaultAction OrynKernelPageFaultPolicyHandle(
         gPageFaultPolicy.UserFaults += 1ULL;
         if (gFaultProcessAddressSpace != 0)
         {
-            if ((errorCode & ORYN_PAGE_FAULT_PRESENT) == 0ULL &&
+            if ((errorCode & ORYN_PAGE_FAULT_PRESENT) != 0ULL &&
+                (errorCode & ORYN_PAGE_FAULT_WRITE) != 0ULL &&
+                gDemandAddressSpace != 0 && gDemandPhysicalMemory != 0 &&
+                OrynVirtualMemoryResolveCopyOnWriteFault(
+                    gDemandAddressSpace,
+                    gDemandPhysicalMemory,
+                    faultAddress))
+            {
+                gPageFaultPolicy.CopyOnWriteFaults += 1ULL;
+                action = OrynKernelPageFaultActionRecover;
+            }
+            else if ((errorCode & ORYN_PAGE_FAULT_PRESENT) == 0ULL &&
                 gDemandAddressSpace != 0 &&
                 OrynVirtualMemoryDemandAllocateUserPage(
                     gDemandAddressSpace,
@@ -153,6 +164,11 @@ OrynKernelPageFaultAction OrynKernelPageFaultPolicyHandle(
                 if ((errorCode & ORYN_PAGE_FAULT_PRESENT) == 0ULL && gDemandAddressSpace != 0)
                 {
                     gPageFaultPolicy.DemandAllocationFailures += 1ULL;
+                }
+                if ((errorCode & ORYN_PAGE_FAULT_PRESENT) != 0ULL &&
+                    (errorCode & ORYN_PAGE_FAULT_WRITE) != 0ULL && gDemandAddressSpace != 0)
+                {
+                    gPageFaultPolicy.CopyOnWriteFailures += 1ULL;
                 }
                 gPageFaultPolicy.UserProcessFaults += 1ULL;
                 action = OrynKernelPageFaultActionKillProcess;
@@ -255,6 +271,9 @@ void OrynKernelPageFaultPolicyPrintProof(void)
     OrynKernelScreenReportOkOrFail(gPageFaultPolicy.DemandAllocatedFaults != 0ULL,
         "Demand allocation handles non-present user pages.",
         "Demand allocation did not handle a user page fault.");
+    OrynKernelScreenReportOkOrFail(gPageFaultPolicy.CopyOnWriteFaults != 0ULL,
+        "Copy-on-write write faults resolve into private user pages.",
+        "Copy-on-write page-fault resolution did not run.");
     OrynKernelScreenReportOkOrFail(gPageFaultPolicy.GuardPageFaults != 0ULL,
         "Guard-page page faults are classified as fatal.",
         "Guard-page page-fault policy did not classify faults.");

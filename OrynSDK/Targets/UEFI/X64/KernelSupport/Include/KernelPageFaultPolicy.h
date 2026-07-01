@@ -33,6 +33,8 @@ typedef struct OrynKernelPageFaultPolicyState
     unsigned long long NonPresentFaults;
     unsigned long long DemandAllocatedFaults;
     unsigned long long DemandAllocationFailures;
+    unsigned long long CopyOnWriteFaults;
+    unsigned long long CopyOnWriteFailures;
     unsigned long long FatalFaults;
     unsigned long long NonFatalFaults;
     unsigned long long LastAddress;

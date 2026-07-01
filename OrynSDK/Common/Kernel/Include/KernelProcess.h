@@ -63,6 +63,9 @@ typedef struct OrynKernelProcessStats
     unsigned long long KernelThreadStackBytes;
     unsigned long long KernelThreadGuardBytes;
     unsigned int AddressSpaceBoundProcessCount;
+    unsigned int CopyOnWriteChildProcessCount;
+    unsigned long long CopyOnWriteSharedPages;
+    unsigned long long CopyOnWriteResolvedPages;
     unsigned int FailedAllocations;
 } OrynKernelProcessStats;
 
@@ -72,6 +75,10 @@ OrynKernelProcess* OrynKernelProcessCreate(
     const char* name,
     unsigned int parentProcessId);
 void OrynKernelProcessDestroy(OrynKernelProcess* process);
+OrynKernelProcess* OrynKernelProcessCreateCopyOnWriteChild(
+    OrynKernelPhysicalMemory* physicalMemory,
+    OrynKernelProcess* parentProcess,
+    const char* name);
 OrynKernelThread* OrynKernelThreadCreateKernel(
     OrynKernelProcess* process,
     const char* name,

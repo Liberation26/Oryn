@@ -78,6 +78,9 @@ void OrynPhysicalMemoryRunSelfTest(OrynKernelPhysicalMemory* allocator)
     unsigned long long page1;
     unsigned long long page2;
     unsigned long long page3;
+    unsigned long long dmaPage;
+    OrynPhysicalAllocationConstraints dmaRange;
+    unsigned long long dmaBlock;
     int freed;
 
     if (allocator == 0 || allocator->Initialized == 0U)
@@ -117,6 +120,39 @@ void OrynPhysicalMemoryRunSelfTest(OrynKernelPhysicalMemory* allocator)
         (void)OrynPhysicalMemoryFreePage(allocator, page3);
     }
 
+    dmaPage = OrynPhysicalMemoryAllocateDmaPage(
+        allocator,
+        ORYN_PHYSICAL_DMA_32BIT_LIMIT,
+        ORYN_PHYSICAL_PAGE_SIZE);
+    KernelIoWriteString("[KERNEL] DMA-safe test page: ");
+    KernelIoWriteHex64(dmaPage);
+    KernelIoWriteString("\n");
+    if (dmaPage != ORYN_PHYSICAL_ALLOC_FAIL)
+    {
+        (void)OrynPhysicalMemoryFreePage(allocator, dmaPage);
+    }
+
+    dmaRange.MinAddress = ORYN_PHYSICAL_MIN_ALLOC_ADDRESS;
+    dmaRange.MaxExclusiveAddress = ORYN_PHYSICAL_DMA_32BIT_LIMIT;
+    dmaRange.Alignment = ORYN_PHYSICAL_PAGE_SIZE;
+    dmaRange.PageCount = 2U;
+    dmaRange.RequireContiguous = 1U;
+    dmaRange.DmaSafe = 1U;
+    dmaRange.Owner = OrynPhysicalPageOwnerDma;
+    dmaRange.Tag = 2ULL;
+    dmaBlock = OrynPhysicalMemoryAllocateContiguousPages(allocator, &dmaRange);
+    KernelIoWriteString("[KERNEL] DMA-safe contiguous test block: ");
+    KernelIoWriteHex64(dmaBlock);
+    KernelIoWriteString("\n");
+    if (dmaBlock != ORYN_PHYSICAL_ALLOC_FAIL)
+    {
+        (void)OrynPhysicalMemoryFreeContiguousPages(allocator, dmaBlock, 2U);
+    }
+
+    OrynKernelScreenReportOkOrFail(
+        dmaPage != ORYN_PHYSICAL_ALLOC_FAIL && dmaBlock != ORYN_PHYSICAL_ALLOC_FAIL,
+        "DMA-safe physical allocation constraints are available.",
+        "DMA-safe physical allocation constraint proof failed.");
     KernelIoWriteString("[KERNEL] Physical allocator self-test: complete\n");
 }
 
@@ -149,6 +185,17 @@ void OrynPhysicalMemoryPrintOwnershipDiagnostics(const OrynKernelPhysicalMemory*
     KernelIoWriteDec64(stats.UserPages);
     KernelIoWriteString(" reserved=");
     KernelIoWriteDec64(stats.ReservedPages);
+    KernelIoWriteString(" dma=");
+    KernelIoWriteDec64(stats.DmaPages);
+    KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] Constrained physical allocations: ");
+    KernelIoWriteDec64(stats.ConstrainedAllocations);
+    KernelIoWriteString(" success, ");
+    KernelIoWriteDec64(stats.ConstrainedAllocationFailures);
+    KernelIoWriteString(" failed, DMA-safe pages=");
+    KernelIoWriteDec64(stats.DmaSafeAllocations);
+    KernelIoWriteString(" contiguous pages=");
+    KernelIoWriteDec64(stats.ContiguousAllocationPages);
     KernelIoWriteString("\n");
     OrynKernelScreenReportOkOrFail(stats.OwnershipRecordOverflows == 0ULL,
         "Physical page ownership diagnostics have capacity.",
@@ -156,4 +203,7 @@ void OrynPhysicalMemoryPrintOwnershipDiagnostics(const OrynKernelPhysicalMemory*
     OrynKernelScreenReportOkOrFail(stats.OwnershipMismatches == 0ULL,
         "Physical page reference counters are consistent.",
         "Physical page reference counter mismatch detected.");
+    OrynKernelScreenReportOkOrFail(stats.DmaSafeAllocations != 0ULL,
+        "DMA-safe physical allocation constraints are proven.",
+        "DMA-safe physical allocation constraints were not proven.");
 }

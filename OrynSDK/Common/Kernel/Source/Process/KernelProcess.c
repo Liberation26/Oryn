@@ -100,6 +100,53 @@ OrynKernelProcess* OrynKernelProcessCreate(
     return process;
 }
 
+
+OrynKernelProcess* OrynKernelProcessCreateCopyOnWriteChild(
+    OrynKernelPhysicalMemory* physicalMemory,
+    OrynKernelProcess* parentProcess,
+    const char* name)
+{
+    OrynKernelProcess* child;
+    OrynKernelAddressSpace* childAddressSpace;
+    if (parentProcess == 0 || parentProcess->AddressSpace == 0 ||
+        parentProcess->AddressSpace->ProcessOwned == 0U)
+    {
+        gProcessStats.FailedAllocations += 1U;
+        return 0;
+    }
+    child = (OrynKernelProcess*)kmalloc(sizeof(OrynKernelProcess));
+    childAddressSpace = (OrynKernelAddressSpace*)kmalloc(sizeof(OrynKernelAddressSpace));
+    if (child == 0 || childAddressSpace == 0)
+    {
+        if (child != 0) kfree(child);
+        if (childAddressSpace != 0) kfree(childAddressSpace);
+        gProcessStats.FailedAllocations += 1U;
+        return 0;
+    }
+    ProcessClear(child, sizeof(*child));
+    ProcessClear(childAddressSpace, sizeof(*childAddressSpace));
+    if (!OrynVirtualMemoryCreateCopyOnWriteClone(
+        physicalMemory,
+        parentProcess->AddressSpace,
+        childAddressSpace))
+    {
+        kfree(childAddressSpace);
+        kfree(child);
+        gProcessStats.FailedAllocations += 1U;
+        return 0;
+    }
+    child->ProcessId = gNextProcessId++;
+    child->ParentProcessId = parentProcess->ProcessId;
+    child->State = OrynKernelProcessStateCreated;
+    child->AddressSpace = childAddressSpace;
+    ProcessCopyName(child->Name, ORYN_KERNEL_PROCESS_NAME_LENGTH, name);
+    gProcessStats.ProcessCreatedCount += 1U;
+    gProcessStats.AddressSpaceBoundProcessCount += 1U;
+    gProcessStats.CopyOnWriteChildProcessCount += 1U;
+    gProcessStats.CopyOnWriteSharedPages += childAddressSpace->CopyOnWriteSharedPages;
+    return child;
+}
+
 void OrynKernelProcessDestroy(OrynKernelProcess* process)
 {
     if (process == 0)
@@ -209,6 +256,7 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
 {
     OrynKernelProcess* process;
     OrynKernelThread* thread;
+    OrynKernelProcess* child;
     const OrynKernelHeapStats* heapBefore;
     const OrynKernelHeapStats* heapAfter;
     unsigned long long stackGuardPagesBefore;
@@ -238,6 +286,15 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
         OrynKernelProcessDestroy(process);
         return 0;
     }
+    child = OrynKernelProcessCreateCopyOnWriteChild(physicalMemory, process, "init-child");
+    if (child == 0 || child->ParentProcessId != process->ProcessId ||
+        child->AddressSpace == 0 || child->AddressSpace->ProcessOwned == 0U)
+    {
+        gProcessProofFailure = "copy-on-write child process foundation failed";
+        OrynKernelProcessDestroy(child);
+        OrynKernelProcessDestroy(process);
+        return 0;
+    }
     thread = OrynKernelThreadCreateKernel(
         process,
         "init-main",
@@ -248,6 +305,7 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
     {
         gProcessProofFailure = "guarded scheduler-ready kernel thread stack allocation failed";
         OrynKernelThreadDestroy(thread);
+        OrynKernelProcessDestroy(child);
         OrynKernelProcessDestroy(process);
         return 0;
     }
@@ -256,10 +314,12 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
     {
         gProcessProofFailure = "stack guard page accounting did not advance";
         OrynKernelThreadDestroy(thread);
+        OrynKernelProcessDestroy(child);
         OrynKernelProcessDestroy(process);
         return 0;
     }
     OrynKernelThreadDestroy(thread);
+    OrynKernelProcessDestroy(child);
     OrynKernelProcessDestroy(process);
     return 1;
 }
@@ -296,4 +356,8 @@ void OrynKernelProcessPrintProof(void)
         gProcessStats.SchedulerReadyThreadCount > 0U,
         "Scheduler-ready kernel thread stacks use guarded heap/VM helpers.",
         "Scheduler-ready kernel thread stack allocation proof failed.");
+    OrynKernelScreenReportOkOrFail(
+        gProcessStats.CopyOnWriteChildProcessCount > 0U,
+        "Process creation has a copy-on-write child foundation for fork-like creation.",
+        "Process copy-on-write child foundation proof failed.");
 }

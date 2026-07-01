@@ -18,6 +18,7 @@
 #define ORYN_VIRTUAL_FLAG_USER 0x008ULL
 #define ORYN_VIRTUAL_FLAG_GUARD 0x010ULL
 #define ORYN_VIRTUAL_FLAG_GLOBAL 0x020ULL
+#define ORYN_VIRTUAL_FLAG_COPY_ON_WRITE 0x040ULL
 #define ORYN_VIRTUAL_USER_BASE 0x0000000000400000ULL
 #define ORYN_VIRTUAL_USER_LIMIT 0x0000800000000000ULL
 #define ORYN_VIRTUAL_KERNEL_BASE 0xFFFF800000000000ULL
@@ -33,6 +34,7 @@ typedef struct OrynVirtualAnonymousRegion
     unsigned long long Bytes;
     unsigned long long Flags;
     unsigned long long CommittedPages;
+    unsigned int CopyOnWriteInherited;
 } OrynVirtualAnonymousRegion;
 
 typedef struct OrynKernelAddressSpace
@@ -49,6 +51,9 @@ typedef struct OrynKernelAddressSpace
     unsigned long long ProtectedPages;
     unsigned long long UnmappedPages;
     unsigned long long DemandAllocatedPages;
+    unsigned long long CopyOnWriteSharedPages;
+    unsigned long long CopyOnWriteResolvedPages;
+    unsigned long long CopyOnWriteClonePages;
     unsigned long long AnonymousRegionCount;
     OrynVirtualAnonymousRegion AnonymousRegions[ORYN_VIRTUAL_MAX_ANONYMOUS_REGIONS];
 } OrynKernelAddressSpace;
@@ -104,6 +109,9 @@ typedef struct OrynKernelVirtualMemory
     unsigned long long UserCopyBytesIn;
     unsigned long long UserCopyBytesOut;
     unsigned long long UserCopyFaults;
+    unsigned long long CopyOnWriteCloneCount;
+    unsigned long long CopyOnWriteSharedPages;
+    unsigned long long CopyOnWriteResolvedPages;
     OrynKernelAddressSpace KernelAddressSpace;
 } OrynKernelVirtualMemory;
 
@@ -130,6 +138,14 @@ int OrynVirtualMemoryProtect(
     unsigned long long virtualAddress,
     unsigned long long bytes,
     unsigned long long flags);
+int OrynVirtualMemoryCreateCopyOnWriteClone(
+    OrynKernelPhysicalMemory* physicalMemory,
+    OrynKernelAddressSpace* parentAddressSpace,
+    OrynKernelAddressSpace* childAddressSpace);
+int OrynVirtualMemoryResolveCopyOnWriteFault(
+    OrynKernelAddressSpace* addressSpace,
+    OrynKernelPhysicalMemory* physicalMemory,
+    unsigned long long faultAddress);
 
 int OrynVirtualMemoryReserveAnonymousRegion(
     OrynKernelAddressSpace* addressSpace,

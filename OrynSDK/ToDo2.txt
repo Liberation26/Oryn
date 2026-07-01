@@ -187,8 +187,8 @@ Milestone 0.7 - Production memory management:
 [ OK ] Add copy_from_user and copy_to_user safety helpers using user/kernel split and page-fault-aware address validation.
 [ OK ] Add demand allocation for user pages and anonymous regions.
 [ OK ] Add page reference counts and ownership diagnostics.
-[TOBE] Add copy-on-write foundation for fork-like process creation later.
-[TOBE] Add DMA-safe physical allocation constraints.
+[ OK ] Add copy-on-write foundation for fork-like process creation later.
+[ OK ] Add DMA-safe physical allocation constraints.
 [TOBE] Add memory pressure and out-of-memory policy.
 [TOBE] Add mmap-style region tracking for files, devices, and anonymous memory.
 [TOBE] Add W^X page policy for kernel and user mappings.
@@ -631,7 +631,7 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [ OK ] Added page owner classes for generic pages, page tables, kernel heap pages, user pages, and reserved pages.
 [ OK ] Added ownership diagnostics for record usage, total references, owner counts, overflows, and mismatches.
 [ OK ] Virtual-memory proof now covers user copy helpers, anonymous region demand allocation, and ownership diagnostics.
-[WARN] Full user process lifecycle integration, page eviction, copy-on-write, and mmap-backed file regions remain future work.
+[WARN] Full user process lifecycle integration, page eviction, and mmap-backed file regions remain future work.
 
 
 0.5.107 - Process/thread and scheduler-ready stack foundation
@@ -671,3 +671,7 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [ OK ] Confirmed complete function-level manifests exist for all 77 OrynLibC source units.
 [ OK ] Confirmed host-side OrynLibC conformance command and script exist beyond the in-kernel self proof.
 [ OK ] Updated this ToDo2 status block so current LibC work is no longer incorrectly listed as TOBE/WARN.
+
+0.5.113 - COW and DMA-safe allocation foundations
+[ OK ] Add copy-on-write foundation for fork-like process creation later.
+[ OK ] Add DMA-safe physical allocation constraints.

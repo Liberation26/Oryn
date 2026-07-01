@@ -10,6 +10,8 @@
 
 #define ORYN_PHYSICAL_ALLOC_FAIL 0ULL
 #define ORYN_PHYSICAL_MAX_OWNERSHIP_RECORDS 8192U
+#define ORYN_PHYSICAL_DMA_32BIT_LIMIT 0x100000000ULL
+#define ORYN_PHYSICAL_DMA_24BIT_LIMIT 0x01000000ULL
 
 typedef enum OrynPhysicalPageOwner
 {
@@ -18,8 +20,21 @@ typedef enum OrynPhysicalPageOwner
     OrynPhysicalPageOwnerPageTable = 2,
     OrynPhysicalPageOwnerKernelHeap = 3,
     OrynPhysicalPageOwnerUserPage = 4,
-    OrynPhysicalPageOwnerReserved = 5
+    OrynPhysicalPageOwnerReserved = 5,
+    OrynPhysicalPageOwnerDma = 6
 } OrynPhysicalPageOwner;
+
+typedef struct OrynPhysicalAllocationConstraints
+{
+    unsigned long long MinAddress;
+    unsigned long long MaxExclusiveAddress;
+    unsigned long long Alignment;
+    unsigned int PageCount;
+    unsigned int RequireContiguous;
+    unsigned int DmaSafe;
+    unsigned int Owner;
+    unsigned long long Tag;
+} OrynPhysicalAllocationConstraints;
 
 typedef struct OrynPhysicalPageRecord
 {
@@ -40,8 +55,13 @@ typedef struct OrynPhysicalPageOwnershipStats
     unsigned long long KernelHeapPages;
     unsigned long long UserPages;
     unsigned long long ReservedPages;
+    unsigned long long DmaPages;
     unsigned long long OwnershipRecordOverflows;
     unsigned long long OwnershipMismatches;
+    unsigned long long ConstrainedAllocations;
+    unsigned long long ConstrainedAllocationFailures;
+    unsigned long long DmaSafeAllocations;
+    unsigned long long ContiguousAllocationPages;
 } OrynPhysicalPageOwnershipStats;
 
 typedef struct OrynKernelPhysicalMemory
@@ -63,6 +83,10 @@ typedef struct OrynKernelPhysicalMemory
     unsigned int PageRecordCount;
     unsigned long long OwnershipRecordOverflows;
     unsigned long long OwnershipMismatches;
+    unsigned long long ConstrainedAllocations;
+    unsigned long long ConstrainedAllocationFailures;
+    unsigned long long DmaSafeAllocations;
+    unsigned long long ContiguousAllocationPages;
 } OrynKernelPhysicalMemory;
 
 int OrynPhysicalMemoryInit(const OrynKernelMemoryMap* memoryMap, OrynKernelPhysicalMemory* allocator);
@@ -70,6 +94,20 @@ unsigned long long OrynPhysicalMemoryAllocatePage(OrynKernelPhysicalMemory* allo
 unsigned long long OrynPhysicalMemoryAllocatePageBelow(
     OrynKernelPhysicalMemory* allocator,
     unsigned long long exclusiveLimit);
+unsigned long long OrynPhysicalMemoryAllocateConstrainedPage(
+    OrynKernelPhysicalMemory* allocator,
+    const OrynPhysicalAllocationConstraints* constraints);
+unsigned long long OrynPhysicalMemoryAllocateDmaPage(
+    OrynKernelPhysicalMemory* allocator,
+    unsigned long long maxExclusiveAddress,
+    unsigned long long alignment);
+unsigned long long OrynPhysicalMemoryAllocateContiguousPages(
+    OrynKernelPhysicalMemory* allocator,
+    const OrynPhysicalAllocationConstraints* constraints);
+int OrynPhysicalMemoryFreeContiguousPages(
+    OrynKernelPhysicalMemory* allocator,
+    unsigned long long physicalAddress,
+    unsigned int pageCount);
 unsigned int OrynPhysicalMemoryReserveRange(
     OrynKernelPhysicalMemory* allocator,
     unsigned long long physicalStart,

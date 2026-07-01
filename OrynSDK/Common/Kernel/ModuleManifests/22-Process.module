@@ -2,7 +2,7 @@
 Order=22
 Id=OrynKernelModuleProcess
 Name=Process
-Items=process structures, per-process address spaces, ownership, lifecycle state
+Items=process structures, per-process address spaces, ownership, lifecycle state, copy-on-write child foundation
 Requires=OrynKernelModuleVirtualMemory
 CompiledIn=Yes
 Required=No
