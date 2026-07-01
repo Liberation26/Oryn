@@ -40,6 +40,7 @@ void OrynKernelModuleManifestInit(void)
 
     SetModule(OrynKernelModuleBootInfo, "BootInfo", "ABI, checksum, command line, memory map, framebuffer", none, 0U);
     SetModule(OrynKernelModuleScreenReport, "KernelScreenReport", "OK, WARN, FAIL, category emission, colour", none, 0U);
+    SetModule(OrynKernelModuleLibC, "OrynLibC", "stddef, stdint, string, ctype, stdlib, errno, assert", none, 0U);
     SetModule(OrynKernelModuleLifecycle, "Lifecycle", "state transitions, history, invalid transition count", none, 0U);
     SetModule(OrynKernelModulePanic, "Panic", "panic begin, report, active state, halt", boot, 1U);
     SetModule(OrynKernelModuleGdt, "GDT", "kernel code/data selectors, TSS descriptor, IST stack", none, 0U);

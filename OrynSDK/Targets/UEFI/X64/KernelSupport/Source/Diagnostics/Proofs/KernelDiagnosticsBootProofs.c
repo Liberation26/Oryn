@@ -44,6 +44,7 @@ void OrynKernelDiagnosticsRunBootProofs(const OrynBootInfo* kernelBootInfo)
 {
     OrynKernelDiagnosticsPrintEntryProofs(kernelBootInfo);
     OrynKernelModuleManifestPrintProof();
+    OrynKernelDiagnosticsRunLibCProof();
     OrynKernelDiagnosticsPrintBootOptionPlan(kernelBootInfo);
     OrynKernelBootInfoStatus bootStatus = KernelBootInfoValidate(kernelBootInfo);
 

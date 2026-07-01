@@ -25,6 +25,7 @@
 #include "KernelSysCallInterrupts.h"
 #include "KernelVirtualMemory.h"
 #include "SysCall.h"
+#include "OrynLibCProof.h"
 
 #ifndef ORYN_VM_PIC
 #define ORYN_VM_PIC 1
@@ -52,6 +53,7 @@
 
 void OrynKernelDiagnosticsPrintEntryProofs(const OrynBootInfo* kernelBootInfo);
 void OrynKernelDiagnosticsPrintBootOptionPlan(const OrynBootInfo* kernelBootInfo);
+void OrynKernelDiagnosticsRunLibCProof(void);
 int OrynKernelDiagnosticsShouldStartModule(const OrynBootInfo* kernelBootInfo, OrynKernelModuleId id);
 void OrynKernelDiagnosticsRunDescriptorProofs(void);
 void OrynKernelDiagnosticsRunInterruptTimerProofs(const OrynBootInfo* kernelBootInfo);

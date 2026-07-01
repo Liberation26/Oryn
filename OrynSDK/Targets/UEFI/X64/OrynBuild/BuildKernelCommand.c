@@ -19,7 +19,12 @@ void LogSelectedBootInfoVariant(const OrynProject* project)
 int CollectKernelSources(const OrynProject* project, OrynStringList* sources)
 {
     sources->count = 0;
-    return AppendSourcesFromDirectory(project, project->sdk_kernel_common_source_dir, sources, "SDK common kernel") &&
+
+    char libc_source_dir[ORYN_MAX_PATH];
+    OrynJoinPath(libc_source_dir, sizeof(libc_source_dir), project->sdk_root, "Common/OrynLibC/Source");
+
+    return AppendSourcesFromDirectory(project, libc_source_dir, sources, "OrynLibC") &&
+        AppendSourcesFromDirectory(project, project->sdk_kernel_common_source_dir, sources, "SDK common kernel") &&
         AppendSourcesFromDirectory(project, project->sdk_kernel_target_source_dir, sources, "SDK target kernel") &&
         AppendSourcesFromDirectory(project, project->source_dir, sources, "project kernel");
 }

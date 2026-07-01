@@ -5,6 +5,7 @@ typedef enum OrynKernelModuleId
 {
     OrynKernelModuleBootInfo = 0,
     OrynKernelModuleScreenReport,
+    OrynKernelModuleLibC,
     OrynKernelModuleLifecycle,
     OrynKernelModulePanic,
     OrynKernelModuleGdt,
