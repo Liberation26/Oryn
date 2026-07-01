@@ -1,7 +1,7 @@
 Order=07
 Id=OrynKernelModuleInterrupts
 Name=Interrupts
-Items=dispatcher, handler table, PIC/APIC timer vectors
+Items=dispatcher, handler table, vector handlers, device handlers, PIC/APIC timer vectors
 Requires=OrynKernelModuleGdt,OrynKernelModuleIdt
 CompiledIn=Yes
 Required=Yes

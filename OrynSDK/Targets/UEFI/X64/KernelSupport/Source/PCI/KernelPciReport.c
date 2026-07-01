@@ -1,12 +1,55 @@
 #include "KernelPciInternal.h"
+#include "KernelInterrupts.h"
 #include "KernelScreenReport.h"
+static void PciInterruptStub(OrynIdtInterruptFrame* frame, void* context)
+{
+    (void)frame;
+    (void)context;
+}
+
+int OrynKernelPciAssignInterruptVector(OrynKernelPciDevice* pciDevice, unsigned int vector)
+{
+    if (pciDevice == 0 || vector < 32U || vector > 255U)
+    {
+        return 0;
+    }
+    pciDevice->AssignedInterruptVector = vector;
+    if (pciDevice->MsiCapable || pciDevice->MsixCapable)
+    {
+        gPciState.MsiVectorsAssigned += 1U;
+    }
+    return 1;
+}
+
+static void RegisterDeviceInterrupt(OrynKernelPciDevice* pciDevice)
+{
+    unsigned int vector;
+    if (pciDevice->InterruptPin == 0U && !pciDevice->MsiCapable && !pciDevice->MsixCapable)
+    {
+        return;
+    }
+    vector = 0x90U + (gPciState.DeviceInterruptHandlersRegistered & 0x3FU);
+    if (!OrynKernelPciAssignInterruptVector(pciDevice, vector))
+    {
+        return;
+    }
+    if (OrynKernelInterruptsRegisterDeviceHandler(vector, pciDevice->Bus, pciDevice->Device,
+        pciDevice->Function, PciInterruptStub, pciDevice, "PCI device interrupt"))
+    {
+        pciDevice->DeviceInterruptRegistered = 1U;
+        gPciState.DeviceInterruptHandlersRegistered += 1U;
+    }
+}
+
 void RecordDevice(const OrynKernelPciDevice* pciDevice)
 {
     if (gPciState.DevicesRecorded < ORYN_PCI_MAX_RECORDED_DEVICES)
     {
+        OrynKernelPciDevice localDevice = *pciDevice;
         unsigned char* destination = (unsigned char*)&gPciState.Devices[gPciState.DevicesRecorded];
-        const unsigned char* source = (const unsigned char*)pciDevice;
-        for (unsigned int index = 0U; index < sizeof(*pciDevice); ++index)
+        const unsigned char* source = (const unsigned char*)&localDevice;
+        RegisterDeviceInterrupt(&localDevice);
+        for (unsigned int index = 0U; index < sizeof(localDevice); ++index)
         {
             destination[index] = source[index];
         }
@@ -18,12 +61,59 @@ void RecordDevice(const OrynKernelPciDevice* pciDevice)
     }
 }
 
+
+static void ScanCapabilities(OrynKernelPciDevice* outDevice)
+{
+    unsigned int status = PciRead16(outDevice->Bus, outDevice->Device, outDevice->Function, 0x06U);
+    unsigned int pointer;
+    if ((status & 0x10U) == 0U)
+    {
+        return;
+    }
+    outDevice->CapabilitiesPresent = 1U;
+    gPciState.CapabilityDevicesFound += 1U;
+    pointer = PciRead8(outDevice->Bus, outDevice->Device, outDevice->Function, 0x34U) & 0xFCU;
+    for (unsigned int guard = 0U; guard < 48U && pointer >= 0x40U && pointer <= 0xFCU; ++guard)
+    {
+        unsigned int capId = PciRead8(outDevice->Bus, outDevice->Device, outDevice->Function, pointer);
+        unsigned int next = PciRead8(outDevice->Bus, outDevice->Device, outDevice->Function, pointer + 1U) & 0xFCU;
+        if (capId == 0x05U)
+        {
+            outDevice->MsiCapable = 1U;
+            outDevice->MsiCapabilityOffset = pointer;
+        }
+        else if (capId == 0x11U)
+        {
+            outDevice->MsixCapable = 1U;
+            outDevice->MsixCapabilityOffset = pointer;
+        }
+        if (next == 0U || next == pointer)
+        {
+            break;
+        }
+        pointer = next;
+    }
+    if (outDevice->MsiCapable)
+    {
+        gPciState.MsiDevicesFound += 1U;
+    }
+    if (outDevice->MsixCapable)
+    {
+        gPciState.MsixDevicesFound += 1U;
+    }
+}
+
 void ReadDevice(
     unsigned int bus,
     unsigned int device,
     unsigned int function,
     OrynKernelPciDevice* outDevice)
 {
+    unsigned char* bytes = (unsigned char*)outDevice;
+    for (unsigned int index = 0U; index < sizeof(*outDevice); ++index)
+    {
+        bytes[index] = 0U;
+    }
     unsigned int id = OrynKernelPciConfigRead32(bus, device, function, 0x00U);
     unsigned int classRegister = OrynKernelPciConfigRead32(bus, device, function, 0x08U);
     unsigned int headerRegister = OrynKernelPciConfigRead32(bus, device, function, 0x0CU);
@@ -41,6 +131,7 @@ void ReadDevice(
     outDevice->InterruptLine = PciRead8(bus, device, function, 0x3CU);
     outDevice->InterruptPin = PciRead8(bus, device, function, 0x3DU);
     outDevice->SecondaryBus = PciRead8(bus, device, function, 0x19U);
+    ScanCapabilities(outDevice);
 }
 
 void ScanConfigSpace(void)
@@ -185,6 +276,23 @@ void OrynKernelPciPrintProof(void)
     OrynKernelScreenReportOkOrFail(gPciState.ClassDecodeReady,
         "PCI class-code decoding ready.",
         "PCI class-code decoding unavailable.");
+    OrynKernelScreenReportOkOrWarn(gPciState.CapabilityDevicesFound != 0U,
+        "PCI capability-list scan foundation ran.",
+        "PCI capability-list scan found no capabilities.");
+    OrynKernelScreenReportOkOrWarn(gPciState.MsiDevicesFound || gPciState.MsixDevicesFound,
+        "PCI MSI/MSI-X capability foundation discovered capable devices.",
+        "PCI MSI/MSI-X capability foundation ready; no capable device found.");
+    KernelIoWriteString("[KERNEL] PCI capability/MSI/MSI-X/vector/device-handler counts: ");
+    KernelIoWriteDec64(gPciState.CapabilityDevicesFound);
+    KernelIoWriteString("/");
+    KernelIoWriteDec64(gPciState.MsiDevicesFound);
+    KernelIoWriteString("/");
+    KernelIoWriteDec64(gPciState.MsixDevicesFound);
+    KernelIoWriteString("/");
+    KernelIoWriteDec64(gPciState.MsiVectorsAssigned);
+    KernelIoWriteString("/");
+    KernelIoWriteDec64(gPciState.DeviceInterruptHandlersRegistered);
+    KernelIoWriteString("\n");
     KernelIoWriteString("[KERNEL] PCI recorded device entries: ");
     KernelIoWriteDec64(gPciState.DevicesRecorded);
     KernelIoWriteString(gPciState.DeviceListTruncated ? " truncated\n" : "\n");

@@ -64,6 +64,11 @@ static void OrynKernelDiagnosticsRunApicProofs(const OrynBootInfo* kernelBootInf
         OrynKernelModuleManifestFailed(OrynKernelModuleApic);
     }
     OrynKernelApicPrintProof();
+    if (OrynKernelIoApicInit(kernelBootInfo))
+    {
+        OrynKernelIoApicRouteLegacySet(ORYN_INTERRUPT_IRQ_BASE);
+    }
+    OrynKernelIoApicPrintProof();
     OrynKernelDiagnosticsRunEarlySmpProof(kernelBootInfo);
 }
 

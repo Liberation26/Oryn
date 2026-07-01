@@ -21,6 +21,13 @@ typedef struct OrynKernelPciDevice
     unsigned int InterruptLine;
     unsigned int InterruptPin;
     unsigned int SecondaryBus;
+    unsigned int CapabilitiesPresent;
+    unsigned int MsiCapable;
+    unsigned int MsixCapable;
+    unsigned int MsiCapabilityOffset;
+    unsigned int MsixCapabilityOffset;
+    unsigned int AssignedInterruptVector;
+    unsigned int DeviceInterruptRegistered;
 } OrynKernelPciDevice;
 
 typedef struct OrynKernelPciState
@@ -43,6 +50,11 @@ typedef struct OrynKernelPciState
     unsigned int NetworkControllersFound;
     unsigned int DisplayControllersFound;
     unsigned int ClassDecodeReady;
+    unsigned int CapabilityDevicesFound;
+    unsigned int MsiDevicesFound;
+    unsigned int MsixDevicesFound;
+    unsigned int MsiVectorsAssigned;
+    unsigned int DeviceInterruptHandlersRegistered;
     unsigned int FirstMcfgSegment;
     unsigned int FirstMcfgStartBus;
     unsigned int FirstMcfgEndBus;
@@ -69,5 +81,6 @@ const char* OrynKernelPciSubclassName(unsigned int classCode, unsigned int subcl
 const char* OrynKernelPciHeaderTypeName(unsigned int headerType);
 const char* OrynKernelPciInterruptPinName(unsigned int interruptPin);
 void OrynKernelPciPrintProof(void);
+int OrynKernelPciAssignInterruptVector(OrynKernelPciDevice* pciDevice, unsigned int vector);
 
 #endif

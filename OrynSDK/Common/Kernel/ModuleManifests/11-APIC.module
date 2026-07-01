@@ -1,7 +1,7 @@
 Order=11
 Id=OrynKernelModuleApic
 Name=APIC
-Items=local APIC, x2APIC, timer, EOI, IPI
+Items=local APIC, x2APIC, IOAPIC discovery, IRQ routing, timer, EOI, IPI
 Requires=OrynKernelModuleCpu,OrynKernelModuleInterrupts,OrynKernelModulePic
 CompiledIn=Yes
 Required=No

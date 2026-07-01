@@ -16,6 +16,8 @@ typedef struct OrynKernelInterruptState
     unsigned int Initialized;
     unsigned int HandlerSlots;
     unsigned int RegisteredHandlers;
+    unsigned int RegisteredDeviceHandlers;
+    unsigned int DeviceRouteSlots;
     unsigned int InterruptsEnabled;
     unsigned int LastVector;
     unsigned int LastErrorCodeLow;
@@ -46,6 +48,20 @@ int OrynKernelInterruptsRegisterHandler(
     OrynKernelInterruptHandler handler,
     void* context,
     const char* name);
+int OrynKernelInterruptsRegisterDeviceHandler(
+    unsigned int vector,
+    unsigned int bus,
+    unsigned int device,
+    unsigned int function,
+    OrynKernelInterruptHandler handler,
+    void* context,
+    const char* name);
+int OrynKernelInterruptsFindDeviceHandler(
+    unsigned int bus,
+    unsigned int device,
+    unsigned int function,
+    unsigned int* vectorOut);
+void OrynKernelInterruptsPrintDeviceProof(void);
 unsigned long long OrynKernelInterruptsGetVectorCount(unsigned int vector);
 void OrynKernelInterruptsEnable(void);
 void OrynKernelInterruptsDisable(void);

@@ -343,6 +343,7 @@ void OrynKernelInterruptsPrintProof(void)
     OrynKernelScreenReportOkOrWarn(!(OrynKernelInterruptsAreEnabled()),
         "CPU interrupts are currently disabled for controlled boot.",
         "CPU interrupts are currently enabled.");
+    OrynKernelInterruptsPrintDeviceProof();
 }
 
 void OrynKernelInterruptsPrintPicRuntimeProof(void)

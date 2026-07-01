@@ -1,3 +1,10 @@
+OrynWsl SDK ToDo2 update: 0.5.120
+
+[ OK ] Added IOAPIC discovery from ACPI MADT using BootInfo RSDP handoff data.
+[ OK ] Added IOAPIC legacy IRQ routing records with source-override resolution and redirection programming foundation.
+[ OK ] Added PCI MSI/MSI-X capability detection and interrupt vector assignment foundation.
+[ OK ] Added interrupt handler registration by vector and by PCI bus/device/function identity.
+
 OrynWsl SDK ToDo2 update: 0.5.115
 
 [ OK ] Added update-owned deleted-file cleanup for obsolete root recovery/bootstrap scripts.
@@ -228,9 +235,9 @@ Milestone 0.9 - Interrupt and deferred-work system:
 [ OK ] IDT dispatch and exception reporting exist.
 [ OK ] PIC/APIC EOI counters exist.
 [ OK ] IRQ1 keyboard scrolling proof exists.
-[TOBE] Add IOAPIC discovery and routing.
-[TOBE] Add MSI/MSI-X foundation for PCI devices.
-[TOBE] Add interrupt handler registration by vector and device.
+[ OK ] Add IOAPIC discovery and routing.
+[ OK ] Add MSI/MSI-X foundation for PCI devices.
+[ OK ] Add interrupt handler registration by vector and device.
 [TOBE] Add per-CPU interrupt accounting.
 [TOBE] Add interrupt-safe lock primitives.
 [TOBE] Add bottom halves/deferred procedure calls.
