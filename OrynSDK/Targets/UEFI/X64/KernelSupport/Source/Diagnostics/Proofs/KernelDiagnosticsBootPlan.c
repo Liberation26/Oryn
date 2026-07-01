@@ -105,11 +105,11 @@ static void ReportModuleSkipped(OrynKernelModuleId id, const char* reason)
 {
     const OrynKernelModuleManifestItem* item = OrynKernelModuleManifestGet(id);
     OrynKernelScreenReportBeginWarn();
-    KernelIoWriteString("Module skipped by boot option plan: ");
-    KernelIoWriteString(item ? item->Name : "unknown");
-    KernelIoWriteString(" needs ");
-    KernelIoWriteString(reason ? reason : "a prerequisite module");
-    KernelIoWriteString(".\n");
+    OrynKernelDiagnosticsLogText("Module skipped by boot option plan: ");
+    OrynKernelDiagnosticsLogText(item ? item->Name : "unknown");
+    OrynKernelDiagnosticsLogText(" needs ");
+    OrynKernelDiagnosticsLogText(reason ? reason : "a prerequisite module");
+    OrynKernelDiagnosticsLogText(".\n");
 }
 
 int OrynKernelDiagnosticsShouldStartModule(const OrynBootInfo* bootInfo, OrynKernelModuleId id)

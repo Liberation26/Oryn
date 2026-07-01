@@ -8,7 +8,7 @@ static void OrynKernelDiagnosticsRunEarlySmpProof(const OrynBootInfo* kernelBoot
         return;
     }
 
-    KernelIoWriteString("[KERNEL] SMP: starting early after APIC/APIC2 enable.\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] SMP: starting early after APIC/APIC2 enable.\n");
     (void)OrynKernelSmpInit(kernelBootInfo);
     OrynKernelSmpPrintProof();
 }
@@ -37,7 +37,7 @@ static void OrynKernelDiagnosticsRunApicProofs(const OrynBootInfo* kernelBootInf
 #if ORYN_VM_APIC2
     (void)OrynKernelApicInit(1);
 #else
-    KernelIoWriteString("[KERNEL] INFO: APIC2/x2APIC disabled by VM profile.\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] INFO: APIC2/x2APIC disabled by VM profile.\n");
     (void)OrynKernelApicInit(0);
 #endif
     OrynKernelApicPrintProof();

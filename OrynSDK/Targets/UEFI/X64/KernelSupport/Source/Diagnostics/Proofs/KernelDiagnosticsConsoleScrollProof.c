@@ -61,16 +61,16 @@ int OrynKernelDiagnosticsConsoleRunScrollProbe(void)
     unsigned int savedState;
     int ok;
 
-    KernelIoWriteString("[KERNEL] Kernel screen scrolling: starting proof.\n");
-    KernelIoWriteString("[KERNEL] Kernel screen visible rows: ");
-    KernelIoWriteDec64(OrynBootProofConsoleVisibleRows());
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Kernel screen visible columns: ");
-    KernelIoWriteDec64(OrynBootProofConsoleVisibleColumns());
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Kernel screen scrollback rows: ");
-    KernelIoWriteDec64(OrynBootProofConsoleScrollbackRows());
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Kernel screen scrolling: starting proof.\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Kernel screen visible rows: ");
+    OrynKernelDiagnosticsLogDec64(OrynBootProofConsoleVisibleRows());
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Kernel screen visible columns: ");
+    OrynKernelDiagnosticsLogDec64(OrynBootProofConsoleVisibleColumns());
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Kernel screen scrollback rows: ");
+    OrynKernelDiagnosticsLogDec64(OrynBootProofConsoleScrollbackRows());
+    OrynKernelDiagnosticsLogText("\n");
 
     if (!OrynBootProofConsoleIsAvailable() || OrynBootProofConsoleVisibleRows() == 0U || OrynBootProofConsoleVisibleColumns() == 0U)
     {

@@ -13,13 +13,13 @@ int OrynKernelDiagnosticsConsoleRunDoubleBufferProbe(void)
     OrynBootProofConsoleMetrics after;
     unsigned int savedState;
 
-    KernelIoWriteString("[KERNEL] Kernel screen double buffer: starting proof.\n");
-    KernelIoWriteString("[KERNEL] Kernel screen back buffer bytes: ");
-    KernelIoWriteDec64(OrynBootProofConsoleBackBufferBytes());
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Kernel screen present count: ");
-    KernelIoWriteDec64(OrynBootProofConsolePresentCount());
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Kernel screen double buffer: starting proof.\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Kernel screen back buffer bytes: ");
+    OrynKernelDiagnosticsLogDec64(OrynBootProofConsoleBackBufferBytes());
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Kernel screen present count: ");
+    OrynKernelDiagnosticsLogDec64(OrynBootProofConsolePresentCount());
+    OrynKernelDiagnosticsLogText("\n");
 
     if (!OrynKernelDiagnosticsConsoleCanUseBackBuffer())
     {

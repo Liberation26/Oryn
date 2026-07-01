@@ -1,6 +1,6 @@
 #include "KernelBootProof.h"
 #include "KernelDiagnostics.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelLifecycle.h"
 #include "KernelPanic.h"
 
@@ -11,14 +11,14 @@ static void OrynKernelBootProofHandleActivePanic(void)
         return;
     }
 
-    KernelIoWriteString("[KERNEL] System halted by Kernel-5.\n");
+    OrynKernelDiagnosticsLogHaltMessage();
     OrynKernelPanicHalt();
 }
 
 static void OrynKernelBootProofEnterRunningState(void)
 {
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleRunning);
-    KernelIoWriteString("[KERNEL] System halted by Kernel-5.\n");
+    OrynKernelDiagnosticsLogHaltMessage();
 }
 
 void OrynKernelBootProofRunSequence(const OrynBootInfo* kernelBootInfo)

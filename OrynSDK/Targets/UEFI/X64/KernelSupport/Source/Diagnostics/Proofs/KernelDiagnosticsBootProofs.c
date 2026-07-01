@@ -9,12 +9,12 @@ static void OrynKernelDiagnosticsPrintBootInfoOwnership(const OrynBootInfo* kern
     if (KernelBootInfoIsKernelOwned(kernelBootInfo))
     {
         OrynKernelScreenReportOk(0, "OrynBootInfo copied into kernel-owned storage.");
-        KernelIoWriteString("[KERNEL] Loader BootInfo pointer: ");
-        KernelIoWriteHex64(KernelBootInfoSourceAddress());
-        KernelIoWriteString("\n");
-        KernelIoWriteString("[KERNEL] Kernel BootInfo copy: ");
-        KernelIoWriteHex64((unsigned long long)kernelBootInfo);
-        KernelIoWriteString("\n");
+        OrynKernelDiagnosticsLogText("[KERNEL] Loader BootInfo pointer: ");
+        OrynKernelDiagnosticsLogHex64(KernelBootInfoSourceAddress());
+        OrynKernelDiagnosticsLogText("\n");
+        OrynKernelDiagnosticsLogText("[KERNEL] Kernel BootInfo copy: ");
+        OrynKernelDiagnosticsLogHex64((unsigned long long)kernelBootInfo);
+        OrynKernelDiagnosticsLogText("\n");
     }
     else
     {
@@ -24,7 +24,7 @@ static void OrynKernelDiagnosticsPrintBootInfoOwnership(const OrynBootInfo* kern
 
 void OrynKernelDiagnosticsPrintEntryProofs(const OrynBootInfo* kernelBootInfo)
 {
-    KernelIoWriteString("[KERNEL] Oryn Kernel-5 entered.\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Oryn Kernel-5 entered.\n");
     OrynKernelScreenReportOk(0, "Kernel entered successfully.");
     OrynKernelScreenReportOk(0, "Serial/debug output path is working.");
     OrynKernelDiagnosticsPrintBootInfoOwnership(kernelBootInfo);
@@ -33,7 +33,7 @@ void OrynKernelDiagnosticsPrintEntryProofs(const OrynBootInfo* kernelBootInfo)
 
 void OrynKernelDiagnosticsRunBootInfoFailureProof(void)
 {
-    KernelIoWriteString("[KERNEL] BootInfo invalid. Memory services are disabled.\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] BootInfo invalid. Memory services are disabled.\n");
     OrynKernelPanicBegin(
         "BootInfo validation failed",
         "Kernel-owned panic report path handles invalid handoff data",

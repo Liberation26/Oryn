@@ -1,5 +1,53 @@
 #include "KernelBootProof.h"
 #include "KernelDiagnosticsProofsInternal.h"
+#include "KernelInitGraph.h"
+
+static void OrynKernelBootProofRunInitGraphCheck(void)
+{
+    unsigned int index = 0;
+
+    if (!OrynKernelInitGraphValidate())
+    {
+        OrynKernelScreenReportFail(0, "KernelInit graph dependency validation failed.");
+        return;
+    }
+
+    OrynKernelScreenReportOk(0, "KernelInit graph has ordered stages and explicit dependencies.");
+
+    for (index = 0; index < OrynKernelInitGraphCount(); ++index)
+    {
+        const OrynKernelInitStage* stage = OrynKernelInitGraphGet(index);
+        unsigned int dependencyIndex = 0;
+
+        if (!stage)
+        {
+            continue;
+        }
+
+        OrynKernelDiagnosticsLogText("[KERNEL] KernelInit stage ");
+        OrynKernelDiagnosticsLogDec64(index);
+        OrynKernelDiagnosticsLogText(": ");
+        OrynKernelDiagnosticsLogText(stage->Name);
+        OrynKernelDiagnosticsLogText(" needs ");
+
+        if (stage->DependencyCount == 0U)
+        {
+            OrynKernelDiagnosticsLogText("none");
+        }
+
+        for (dependencyIndex = 0; dependencyIndex < stage->DependencyCount; ++dependencyIndex)
+        {
+            if (dependencyIndex > 0U)
+            {
+                OrynKernelDiagnosticsLogText(", ");
+            }
+
+            OrynKernelDiagnosticsLogText(OrynKernelInitStageName(stage->Dependencies[dependencyIndex]));
+        }
+
+        OrynKernelDiagnosticsLogText(".\n");
+    }
+}
 
 static void OrynKernelBootProofRunAlwaysChecks(const OrynBootInfo* kernelBootInfo)
 {
@@ -52,6 +100,7 @@ static void OrynKernelBootProofRunValidBootInfoChecks(const OrynBootInfo* kernel
 
 void OrynKernelBootProofRunCategoryChecks(const OrynBootInfo* kernelBootInfo)
 {
+    OrynKernelBootProofRunInitGraphCheck();
     OrynKernelBootProofRunAlwaysChecks(kernelBootInfo);
 
     OrynKernelBootInfoStatus bootStatus = KernelBootInfoValidate(kernelBootInfo);

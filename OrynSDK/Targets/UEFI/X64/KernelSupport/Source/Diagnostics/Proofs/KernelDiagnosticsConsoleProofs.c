@@ -3,12 +3,12 @@
 
 static void OrynKernelDiagnosticsPrintConsoleHeader(void)
 {
-    KernelIoWriteString("[KERNEL] Oryn Kernel-5 booted.\n");
-    KernelIoWriteString("[KERNEL] Target: uefi-x64\n");
-    KernelIoWriteString("[KERNEL] Toolchain: clang + lld\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Oryn Kernel-5 booted.\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Target: uefi-x64\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Toolchain: clang + lld\n");
     OrynKernelScreenReportOk(0, "Kernel console initialized.");
     OrynKernelScreenReportOk(0, "Console runtime separated from boot proof flow by BootProofConsole adapter.");
-    KernelIoWriteString(OrynBootProofConsoleIsTtfActive() ?
+    OrynKernelDiagnosticsLogText(OrynBootProofConsoleIsTtfActive() ?
         "[KERNEL] TTF renderer: active\n" :
         "[KERNEL] TTF renderer: fallback bitmap glyphs\n");
 }

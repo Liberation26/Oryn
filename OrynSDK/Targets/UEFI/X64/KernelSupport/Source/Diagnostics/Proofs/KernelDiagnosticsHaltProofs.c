@@ -13,8 +13,8 @@ static void OrynKernelDiagnosticsRunInteractiveHaltProofs(void)
         "Interactive halt loop leaves interrupts enabled for keyboard scrolling.",
         "Interactive halt loop could not enable keyboard interrupts.");
     OrynKernelScreenReportOk(0, "Interactive QEMU display mode keeps VM open for scroll testing.");
-    KernelIoWriteString("[KERNEL] INFO: Use Up/Down to scroll one line and PgUp/PgDn to scroll one page.\n");
-    KernelIoWriteString("[KERNEL] INFO: Close the QEMU window after manual scroll testing is complete.\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] INFO: Use Up/Down to scroll one line and PgUp/PgDn to scroll one page.\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] INFO: Close the QEMU window after manual scroll testing is complete.\n");
     if (keyboardInterruptsReady)
     {
         OrynKernelInterruptsEnable();
