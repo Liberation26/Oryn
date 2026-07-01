@@ -12,6 +12,32 @@
 #define ORYN_VIRTUAL_TABLE_FLAGS_DEFAULT \
     (ORYN_VIRTUAL_TABLE_FLAGS_PRESENT | ORYN_VIRTUAL_TABLE_FLAGS_WRITABLE)
 
+#define ORYN_VIRTUAL_FLAG_READ 0x001ULL
+#define ORYN_VIRTUAL_FLAG_WRITE 0x002ULL
+#define ORYN_VIRTUAL_FLAG_EXECUTE 0x004ULL
+#define ORYN_VIRTUAL_FLAG_USER 0x008ULL
+#define ORYN_VIRTUAL_FLAG_GUARD 0x010ULL
+#define ORYN_VIRTUAL_FLAG_GLOBAL 0x020ULL
+#define ORYN_VIRTUAL_USER_BASE 0x0000000000400000ULL
+#define ORYN_VIRTUAL_USER_LIMIT 0x0000800000000000ULL
+#define ORYN_VIRTUAL_KERNEL_BASE 0xFFFF800000000000ULL
+#define ORYN_VIRTUAL_KERNEL_LIMIT 0xFFFFFFFFFFFFFFFFULL
+
+typedef struct OrynKernelAddressSpace
+{
+    unsigned int Initialized;
+    unsigned int ProcessOwned;
+    unsigned int AddressSpaceId;
+    unsigned long long Pml4Physical;
+    unsigned long long UserBase;
+    unsigned long long UserLimit;
+    unsigned long long KernelBase;
+    unsigned long long KernelLimit;
+    unsigned long long MappedPages;
+    unsigned long long ProtectedPages;
+    unsigned long long UnmappedPages;
+} OrynKernelAddressSpace;
+
 typedef struct OrynKernelVirtualMemory
 {
     unsigned int Initialized;
@@ -48,9 +74,45 @@ typedef struct OrynKernelVirtualMemory
     unsigned long long FontMapEnd;
     unsigned long long IdentityMappedPages;
     unsigned long long KernelVirtualMappedPages;
+    unsigned long long UserBase;
+    unsigned long long UserLimit;
+    unsigned long long KernelBase;
+    unsigned long long KernelLimit;
+    unsigned long long ApiMappedPages;
+    unsigned long long ApiUnmappedPages;
+    unsigned long long ApiProtectedPages;
+    unsigned int AddressSpaceApiReady;
+    unsigned int PageFaultPolicyReady;
+    unsigned int ProcessAddressSpacesCreated;
+    OrynKernelAddressSpace KernelAddressSpace;
 } OrynKernelVirtualMemory;
 
 unsigned long long OrynVirtualMemoryReadCr3(void);
+int OrynVirtualMemoryIsUserAddress(unsigned long long virtualAddress);
+int OrynVirtualMemoryIsKernelAddress(unsigned long long virtualAddress);
+int OrynVirtualMemoryInitKernelAddressSpace(OrynKernelVirtualMemory* virtualMemory);
+int OrynVirtualMemoryCreateProcessAddressSpace(
+    OrynKernelPhysicalMemory* physicalMemory,
+    OrynKernelAddressSpace* addressSpace);
+int OrynVirtualMemoryMap(
+    OrynKernelAddressSpace* addressSpace,
+    OrynKernelPhysicalMemory* physicalMemory,
+    unsigned long long virtualAddress,
+    unsigned long long physicalAddress,
+    unsigned long long bytes,
+    unsigned long long flags);
+int OrynVirtualMemoryUnmap(
+    OrynKernelAddressSpace* addressSpace,
+    unsigned long long virtualAddress,
+    unsigned long long bytes);
+int OrynVirtualMemoryProtect(
+    OrynKernelAddressSpace* addressSpace,
+    unsigned long long virtualAddress,
+    unsigned long long bytes,
+    unsigned long long flags);
+int OrynVirtualMemoryRunAddressSpaceSelfTest(
+    OrynKernelVirtualMemory* virtualMemory,
+    OrynKernelPhysicalMemory* physicalMemory);
 int OrynVirtualMemoryUnmapGuardPage(unsigned long long virtualAddress);
 int OrynVirtualMemoryInit(
     const OrynBootInfo* bootInfo,

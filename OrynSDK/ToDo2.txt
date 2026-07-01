@@ -1,6 +1,6 @@
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.100
-Updated from package: 0.5.100 BootProof Category Ownership
+Version: 0.5.102
+Updated from package: 0.5.102 Virtual Memory Address Space Policy
 Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
@@ -162,10 +162,10 @@ Milestone 0.7 - Production memory management:
 [TOBE] Add heap statistics and leak counters.
 [TOBE] Add slab/object caches for fixed-size kernel structures.
 [TOBE] Add guard pages for kernel stacks and critical heaps.
-[TOBE] Add page-fault handler policy instead of only reporting faults.
-[TOBE] Add virtual memory map/unmap/protect APIs.
-[TOBE] Add per-process address spaces.
-[TOBE] Add user/kernel address split.
+[ OK ] Add page-fault handler policy instead of only reporting faults.
+[ OK ] Add virtual memory map/unmap/protect APIs.
+[ OK ] Add per-process address spaces.
+[ OK ] Add user/kernel address split.
 [TOBE] Add copy_from_user and copy_to_user safety helpers.
 [TOBE] Add demand allocation for user pages.
 [TOBE] Add page reference counts.
@@ -585,3 +585,10 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [ OK ] Updated KernelInit graph so Heap explicitly depends on Memory and VirtualMemory explicitly depends on Heap.
 [ OK ] Boot proof now emits OK for heap API, statistics/leak counters, slab caches, and guard-page support.
 [WARN] Full dynamic virtual-address heap growth, per-CPU magazines, poisoning/redzones, and demand-paged heap arenas remain future hardening steps.
+
+0.5.102 Virtual memory address-space policy:
+[ OK ] Added page-fault handler policy with fatal kernel/guard handling and non-fatal user process policy classification.
+[ OK ] Added virtual memory map, unmap, and protect APIs over explicit address-space objects.
+[ OK ] Added process-owned address-space creation with copied kernel-half mappings.
+[ OK ] Added explicit user/kernel address split constants and boot proof output.
+[ OK ] Added VM proof coverage for user mapping, protection change, unmap, process address-space creation, and page-fault policy classification.

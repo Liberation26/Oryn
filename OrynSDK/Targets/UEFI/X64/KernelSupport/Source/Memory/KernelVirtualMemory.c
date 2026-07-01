@@ -500,6 +500,10 @@ int OrynVirtualMemoryInit(
 
     ClearVirtualMemory(virtualMemory);
     virtualMemory->CurrentCr3 = OrynVirtualMemoryReadCr3();
+    virtualMemory->UserBase = ORYN_VIRTUAL_USER_BASE;
+    virtualMemory->UserLimit = ORYN_VIRTUAL_USER_LIMIT;
+    virtualMemory->KernelBase = ORYN_VIRTUAL_KERNEL_BASE;
+    virtualMemory->KernelLimit = ORYN_VIRTUAL_KERNEL_LIMIT;
     KernelIoWriteString("[KERNEL] Virtual memory: current CR3 captured\n");
 
     if (bootInfo == 0 || memoryMap == 0 || physicalMemory == 0 || physicalMemory->Initialized == 0U)
@@ -535,5 +539,6 @@ int OrynVirtualMemoryInit(
     KernelIoWriteString("[KERNEL] Virtual memory: CR3 switched to kernel-owned PML4\n");
     virtualMemory->Active = 1U;
     virtualMemory->Initialized = 1U;
+    (void)OrynVirtualMemoryInitKernelAddressSpace(virtualMemory);
     return 1;
 }

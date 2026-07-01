@@ -3,6 +3,7 @@
 #include "KernelIo.h"
 #include "KernelModuleManifest.h"
 #include "KernelPanic.h"
+#include "KernelPageFaultPolicy.h"
 #include "KernelPic.h"
 #include "KernelPortIo.h"
 #include "KernelScreenReport.h"
@@ -202,8 +203,14 @@ void OrynKernelInterruptsDispatch(OrynIdtInterruptFrame* frame)
         gInterruptState.ExceptionDispatches += 1ULL;
         if (vector == 14U)
         {
+            OrynKernelPageFaultAction action;
             cr2 = ReadCr2();
             gInterruptState.LastCr2 = cr2;
+            action = OrynKernelPageFaultPolicyHandle(frame, cr2);
+            if (action != OrynKernelPageFaultActionKernelPanic)
+            {
+                return;
+            }
         }
 
         OrynKernelPanicRaiseException(

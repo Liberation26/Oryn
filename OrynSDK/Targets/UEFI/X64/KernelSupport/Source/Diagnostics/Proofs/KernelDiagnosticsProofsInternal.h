@@ -19,6 +19,7 @@
 #include "KernelMemoryMap.h"
 #include "KernelModuleManifest.h"
 #include "KernelPanic.h"
+#include "KernelPageFaultPolicy.h"
 #include "KernelPci.h"
 #include "KernelPhysicalMemory.h"
 #include "KernelPic.h"

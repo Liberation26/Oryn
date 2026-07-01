@@ -123,6 +123,33 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
     KernelIoWriteDec64(virtualMemory->KernelVirtualMappedPages);
     KernelIoWriteString("\n");
 
+    WriteRange("[KERNEL] User address split: ",
+        virtualMemory->UserBase,
+        virtualMemory->UserLimit);
+
+    WriteRange("[KERNEL] Kernel address split: ",
+        virtualMemory->KernelBase,
+        virtualMemory->KernelLimit);
+
+    KernelIoWriteString("[KERNEL] VM API mapped pages: ");
+    KernelIoWriteDec64(virtualMemory->ApiMappedPages);
+    KernelIoWriteString("\n");
+
+    KernelIoWriteString("[KERNEL] VM API protected pages: ");
+    KernelIoWriteDec64(virtualMemory->ApiProtectedPages);
+    KernelIoWriteString("\n");
+
+    KernelIoWriteString("[KERNEL] VM API unmapped pages: ");
+    KernelIoWriteDec64(virtualMemory->ApiUnmappedPages);
+    KernelIoWriteString("\n");
+
+    KernelIoWriteString("[KERNEL] Process address spaces created: ");
+    KernelIoWriteDec64(virtualMemory->ProcessAddressSpacesCreated);
+    KernelIoWriteString("\n");
+
+    KernelIoWriteString("[KERNEL] Page-fault policy: ");
+    KernelIoWriteString(virtualMemory->PageFaultPolicyReady ? "ready\n" : "not proven\n");
+
     if (virtualMemory->Active)
     {
         KernelIoWriteString("[KERNEL] Virtual memory: active\n");

@@ -49,3 +49,10 @@ OrynLibC function-unit manifests
 - Common/Kernel/ModuleManifests/21-VirtualMemory.module now depends on Heap, making Heap the explicit stage between PhysicalMemory and VirtualMemory.
 - Targets/UEFI/X64/KernelSupport/Source/Diagnostics/Proofs/KernelDiagnosticsMemoryProofs.c owns heap init/start proof as part of memory proof flow.
 - Targets/UEFI/X64/KernelSupport/Source/Memory/KernelVirtualMemory.c exposes OrynVirtualMemoryUnmapGuardPage for stack and critical-heap guard-page support.
+
+0.5.102 virtual-memory policy layout:
+- Targets/UEFI/X64/KernelSupport/Include/KernelPageFaultPolicy.h declares fatal/non-fatal page-fault policy state and actions.
+- Targets/UEFI/X64/KernelSupport/Source/Memory/KernelPageFaultPolicy.c owns page-fault policy classification and proof coverage.
+- Targets/UEFI/X64/KernelSupport/Include/KernelVirtualMemory.h now exposes address-space objects, user/kernel split constants, and map/unmap/protect APIs.
+- Targets/UEFI/X64/KernelSupport/Source/Memory/KernelVirtualMemoryApi.c owns process address-space creation plus virtual map/unmap/protect operations.
+- KernelInterrupts dispatches page faults through KernelPageFaultPolicy before panic escalation.
