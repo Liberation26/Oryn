@@ -263,9 +263,10 @@ Milestone 1.0 - Threads, processes, and scheduler:
 [ OK ] Add parent/child relationships.
 [ OK ] Add exit status and wait semantics.
        0.5.124 proof: Scheduler priorities are layered over round-robin; threads expose running/ready/sleeping/blocked/zombie/stopped states; wait/wake primitives use wait channels; per-CPU idle thread registration is present; process/thread IDs, parent-child links, exit status, and parent wait semantics are proven.
-[TOBE] Add signal/event delivery design mapped onto Oryn Event.
-[TOBE] Add CPU affinity later, after stable SMP scheduling.
-[TOBE] Add scheduler diagnostics and run-queue dumps.
+[ OK ] Add signal/event delivery design mapped onto Oryn Event.
+[ OK ] Add CPU affinity later, after stable SMP scheduling.
+[ OK ] Add scheduler diagnostics and run-queue dumps.
+       0.5.125 proof: Process/thread records queue Oryn Event-compatible signal packets; scheduler honours CPU affinity masks in the run-queue path; scheduler diagnostics dump per-CPU run queues with thread IDs, states, priorities, and affinity masks.
 
 Milestone 1.1 - User mode and syscall entry:
 [TOBE] Enter ring 3 user mode from a controlled test process.
@@ -417,7 +418,7 @@ Milestone 2.0 - POSIX/Linux compatibility layer:
 [TOBE] Add time APIs.
 [TOBE] Add directory APIs.
 [TOBE] Add sockets API after networking exists.
-[TOBE] Add signals/events compatibility design.
+[ OK ] Add signals/events compatibility design.
 [TOBE] Add minimal shell script runner later.
 [TOBE] Add toolchain story for compiling external user programs.
 

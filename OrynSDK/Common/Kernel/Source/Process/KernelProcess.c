@@ -71,6 +71,8 @@ void OrynKernelProcessSystemInit(void)
     gProcessStats.ThreadStateReady = 1U;
     gProcessStats.ParentChildReady = 1U;
     gProcessStats.ExitWaitReady = 1U;
+    gProcessStats.OrynEventDeliveryReady = 1U;
+    gProcessStats.CpuAffinityReady = 1U;
     gNextProcessId = 1U;
     gNextThreadId = 1U;
     gProcessProofFailure = 0;
@@ -222,6 +224,8 @@ static OrynKernelThread* AllocateThread(OrynKernelProcess* process,
     thread->StackTop = (void*)((unsigned long long)stack + alignedStackBytes);
     thread->SchedulerReady = 1U;
     thread->Priority = ORYN_KERNEL_THREAD_PRIORITY_DEFAULT;
+    thread->CpuAffinityMask = 0xFFFFFFFFU;
+    thread->AffinitySet = 0U;
     thread->QuantumTicks = 4U;
     thread->RemainingQuantumTicks = thread->QuantumTicks;
     ProcessCopyName(thread->Name, ORYN_KERNEL_THREAD_NAME_LENGTH, name);
@@ -330,6 +334,7 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
     OrynKernelProcess* child;
     OrynKernelUserProcess userProcess;
     int childStatus = 0;
+    OrynKernelProcessEvent proofEvent;
     const OrynKernelHeapStats* heapBefore;
     const OrynKernelHeapStats* heapAfter;
     unsigned long long stackGuardPagesBefore;
@@ -381,12 +386,16 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
         return 0;
     }
     if (!OrynKernelThreadSetPriority(thread, 12U) ||
+        !OrynKernelThreadSetCpuAffinity(thread, 1U) ||
+        !OrynKernelThreadSendEvent(thread, 7U, 1234ULL) ||
+        !OrynKernelThreadReceiveEvent(thread, &proofEvent) ||
+        proofEvent.EventCode != 7U || proofEvent.EventValue != 1234ULL ||
         !OrynKernelThreadExit(userThread, 3) ||
         !OrynKernelProcessExit(child, 77) ||
         !OrynKernelProcessWait(process, child->ProcessId, &childStatus) ||
         childStatus != 77)
     {
-        gProcessProofFailure = "priority, exit, or wait proof failed";
+        gProcessProofFailure = "priority, event, affinity, exit, or wait proof failed";
         OrynKernelThreadDestroy(userThread);
         OrynKernelThreadDestroy(thread);
         OrynKernelProcessDestroy(child);
@@ -451,6 +460,13 @@ void OrynKernelProcessPrintProof(void)
     OrynKernelScreenReportOkOrFail(gProcessStats.ParentChildReady && gProcessStats.ProcessWaitCount > 0U,
         "Parent/child process relationships support exit status and wait semantics.",
         "Parent/child exit-wait proof failed.");
+    OrynKernelScreenReportOkOrFail(gProcessStats.OrynEventDeliveryReady &&
+        gProcessStats.DeliveredEventCount > 0U && gProcessStats.ReceivedEventCount > 0U,
+        "Signal/event delivery is mapped onto Oryn Event packets.",
+        "Oryn Event delivery proof failed.");
+    OrynKernelScreenReportOkOrFail(gProcessStats.CpuAffinityReady && gProcessStats.CpuAffinitySetCount > 0U,
+        "CPU affinity foundation is present after stable SMP scheduling.",
+        "CPU affinity proof failed.");
     OrynKernelContextSwitchPrintProof();
     OrynKernelSchedulerPrintProof();
 }

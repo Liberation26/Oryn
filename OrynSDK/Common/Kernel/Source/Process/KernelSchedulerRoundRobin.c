@@ -1,5 +1,6 @@
 #include "KernelScheduler.h"
 #include "KernelContextSwitch.h"
+#include "KernelDiagnosticsLogger.h"
 #include "string.h"
 
 static OrynKernelRoundRobinStats gRoundRobin;
@@ -29,6 +30,8 @@ static void RoundRobinInit(unsigned int cpuCount)
     gRoundRobin.RunQueueReady = 1U;
     gRoundRobin.PreemptiveRoundRobinReady = 1U;
     gRoundRobin.PrioritySchedulingReady = 1U;
+    gRoundRobin.CpuAffinityReady = 1U;
+    gRoundRobin.SchedulerDiagnosticsReady = 1U;
     gRoundRobin.QuantumTicks = ORYN_KERNEL_ROUND_ROBIN_QUANTUM_TICKS;
     for (unsigned int cpu = 0U; cpu < cpuCount; ++cpu)
     {
@@ -57,6 +60,24 @@ int OrynKernelSchedulerAddRunnableThread(unsigned int cpuId, OrynKernelThread* t
     queue->Threads[queue->Tail] = thread;
     queue->Tail = (queue->Tail + 1U) % ORYN_KERNEL_RUN_QUEUE_LIMIT;
     queue->Count += 1U;
+    if (thread->AffinitySet != 0U &&
+        (thread->CpuAffinityMask & (1U << queue->CpuId)) == 0U)
+    {
+        unsigned int targetCpu;
+        for (targetCpu = 0U; targetCpu < gRoundRobin.CpuCount; ++targetCpu)
+        {
+            if ((thread->CpuAffinityMask & (1U << targetCpu)) != 0U)
+            {
+                queue = GetQueue(targetCpu);
+                gRoundRobin.CpuAffinitySelections += 1U;
+                break;
+            }
+        }
+        if (targetCpu >= gRoundRobin.CpuCount)
+        {
+            return 0;
+        }
+    }
     thread->AssignedCpu = queue->CpuId;
     thread->RemainingQuantumTicks = ORYN_KERNEL_ROUND_ROBIN_QUANTUM_TICKS;
     thread->State = OrynKernelThreadStateSchedulerReady;
@@ -165,4 +186,36 @@ OrynKernelThread* OrynKernelSchedulerPreemptCurrent(unsigned int cpuId)
 const OrynKernelRoundRobinStats* OrynKernelSchedulerGetRoundRobinStats(void)
 {
     return &gRoundRobin;
+}
+
+void OrynKernelSchedulerDumpRunQueue(unsigned int cpuId)
+{
+    OrynKernelRunQueue* queue = GetQueue(cpuId);
+    gRoundRobin.RunQueueDumpCount += 1U;
+    OrynKernelDiagnosticsLogText("[KERNEL] Scheduler run queue CPU ");
+    OrynKernelDiagnosticsLogDec64(queue->CpuId);
+    OrynKernelDiagnosticsLogText(": count ");
+    OrynKernelDiagnosticsLogDec64(queue->Count);
+    OrynKernelDiagnosticsLogText(" head ");
+    OrynKernelDiagnosticsLogDec64(queue->Head);
+    OrynKernelDiagnosticsLogText(" tail ");
+    OrynKernelDiagnosticsLogDec64(queue->Tail);
+    OrynKernelDiagnosticsLogText("\n");
+    for (unsigned int index = 0U; index < queue->Count; ++index)
+    {
+        unsigned int slot = (queue->Head + index) % ORYN_KERNEL_RUN_QUEUE_LIMIT;
+        OrynKernelThread* thread = queue->Threads[slot];
+        if (thread != 0)
+        {
+            OrynKernelDiagnosticsLogText("[KERNEL]   tid ");
+            OrynKernelDiagnosticsLogDec64(thread->ThreadId);
+            OrynKernelDiagnosticsLogText(" state ");
+            OrynKernelDiagnosticsLogDec64(thread->State);
+            OrynKernelDiagnosticsLogText(" priority ");
+            OrynKernelDiagnosticsLogDec64(thread->Priority);
+            OrynKernelDiagnosticsLogText(" affinity ");
+            OrynKernelDiagnosticsLogDec64(thread->CpuAffinityMask);
+            OrynKernelDiagnosticsLogText("\n");
+        }
+    }
 }

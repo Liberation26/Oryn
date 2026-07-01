@@ -40,6 +40,10 @@ typedef struct OrynKernelRoundRobinStats
     unsigned int PrioritySelections;
     unsigned int IdleThreadReady;
     unsigned int IdleThreadCount;
+    unsigned int CpuAffinityReady;
+    unsigned int CpuAffinitySelections;
+    unsigned int SchedulerDiagnosticsReady;
+    unsigned int RunQueueDumpCount;
     OrynKernelThread* Current[ORYN_KERNEL_SCHEDULER_CPU_LIMIT];
     OrynKernelThread* IdleThreads[ORYN_KERNEL_SCHEDULER_CPU_LIMIT];
     OrynKernelRunQueue RunQueues[ORYN_KERNEL_SCHEDULER_CPU_LIMIT];
@@ -151,6 +155,7 @@ int OrynKernelSchedulerAddRunnableThread(unsigned int cpuId, OrynKernelThread* t
 OrynKernelThread* OrynKernelSchedulerPickNext(unsigned int cpuId);
 OrynKernelThread* OrynKernelSchedulerPreemptCurrent(unsigned int cpuId);
 const OrynKernelRoundRobinStats* OrynKernelSchedulerGetRoundRobinStats(void);
+void OrynKernelSchedulerDumpRunQueue(unsigned int cpuId);
 void OrynKernelSchedulerTick(unsigned int cpuId, unsigned long long nowTick);
 const OrynKernelSchedulerState* OrynKernelSchedulerGetState(void);
 int OrynKernelSchedulerRunSelfTest(OrynKernelThread* thread);

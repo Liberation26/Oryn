@@ -13,6 +13,7 @@
 #define ORYN_KERNEL_THREAD_PRIORITY_MIN 0U
 #define ORYN_KERNEL_THREAD_PRIORITY_DEFAULT 8U
 #define ORYN_KERNEL_THREAD_PRIORITY_MAX 15U
+#define ORYN_KERNEL_PROCESS_EVENT_QUEUE_LIMIT 8U
 
 typedef enum OrynKernelProcessKind
 {
@@ -45,6 +46,15 @@ typedef enum OrynKernelThreadState
     OrynKernelThreadStateTerminated = 6
 } OrynKernelThreadState;
 
+typedef struct OrynKernelProcessEvent
+{
+    unsigned int Used;
+    unsigned int EventCode;
+    unsigned long long EventValue;
+    unsigned int SourceProcessId;
+    unsigned int SourceThreadId;
+} OrynKernelProcessEvent;
+
 typedef struct OrynKernelProcess
 {
     unsigned int ProcessId;
@@ -60,6 +70,8 @@ typedef struct OrynKernelProcess
     struct OrynKernelProcess* FirstChild;
     struct OrynKernelProcess* NextSibling;
     unsigned int ChildCount;
+    unsigned int PendingEventCount;
+    OrynKernelProcessEvent Events[ORYN_KERNEL_PROCESS_EVENT_QUEUE_LIMIT];
     char Name[ORYN_KERNEL_PROCESS_NAME_LENGTH];
     OrynKernelAddressSpace* AddressSpace;
 } OrynKernelProcess;
@@ -82,6 +94,10 @@ typedef struct OrynKernelThread
     int ExitStatus;
     unsigned int Exited;
     const void* WaitChannel;
+    unsigned int PendingEventCount;
+    OrynKernelProcessEvent Events[ORYN_KERNEL_PROCESS_EVENT_QUEUE_LIMIT];
+    unsigned int CpuAffinityMask;
+    unsigned int AffinitySet;
     unsigned int AssignedCpu;
     unsigned int QuantumTicks;
     unsigned int RemainingQuantumTicks;
@@ -123,6 +139,11 @@ typedef struct OrynKernelProcessStats
     unsigned int ThreadIdReady;
     unsigned int ParentChildReady;
     unsigned int ExitWaitReady;
+    unsigned int OrynEventDeliveryReady;
+    unsigned int DeliveredEventCount;
+    unsigned int ReceivedEventCount;
+    unsigned int CpuAffinityReady;
+    unsigned int CpuAffinitySetCount;
     unsigned int ProcessExitCount;
     unsigned int ProcessWaitCount;
     unsigned int ThreadStateReady;
@@ -160,6 +181,10 @@ int OrynKernelProcessWait(OrynKernelProcess* parent, unsigned int childProcessId
 int OrynKernelThreadExit(OrynKernelThread* thread, int exitStatus);
 int OrynKernelThreadStop(OrynKernelThread* thread);
 int OrynKernelThreadSetPriority(OrynKernelThread* thread, unsigned int priority);
+int OrynKernelThreadSetCpuAffinity(OrynKernelThread* thread, unsigned int affinityMask);
+int OrynKernelProcessSendEvent(OrynKernelProcess* target, unsigned int eventCode, unsigned long long eventValue);
+int OrynKernelThreadSendEvent(OrynKernelThread* target, unsigned int eventCode, unsigned long long eventValue);
+int OrynKernelThreadReceiveEvent(OrynKernelThread* thread, OrynKernelProcessEvent* eventOut);
 int OrynKernelThreadIsSchedulerReady(const OrynKernelThread* thread);
 const OrynKernelProcessStats* OrynKernelProcessGetStats(void);
 int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory);

@@ -401,10 +401,11 @@ int OrynKernelSchedulerRunSelfTest(OrynKernelThread* thread)
     {
         return 0;
     }
-    if (!OrynKernelSchedulerAddRunnableThread(0U, thread))
+    if (!OrynKernelSchedulerAddRunnableThread(1U, thread))
     {
         return 0;
     }
+    OrynKernelSchedulerDumpRunQueue(0U);
     if (OrynKernelSchedulerPickNext(0U) != thread)
     {
         return 0;
@@ -458,4 +459,10 @@ void OrynKernelSchedulerPrintProof(void)
     OrynKernelScreenReportOkOrFail(rr->IdleThreadReady && rr->IdleThreadCount > 0U,
         "Kernel idle thread registration exists for each CPU run queue.",
         "Kernel idle thread proof failed.");
+    OrynKernelScreenReportOkOrFail(rr->CpuAffinityReady && rr->CpuAffinitySelections > 0U,
+        "CPU affinity is enforced by the scheduler run-queue path.",
+        "Scheduler CPU affinity proof failed.");
+    OrynKernelScreenReportOkOrFail(rr->SchedulerDiagnosticsReady && rr->RunQueueDumpCount > 0U,
+        "Scheduler diagnostics can dump per-CPU run queues.",
+        "Scheduler run-queue diagnostic proof failed.");
 }
