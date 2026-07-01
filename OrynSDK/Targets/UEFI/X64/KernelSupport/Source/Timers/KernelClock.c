@@ -4,6 +4,7 @@
 #include "KernelHpet.h"
 #include "KernelIo.h"
 #include "KernelModuleManifest.h"
+#include "KernelRtc.h"
 #include "KernelScreenReport.h"
 
 #define ORYN_CLOCK_SOURCE_LIMIT 4U
@@ -225,6 +226,30 @@ static void RegisterAvailableSources(void)
     }
 }
 
+static void AdoptBootHandoffTime(const OrynBootInfo* bootInfo)
+{
+    gClockState.TimezonePolicy.Defined = 1U;
+    gClockState.TimezonePolicy.KernelWallClockUtcOnly = 1U;
+    gClockState.TimezonePolicy.LocalTimeConversionInUserland = 1U;
+    gClockState.TimezonePolicy.UefiBootTimeHandoffOnly = 1U;
+    gClockState.TimezonePolicy.KernelTimezoneOffsetMinutes = 0;
+    if (bootInfo != 0 && bootInfo->FirmwareData.BootTimeValid)
+    {
+        gClockState.TimezonePolicy.UefiBootTimeCopied = 1U;
+        gClockState.TimezonePolicy.BootHandoffTimezoneMinutes =
+            bootInfo->FirmwareData.BootTimeTimeZone;
+    }
+}
+
+static void ReadWallClockFromRtc(void)
+{
+    gClockState.RtcWallClockAttempted = 1U;
+    if (OrynKernelRtcReadWallClockUtc(&gClockState.WallClockUtc))
+    {
+        gClockState.RtcWallClockValid = 1U;
+    }
+}
+
 static void RegisterAvailableEvents(void)
 {
     const OrynKernelHpetState* hpet = OrynKernelHpetGetState();
@@ -243,11 +268,12 @@ static void RegisterAvailableEvents(void)
 
 int OrynKernelClockBootSelect(const OrynBootInfo* bootInfo)
 {
-    (void)bootInfo;
     ClearState();
+    AdoptBootHandoffTime(bootInfo);
     CalibrateAgainstHpet();
     RegisterAvailableSources();
     RegisterAvailableEvents();
+    ReadWallClockFromRtc();
     SelectBestSource();
     SelectBestEvent();
     gClockState.SelectionRan = 1U;
@@ -258,6 +284,16 @@ int OrynKernelClockBootSelect(const OrynBootInfo* bootInfo)
 const OrynKernelClockState* OrynKernelClockGetState(void)
 {
     return &gClockState;
+}
+
+int OrynKernelClockReadWallClockUtc(OrynKernelWallClockTime* outTime)
+{
+    if (outTime == 0 || gClockState.RtcWallClockValid == 0U)
+    {
+        return 0;
+    }
+    *outTime = gClockState.WallClockUtc;
+    return 1;
 }
 
 unsigned long long OrynKernelClockReadMonotonicRaw(void)
@@ -338,4 +374,18 @@ void OrynKernelClockPrintProof(void)
     OrynKernelScreenReportOkOrWarn(gClockState.Calibration.ApicCalibrated,
         "APIC timer calibrated against HPET.",
         "APIC timer calibration deferred until APIC/HPET are both available.");
+    OrynKernelScreenReportOkOrWarn(gClockState.RtcWallClockAttempted,
+        "RTC read path attempted for wall-clock time.",
+        "RTC read path did not run.");
+    OrynKernelScreenReportOkOrWarn(gClockState.RtcWallClockValid,
+        "RTC wall-clock time is available through UTC clock policy.",
+        "RTC wall-clock time unavailable; UTC wall clock deferred.");
+    OrynKernelScreenReportOkOrFail(gClockState.TimezonePolicy.UefiBootTimeHandoffOnly,
+        "UEFI boot time is treated as boot handoff data only.",
+        "UEFI boot time policy is not marked handoff-only.");
+    OrynKernelScreenReportOkOrFail(gClockState.TimezonePolicy.KernelWallClockUtcOnly &&
+        gClockState.TimezonePolicy.LocalTimeConversionInUserland,
+        "UTC/local timezone policy defined: kernel stores UTC, userland converts local time.",
+        "UTC/local timezone policy is not defined.");
+    OrynKernelRtcPrintProof();
 }

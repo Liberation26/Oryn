@@ -43,7 +43,7 @@ static void PrintFirmwareData(const OrynBootInfo* bootInfo)
 
     if (firmware->BootTimeValid)
     {
-        KernelIoWriteString("[KERNEL] Firmware boot time UTC/local as reported by UEFI: ");
+        KernelIoWriteString("[KERNEL] UEFI boot time handoff snapshot only: ");
         KernelIoWriteDec64(firmware->BootTimeYear);
         KernelIoWriteString("-");
         KernelIoWriteDec64(firmware->BootTimeMonth);

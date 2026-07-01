@@ -7,6 +7,7 @@
 
 static OrynKernelSchedulerState gScheduler;
 static unsigned int gNextTimerId = 1U;
+static unsigned long long gSchedulerJiffies;
 
 static unsigned int ClampCpuCount(unsigned int cpuCount)
 {
@@ -93,7 +94,9 @@ void OrynKernelSchedulerInit(unsigned int cpuCount, unsigned int tickVector)
     {
         tickVector = ORYN_SCHEDULER_DEFAULT_VECTOR;
     }
+    gSchedulerJiffies = 0ULL;
     gScheduler.Initialized = 1U;
+    gScheduler.JiffiesInternalOnly = 1U;
     gScheduler.TimerWheelReady = 1U;
     gScheduler.SleepQueueReady = 1U;
     gScheduler.CpuCount = ClampCpuCount(cpuCount);
@@ -173,6 +176,8 @@ void OrynKernelSchedulerTick(unsigned int cpuId, unsigned long long nowTick)
     {
         return;
     }
+    gSchedulerJiffies += 1ULL;
+    gScheduler.InternalJiffies = gSchedulerJiffies;
     gScheduler.CurrentTick = nowTick;
     if (cpuId < ORYN_KERNEL_SCHEDULER_CPU_LIMIT && gScheduler.CpuTicks[cpuId].Registered)
     {
@@ -252,4 +257,7 @@ void OrynKernelSchedulerPrintProof(void)
     OrynKernelScreenReportOkOrFail(gScheduler.PerCpuTickReady && gScheduler.CpuTicks[0].TickCount > 0ULL,
         "Per-CPU scheduler tick registration is active.",
         "Per-CPU scheduler tick registration proof failed.");
+    OrynKernelScreenReportOkOrFail(gScheduler.JiffiesInternalOnly && gScheduler.InternalJiffies > 0ULL,
+        "Scheduler jiffies are private implementation detail, not public clock API.",
+        "Scheduler jiffies implementation-detail proof failed.");
 }

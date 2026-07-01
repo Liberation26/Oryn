@@ -58,7 +58,9 @@ typedef struct OrynKernelSchedulerState
     unsigned int WakeCount;
     unsigned int BusyWaitSleepRejected;
     unsigned int FailedTimerAllocations;
+    unsigned int JiffiesInternalOnly;
     unsigned long long CurrentTick;
+    unsigned long long InternalJiffies;
     OrynKernelTimerNode Timers[ORYN_KERNEL_TIMER_LIMIT];
     OrynKernelTimerNode* Wheel[ORYN_KERNEL_TIMER_WHEEL_SLOTS];
     OrynKernelCpuSchedulerTick CpuTicks[ORYN_KERNEL_SCHEDULER_CPU_LIMIT];

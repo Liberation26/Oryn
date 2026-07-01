@@ -219,10 +219,10 @@ Milestone 0.8 - Timers, clocks, and scheduler base:
 [ OK ] Add sleep queues that do not busy-wait.
 [ OK ] Add timer wheel or red-black tree timer queue.
 [ OK ] Add per-CPU scheduler tick.
-[TOBE] Add jiffies/tick counter only as an implementation detail, not the public clock API.
-[TOBE] Add RTC read path for wall-clock time.
-[TOBE] Treat UEFI boot time as boot handoff data only.
-[TOBE] Define UTC/local timezone policy.
+[ OK ] Add jiffies/tick counter only as an implementation detail, not the public clock API.
+[ OK ] Add RTC read path for wall-clock time.
+[ OK ] Treat UEFI boot time as boot handoff data only.
+[ OK ] Define UTC/local timezone policy.
 
 Milestone 0.9 - Interrupt and deferred-work system:
 [ OK ] IDT dispatch and exception reporting exist.
