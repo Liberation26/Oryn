@@ -1,3 +1,10 @@
+OrynWsl SDK ToDo2 update: 0.5.115
+
+[ OK ] Added update-owned deleted-file cleanup for obsolete root recovery/bootstrap scripts.
+[ OK ] Removed old OrynReleaseKeyRecovery and OrynNoValidationBootstrap scripts from the workspace root on update.
+[ OK ] Removed Windows Zone.Identifier sidecar files from the workspace root on update.
+[ OK ] Kept the permanent top-level README.md in ChangedFiles and FullSource so GitHub can receive it after the next push.
+
 OrynWsl SDK ToDo2 update: 0.5.110
 
 [ OK ] Added module stop, panic, and shutdown callbacks to generated KernelModuleManifest records.

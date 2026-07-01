@@ -1158,6 +1158,31 @@ ApplyDeletedFiles()
     done < "$deleted_file"
 }
 
+RemoveObsoleteWorkspaceRootScripts()
+{
+    local obsolete
+    for obsolete in \
+        "InstallUpdate.sh" \
+        "InstallUpdate.sh:Zone.Identifier" \
+        "OrynNoValidationBootstrap-0.5.111.sh" \
+        "OrynNoValidationBootstrap-0.5.111.sh:Zone.Identifier" \
+        "OrynReleaseKeyRecovery-0.5.89.sh" \
+        "OrynReleaseKeyRecovery-0.5.89.sh:Zone.Identifier" \
+        "OrynReleaseKeyRecovery-0.5.90.sh" \
+        "OrynReleaseKeyRecovery-0.5.90.sh:Zone.Identifier" \
+        "OrynReleaseKeyRecovery-0.5.90-fixed.sh" \
+        "OrynReleaseKeyRecovery-0.5.90-fixed.sh:Zone.Identifier" \
+        "OrynReleaseKeyRecovery-0.5.104.sh" \
+        "OrynReleaseKeyRecovery-0.5.104.sh:Zone.Identifier" \
+        "OrynReleaseKeyRecovery-0.5.110.sh" \
+        "OrynReleaseKeyRecovery-0.5.110.sh:Zone.Identifier"; do
+        if [ -e "$WorkspaceRoot/$obsolete" ]; then
+            rm -rf "$WorkspaceRoot/$obsolete"
+            Ok "Removed obsolete workspace script: $obsolete"
+        fi
+    done
+}
+
 
 ApplyChangedFiles()
 {
@@ -1304,6 +1329,7 @@ RemoveLegacyGeneratedProjects
 RemoveObsoleteSdkSourcePaths
 RemoveMovedSharedKernelProjectPaths
 ApplyDeletedFiles "$TempRoot/extract"
+RemoveObsoleteWorkspaceRootScripts
 
 chmod +x \
   "$WorkspaceRoot/Oryn.sh" \
