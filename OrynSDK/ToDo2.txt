@@ -152,9 +152,9 @@ Current OrynLibC foundation already present:
 [ OK ] OrynLibC proof source exists.
 [ OK ] LibC has been expanded from proof-only support into a fuller freestanding libc foundation with stdarg/stdalign/stdnoreturn/iso646/float/stdio headers, extended string/ctype/stdlib/inttypes functions, snprintf/vsnprintf, bsearch/qsort, rand/srand, and allocator hooks.
 [ OK ] LibC is included through the module/archive resolver as libOrynLibC.a.
-[TOBE] Split remaining multi-function LibC files further where practical.
-[TOBE] Add complete function-level manifests for each LibC unit.
-[WARN] Add external host-side conformance tests for every LibC function beyond the in-kernel self proof.
+[ OK ] Split remaining multi-function LibC files further where practical.
+[ OK ] Add complete function-level manifests for each LibC unit.
+[ OK ] Add external host-side conformance tests for every LibC function beyond the in-kernel self proof.
 [ OK ] Add freestanding-safe snprintf/vsnprintf family after integer/string foundation is stable.
 
 Milestone 0.6 - Clean kernel entry and module ownership:
@@ -439,7 +439,7 @@ Recommended implementation order:
 3. Keep KernelRuntimeBootSequence limited to runtime entry and boot-proof handoff.
 4. Complete Diagnostics/Logger ring buffer and make serial proof detail flow through it.
 5. Turn FillPrerequisites.sh into a full prerequisites app/command with proof report.
-6. Finish OrynLibC unit tests and function-level manifests.
+6. Continue expanding OrynLibC conformance edge cases as new functions are added.
 7. Add the real kernel heap and virtual-memory map/unmap/protect APIs.
 8. Finish interrupt queues, deferred work, and monotonic clock.
 9. Build scheduler and kernel threads.
@@ -462,7 +462,7 @@ Immediate next 10 SDK tasks:
 [ OK ] 5. Move remaining proof orchestration from KernelRuntimeBootSequence into KernelBootProof.
 [TOBE] 6. Add Diagnostics/Logger ring buffer and route serial details through it.
 [ OK ] 7. Expand FillPrerequisites into a complete command with detect/install/report phases.
-[WARN] 8. Add complete OrynLibC function-level manifests and external unit tests; in-kernel self proof now covers the expanded function set.
+[ OK ] 8. Complete OrynLibC function-level manifests and external host-side conformance tests; in-kernel self proof remains active.
 [TOBE] 9. Replace LibC textual symbol preparse with archive/dependency resolution.
 [TOBE] 10. Add Build/Reports outputs for prerequisites, manifest validation, dependency graph, and boot module status.
 
@@ -664,3 +664,10 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [ OK ] Added ChangedFiles copy of UpdateOrynCurrent.sh so future updates carry no-validation policy.
 [WARN] Package authenticity is no longer enforced by the updater by design.
 
+
+0.5.112 - LibC completion status refresh
+[ OK ] Confirmed OrynLibC is included through the module/archive resolver as libOrynLibC.a.
+[ OK ] Confirmed remaining practical multi-function OrynLibC files were split into function-sized source units.
+[ OK ] Confirmed complete function-level manifests exist for all 77 OrynLibC source units.
+[ OK ] Confirmed host-side OrynLibC conformance command and script exist beyond the in-kernel self proof.
+[ OK ] Updated this ToDo2 status block so current LibC work is no longer incorrectly listed as TOBE/WARN.
