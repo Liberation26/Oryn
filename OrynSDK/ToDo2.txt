@@ -196,9 +196,12 @@ Milestone 0.7 - Production memory management:
 [ OK ] Add page reference counts and ownership diagnostics.
 [ OK ] Add copy-on-write foundation for fork-like process creation later.
 [ OK ] Add DMA-safe physical allocation constraints.
-[TOBE] Add memory pressure and out-of-memory policy.
-[TOBE] Add mmap-style region tracking for files, devices, and anonymous memory.
-[TOBE] Add W^X page policy for kernel and user mappings.
+[ OK ] Add memory pressure and out-of-memory policy.
+       Pressure state, low/critical/OOM levels, OOM actions, diagnostics, and proof self-test are implemented.
+[ OK ] Add mmap-style region tracking for files, devices, and anonymous memory.
+       Address spaces now track anonymous, file, and device mmap-style regions through one region table.
+[ OK ] Add W^X page policy for kernel and user mappings.
+       VM map/protect/region reservation reject writable+executable mappings and report proof counters.
 
 Milestone 0.8 - Timers, clocks, and scheduler base:
 [ OK ] PIT/PIC one-shot proof exists.
@@ -365,7 +368,8 @@ Milestone 1.8 - Security, users, and isolation:
 [TOBE] Add filesystem permission checks.
 [TOBE] Add device permission checks.
 [TOBE] Add module permissions.
-[TOBE] Add W^X enforcement.
+[ OK ] Add W^X enforcement.
+       User mappings, protection changes, and mmap-style reservations enforce write-xor-execute flags.
 [TOBE] Add SMAP/SMEP support when CPU supports it.
 [TOBE] Add stack canaries or equivalent kernel hardening.
 [TOBE] Add random number source and entropy collection.

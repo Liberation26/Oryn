@@ -1,7 +1,7 @@
 Order=19
 Id=OrynKernelModulePhysicalMemory
 Name=PhysicalMemory
-Items=usable pages, free list, allocation proof, DMA-safe constraints, contiguous constrained allocations
+Items=usable pages, free list, allocation proof, DMA-safe constraints, contiguous constrained allocations, memory pressure, out-of-memory policy
 Requires=OrynKernelModuleBootInfo
 CompiledIn=Yes
 Required=No

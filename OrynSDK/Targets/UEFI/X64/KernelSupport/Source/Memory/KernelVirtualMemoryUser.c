@@ -97,11 +97,21 @@ static OrynVirtualAnonymousRegion* FindAnonymousRegion(
     return 0;
 }
 
-int OrynVirtualMemoryReserveAnonymousRegion(
+int OrynVirtualMemoryFlagsRespectWriteXorExecute(unsigned long long flags)
+{
+    return ((flags & ORYN_VIRTUAL_FLAG_WRITE) == 0ULL) ||
+        ((flags & ORYN_VIRTUAL_FLAG_EXECUTE) == 0ULL);
+}
+
+int OrynVirtualMemoryReserveMmapRegion(
     OrynKernelAddressSpace* addressSpace,
     unsigned long long virtualAddress,
     unsigned long long bytes,
-    unsigned long long flags)
+    unsigned long long flags,
+    unsigned int type,
+    unsigned long long sourceId,
+    unsigned long long sourceOffset,
+    unsigned long long devicePhysical)
 {
     unsigned long long base = UserAlignDown(virtualAddress);
     unsigned long long end = UserAlignUp(virtualAddress + bytes);
@@ -111,8 +121,13 @@ int OrynVirtualMemoryReserveAnonymousRegion(
     {
         return 0;
     }
-
-    for (unsigned int index = 0U; index < ORYN_VIRTUAL_MAX_ANONYMOUS_REGIONS; ++index)
+    addressSpace->WriteExecutePolicyChecks += 1ULL;
+    if (!OrynVirtualMemoryFlagsRespectWriteXorExecute(flags))
+    {
+        addressSpace->WriteExecuteDeniedCount += 1ULL;
+        return 0;
+    }
+    for (unsigned int index = 0U; index < ORYN_VIRTUAL_MAX_MMAP_REGIONS; ++index)
     {
         OrynVirtualAnonymousRegion* region = &addressSpace->AnonymousRegions[index];
         if (region->Used == 0U)
@@ -122,11 +137,47 @@ int OrynVirtualMemoryReserveAnonymousRegion(
             region->Bytes = end - base;
             region->Flags = (flags | ORYN_VIRTUAL_FLAG_USER) & ~ORYN_VIRTUAL_FLAG_GUARD;
             region->CommittedPages = 0ULL;
-            addressSpace->AnonymousRegionCount += 1ULL;
+            region->CopyOnWriteInherited = 0U;
+            region->Type = type == OrynVirtualMmapRegionUnused ?
+                OrynVirtualMmapRegionAnonymous : type;
+            region->SourceId = sourceId;
+            region->SourceOffset = sourceOffset;
+            region->DevicePhysical = devicePhysical;
+            region->DeviceBytes = region->Type == OrynVirtualMmapRegionDevice ? end - base : 0ULL;
+            addressSpace->MmapRegionCount += 1ULL;
+            if (region->Type == OrynVirtualMmapRegionAnonymous)
+            {
+                addressSpace->AnonymousRegionCount += 1ULL;
+            }
+            else if (region->Type == OrynVirtualMmapRegionFile)
+            {
+                addressSpace->FileRegionCount += 1ULL;
+            }
+            else if (region->Type == OrynVirtualMmapRegionDevice)
+            {
+                addressSpace->DeviceRegionCount += 1ULL;
+            }
             return 1;
         }
     }
     return 0;
+}
+
+int OrynVirtualMemoryReserveAnonymousRegion(
+    OrynKernelAddressSpace* addressSpace,
+    unsigned long long virtualAddress,
+    unsigned long long bytes,
+    unsigned long long flags)
+{
+    return OrynVirtualMemoryReserveMmapRegion(
+        addressSpace,
+        virtualAddress,
+        bytes,
+        flags,
+        OrynVirtualMmapRegionAnonymous,
+        ORYN_VIRTUAL_MMAP_SOURCE_NONE,
+        0ULL,
+        0ULL);
 }
 
 int OrynVirtualMemoryDemandAllocateUserPage(
