@@ -1,4 +1,4 @@
-Oryn WSL SDK ToDo2 - 0.5.107
+Oryn WSL SDK ToDo2 - 0.5.108
 
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
 Version: 0.5.104
@@ -629,3 +629,14 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 
 [ OK ] 0.5.107: Process manifest state is marked ready before Scheduler prerequisite checks.
        Scheduler no longer fails with "missing prerequisite: Process" after Process proof succeeds.
+
+
+0.5.108 - Kernel heap contiguous span and process stack proof fix
+[ OK ] Fixed kernel heap multi-page span placement.
+       Heap spans now use the lowest address of the allocated contiguous physical-page run, instead of the first page popped from the descending physical allocator.
+[ OK ] Fixed scheduler-ready kernel thread stack allocation proof.
+       Multi-page stacks no longer write upward from the highest allocated page into unowned memory.
+[ OK ] Added process/thread proof detail logging for failed sub-steps.
+       Future failures now report whether the missing part was heap initialization, process allocation, address-space binding, scheduler stack allocation, or stack guard accounting.
+[ OK ] Scheduler prerequisite failure is no longer the root symptom when Process stack proof fails.
+       Process proof now reports the real failed sub-step first, then Scheduler remains blocked only as a consequence.

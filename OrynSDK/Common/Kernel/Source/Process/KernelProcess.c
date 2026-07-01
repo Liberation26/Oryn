@@ -7,6 +7,7 @@
 static unsigned int gNextProcessId = 1U;
 static unsigned int gNextThreadId = 1U;
 static OrynKernelProcessStats gProcessStats;
+static const char* gProcessProofFailure;
 
 static void ProcessClear(void* pointer, unsigned long long bytes)
 {
@@ -51,6 +52,7 @@ void OrynKernelProcessSystemInit(void)
     gProcessStats.Initialized = 1U;
     gNextProcessId = 1U;
     gNextThreadId = 1U;
+    gProcessProofFailure = 0;
 }
 
 OrynKernelProcess* OrynKernelProcessCreate(
@@ -209,15 +211,29 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
     OrynKernelThread* thread;
     const OrynKernelHeapStats* heapBefore;
     const OrynKernelHeapStats* heapAfter;
+    gProcessProofFailure = 0;
     if (physicalMemory == 0 || physicalMemory->Initialized == 0U)
     {
+        gProcessProofFailure = "physical memory allocator is not initialized";
         return 0;
     }
     OrynKernelProcessSystemInit();
     heapBefore = OrynKernelHeapGetStats();
-    process = OrynKernelProcessCreate(physicalMemory, "init", 0U);
-    if (process == 0 || process->AddressSpace == 0 || process->AddressSpace->ProcessOwned == 0U)
+    if (heapBefore == 0 || heapBefore->Initialized == 0U)
     {
+        gProcessProofFailure = "kernel heap is not initialized";
+        return 0;
+    }
+    process = OrynKernelProcessCreate(physicalMemory, "init", 0U);
+    if (process == 0)
+    {
+        gProcessProofFailure = "process allocation failed";
+        return 0;
+    }
+    if (process->AddressSpace == 0 || process->AddressSpace->ProcessOwned == 0U)
+    {
+        gProcessProofFailure = "process address space binding failed";
+        OrynKernelProcessDestroy(process);
         return 0;
     }
     thread = OrynKernelThreadCreateKernel(
@@ -228,12 +244,17 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
         ORYN_KERNEL_THREAD_DEFAULT_STACK_BYTES);
     if (!OrynKernelThreadIsSchedulerReady(thread))
     {
+        gProcessProofFailure = "guarded scheduler-ready kernel thread stack allocation failed";
+        OrynKernelThreadDestroy(thread);
+        OrynKernelProcessDestroy(process);
         return 0;
     }
     heapAfter = OrynKernelHeapGetStats();
-    if (heapBefore == 0 || heapAfter == 0 ||
-        heapAfter->StackGuardPages <= heapBefore->StackGuardPages)
+    if (heapAfter == 0 || heapAfter->StackGuardPages <= heapBefore->StackGuardPages)
     {
+        gProcessProofFailure = "stack guard page accounting did not advance";
+        OrynKernelThreadDestroy(thread);
+        OrynKernelProcessDestroy(process);
         return 0;
     }
     OrynKernelThreadDestroy(thread);
@@ -244,6 +265,12 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
 void OrynKernelProcessPrintProof(void)
 {
     OrynKernelDiagnosticsLogText("[KERNEL] Process/thread structures: active\n");
+    if (gProcessProofFailure != 0)
+    {
+        OrynKernelDiagnosticsLogText("[KERNEL] Process/thread proof detail: ");
+        OrynKernelDiagnosticsLogText(gProcessProofFailure);
+        OrynKernelDiagnosticsLogText("\n");
+    }
     OrynKernelDiagnosticsLogText("[KERNEL] Processes created: ");
     OrynKernelDiagnosticsLogDec64(gProcessStats.ProcessCreatedCount);
     OrynKernelDiagnosticsLogText("\n");

@@ -73,3 +73,8 @@ OrynLibC function-unit manifests
 0.5.107:
 - Process manifest ready transition now occurs before Scheduler start policy checks.
 - Scheduler prerequisite validation now observes Process as ready after the process/thread proof.
+
+
+0.5.108 Kernel heap/process stack proof fix:
+- KernelHeap multi-page spans now choose the lowest address in the allocated contiguous run.
+- Process proof logs exact failed sub-step before Scheduler prerequisite policy reports dependent blockage.

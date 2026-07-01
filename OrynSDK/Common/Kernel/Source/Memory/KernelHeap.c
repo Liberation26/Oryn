@@ -151,16 +151,31 @@ static OrynKernelHeapBlock* AddHeapSpan(unsigned long long requestedBytes, unsig
     unsigned long long pages = (requiredBytes + ORYN_PHYSICAL_PAGE_SIZE - 1ULL) / ORYN_PHYSICAL_PAGE_SIZE;
     unsigned long long totalBytes = pages * ORYN_PHYSICAL_PAGE_SIZE;
     unsigned long long firstPage = 0ULL;
+    unsigned long long lowestPage = 0ULL;
+    unsigned long long highestPage = 0ULL;
     unsigned long long guardBefore = 0ULL;
     unsigned long long guardAfter = 0ULL;
+    unsigned long long allocatedPages[64];
+
+    if (pages == 0ULL || pages > 64ULL)
+    {
+        gHeapStats.FailedAllocations += 1ULL;
+        return 0;
+    }
 
     if ((flags & ORYN_KERNEL_HEAP_FLAG_CRITICAL) != 0U)
     {
         guardBefore = AllocateHeapPage();
         if (guardBefore == ORYN_PHYSICAL_ALLOC_FAIL)
         {
+            gHeapStats.FailedAllocations += 1ULL;
             return 0;
         }
+        (void)OrynPhysicalMemorySetPageOwner(
+            gPhysicalMemory,
+            guardBefore,
+            OrynPhysicalPageOwnerReserved,
+            ORYN_KERNEL_HEAP_FLAG_CRITICAL);
         gHeapStats.GuardPages += 1ULL;
         gHeapStats.CriticalHeapGuardPages += 1ULL;
         if (gVirtualMemory != 0)
@@ -174,22 +189,58 @@ static OrynKernelHeapBlock* AddHeapSpan(unsigned long long requestedBytes, unsig
         unsigned long long page = AllocateHeapPage();
         if (page == ORYN_PHYSICAL_ALLOC_FAIL)
         {
+            for (unsigned long long rollback = 0ULL; rollback < index; ++rollback)
+            {
+                (void)OrynPhysicalMemoryFreePage(gPhysicalMemory, allocatedPages[rollback]);
+            }
             gHeapStats.FailedAllocations += 1ULL;
             return 0;
         }
-        if (index == 0ULL)
+        allocatedPages[index] = page;
+        if (lowestPage == 0ULL || page < lowestPage)
         {
-            firstPage = page;
+            lowestPage = page;
         }
+        if (page > highestPage)
+        {
+            highestPage = page;
+        }
+        (void)OrynPhysicalMemorySetPageOwner(
+            gPhysicalMemory,
+            page,
+            OrynPhysicalPageOwnerKernelHeap,
+            flags);
     }
+
+    if (pages > 1ULL && highestPage - lowestPage != (pages - 1ULL) * ORYN_PHYSICAL_PAGE_SIZE)
+    {
+        for (unsigned long long index = 0ULL; index < pages; ++index)
+        {
+            (void)OrynPhysicalMemoryFreePage(gPhysicalMemory, allocatedPages[index]);
+        }
+        gHeapStats.FailedAllocations += 1ULL;
+        return 0;
+    }
+
+    firstPage = lowestPage;
 
     if ((flags & ORYN_KERNEL_HEAP_FLAG_CRITICAL) != 0U)
     {
         guardAfter = AllocateHeapPage();
         if (guardAfter == ORYN_PHYSICAL_ALLOC_FAIL)
         {
+            for (unsigned long long index = 0ULL; index < pages; ++index)
+            {
+                (void)OrynPhysicalMemoryFreePage(gPhysicalMemory, allocatedPages[index]);
+            }
+            gHeapStats.FailedAllocations += 1ULL;
             return 0;
         }
+        (void)OrynPhysicalMemorySetPageOwner(
+            gPhysicalMemory,
+            guardAfter,
+            OrynPhysicalPageOwnerReserved,
+            ORYN_KERNEL_HEAP_FLAG_CRITICAL);
         gHeapStats.GuardPages += 1ULL;
         gHeapStats.CriticalHeapGuardPages += 1ULL;
         if (gVirtualMemory != 0)

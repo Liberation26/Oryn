@@ -139,6 +139,7 @@ static void OrynKernelDiagnosticsRunVirtualMemoryProof(const OrynBootInfo* kerne
                 }
                 else
                 {
+                    OrynKernelProcessPrintProof();
                     OrynKernelModuleManifestFailed(OrynKernelModuleProcess);
                     OrynKernelScreenReportFail(0, "Process/thread scheduler stack proof failed.");
                     if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleScheduler))
