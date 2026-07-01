@@ -20,6 +20,303 @@ RequireCommand()
     fi
 }
 
+
+AppendValidationReport()
+{
+    local level="$1"
+    local message="$2"
+
+    [ -n "${PackageValidationReport:-}" ] || return 0
+    printf '[%s] %s\n' "$level" "$message" >> "$PackageValidationReport"
+}
+
+ValidationOk()
+{
+    AppendValidationReport " OK " "$1"
+    Ok "Package validation: $1"
+}
+
+ValidationInfo()
+{
+    AppendValidationReport "INFO" "$1"
+    Info "Package validation: $1"
+}
+
+ValidationWarn()
+{
+    AppendValidationReport "WARN" "$1"
+    Warn "Package validation: $1"
+}
+
+ValidationFail()
+{
+    AppendValidationReport "FAIL" "$1"
+    Fail "Package validation: $1"
+    PackageValidationFailed=1
+}
+
+NormaliseVersionText()
+{
+    tr -d '\r\n\t ' < "$1"
+}
+
+SelectedPackageBaseVersion()
+{
+    local selected="$1"
+    printf '%s\n' "${selected%%-*}"
+}
+
+PackagePathIsUnsafe()
+{
+    local path="$1"
+
+    case "$path" in
+        ""|/*|~*|*'\\'*|*'//'*)
+            return 0
+            ;;
+        *../*|../*|*/..|*'/../'*|*'/.'|./*)
+            return 0
+            ;;
+    esac
+
+    return 1
+}
+
+ValidateZipEntryList()
+{
+    local zip_path="$1"
+    local entries_file="$2"
+    local entry
+    local count=0
+
+    : > "$entries_file"
+    if ! unzip -Z1 "$zip_path" > "$entries_file" 2>/dev/null; then
+        ValidationFail "could not read zip entry list before extraction."
+        return 0
+    fi
+
+    while IFS= read -r entry || [ -n "$entry" ]; do
+        entry="${entry%$'\r'}"
+        [ -n "$entry" ] || continue
+        count=$((count + 1))
+        if PackagePathIsUnsafe "$entry"; then
+            ValidationFail "unsafe archive path rejected before extraction: $entry"
+        fi
+    done < "$entries_file"
+
+    if [ "$count" -eq 0 ]; then
+        ValidationFail "archive has no entries."
+    else
+        ValidationOk "archive entry list is readable and contains $count entries."
+    fi
+}
+
+RequirePackageFile()
+{
+    local root="$1"
+    local relative="$2"
+
+    if [ -f "$root/$relative" ]; then
+        ValidationOk "required file present: $relative"
+    else
+        ValidationFail "required file missing: $relative"
+    fi
+}
+
+RequirePackageDir()
+{
+    local root="$1"
+    local relative="$2"
+
+    if [ -d "$root/$relative" ]; then
+        ValidationOk "required directory present: $relative"
+    else
+        ValidationFail "required directory missing: $relative"
+    fi
+}
+
+ValidateNoExtractedSymlinks()
+{
+    local extract_root="$1"
+    local found
+
+    found="$(find "$extract_root" -type l -print -quit 2>/dev/null)"
+    if [ -n "$found" ]; then
+        ValidationFail "package contains symlink entry: ${found#$extract_root/}"
+    else
+        ValidationOk "package contains no extracted symlinks."
+    fi
+}
+
+ValidateExtractedPathSafety()
+{
+    local extract_root="$1"
+    local relative
+    local failed=0
+
+    while IFS= read -r relative || [ -n "$relative" ]; do
+        relative="${relative#./}"
+        [ -n "$relative" ] || continue
+        if PackagePathIsUnsafe "$relative"; then
+            ValidationFail "unsafe extracted path rejected: $relative"
+            failed=1
+        fi
+    done < <(cd "$extract_root" && find . -mindepth 1 -print 2>/dev/null)
+
+    if [ "$failed" -eq 0 ]; then
+        ValidationOk "all extracted paths are relative and safe."
+    fi
+}
+
+ValidateNoNestedPackageRoots()
+{
+    local extract_root="$1"
+    local nested
+
+    nested="$(find "$extract_root/ChangedFiles" "$extract_root/FullSource" -mindepth 2 \( -path '*/ChangedFiles/FullSource' -o -path '*/ChangedFiles/ChangedFiles' -o -path '*/FullSource/ChangedFiles' -o -path '*/FullSource/FullSource' \) -print -quit 2>/dev/null)"
+    if [ -n "$nested" ]; then
+        ValidationFail "package contains nested package root: ${nested#$extract_root/}"
+    else
+        ValidationOk "package roots are not nested inside payload folders."
+    fi
+}
+
+ValidateDeletedFilesManifest()
+{
+    local extract_root="$1"
+    local deleted_file="$extract_root/ChangedFiles/DeletedFiles.txt"
+    local relative_path
+    local count=0
+
+    if [ ! -f "$deleted_file" ]; then
+        ValidationInfo "DeletedFiles.txt not present; no delete operations requested."
+        return 0
+    fi
+
+    while IFS= read -r relative_path || [ -n "$relative_path" ]; do
+        relative_path="${relative_path%$'\r'}"
+        case "$relative_path" in
+            ""|\#*)
+                continue
+                ;;
+        esac
+        count=$((count + 1))
+        if PackagePathIsUnsafe "$relative_path"; then
+            ValidationFail "unsafe DeletedFiles.txt entry rejected: $relative_path"
+        fi
+    done < "$deleted_file"
+
+    ValidationOk "DeletedFiles.txt checked with $count delete entr$( [ "$count" -eq 1 ] && printf 'y' || printf 'ies' )."
+}
+
+ValidateVersionFiles()
+{
+    local extract_root="$1"
+    local selected_version="$2"
+    local expected
+    local full_version
+    local changed_version
+
+    expected="$(SelectedPackageBaseVersion "$selected_version")"
+    full_version="$(NormaliseVersionText "$extract_root/FullSource/OrynSDK/VERSION" 2>/dev/null || true)"
+    changed_version="$(NormaliseVersionText "$extract_root/ChangedFiles/OrynSDK/VERSION" 2>/dev/null || true)"
+
+    if [ -z "$full_version" ]; then
+        ValidationFail "FullSource/OrynSDK/VERSION is empty."
+    fi
+
+    if [ -z "$changed_version" ]; then
+        ValidationFail "ChangedFiles/OrynSDK/VERSION is empty."
+    fi
+
+    if [ -n "$full_version" ] && [ -n "$changed_version" ] && [ "$full_version" != "$changed_version" ]; then
+        ValidationFail "FullSource and ChangedFiles VERSION values differ: $full_version vs $changed_version"
+    elif [ -n "$full_version" ]; then
+        ValidationOk "FullSource and ChangedFiles VERSION agree: $full_version"
+    fi
+
+    if [ -n "$expected" ] && [ -n "$full_version" ] && [ "$expected" != "$full_version" ]; then
+        ValidationFail "archive name version $expected does not match package VERSION $full_version."
+    elif [ -n "$expected" ] && [ -n "$full_version" ]; then
+        ValidationOk "archive name version matches package VERSION: $expected"
+    fi
+}
+
+ValidateModePayload()
+{
+    local extract_root="$1"
+    local mode="$2"
+
+    if [ "$mode" = "full" ]; then
+        RequirePackageDir "$extract_root" "FullSource/OrynSDK"
+        RequirePackageFile "$extract_root" "FullSource/OrynSDK/VERSION"
+        RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/Scripts/UpdateOrynCurrent.sh"
+    else
+        RequirePackageDir "$extract_root" "ChangedFiles"
+        RequirePackageDir "$extract_root" "ChangedFiles/OrynSDK"
+        RequirePackageFile "$extract_root" "ChangedFiles/OrynSDK/VERSION"
+    fi
+}
+
+ValidateCriticalSdkFiles()
+{
+    local extract_root="$1"
+
+    RequirePackageDir "$extract_root" "FullSource"
+    RequirePackageDir "$extract_root" "ChangedFiles"
+    RequirePackageDir "$extract_root" "FullSource/OrynSDK/Common/Scripts"
+    RequirePackageDir "$extract_root" "FullSource/OrynSDK/Common/OrynBuild"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/VERSION"
+    RequirePackageFile "$extract_root" "ChangedFiles/OrynSDK/VERSION"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/Oryn.sh"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/oryn"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/update"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/update.sh"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/Scripts/UpdateOryn.sh"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/Scripts/UpdateOrynCurrent.sh"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/Scripts/BuildOryn.sh"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/OrynBuild/Main.c"
+    RequirePackageFile "$extract_root" "FullSource/OrynSDK/Common/OrynBuild/OrynBuild.h"
+}
+
+ValidatePackageBeforeCopy()
+{
+    local zip_path="$1"
+    local extract_root="$2"
+    local mode="$3"
+    local selected_version="$4"
+    local entries_file="$5"
+
+    PackageValidationFailed=0
+    PackageValidationReport="$TempRoot/PackageSelfValidationReport.txt"
+    : > "$PackageValidationReport"
+
+    ValidationInfo "archive: $zip_path"
+    ValidationInfo "selected version: $selected_version"
+    ValidationInfo "mode: $mode"
+    ValidationInfo "workspace root: $WorkspaceRoot"
+    ValidationInfo "SDK root: $SdkRoot"
+    ValidationInfo "projects root: $ProjectsRoot"
+
+    ValidateZipEntryList "$zip_path" "$entries_file"
+    ValidateNoExtractedSymlinks "$extract_root"
+    ValidateExtractedPathSafety "$extract_root"
+    ValidateCriticalSdkFiles "$extract_root"
+    ValidateModePayload "$extract_root" "$mode"
+    ValidateVersionFiles "$extract_root" "$selected_version"
+    ValidateNoNestedPackageRoots "$extract_root"
+    ValidateDeletedFilesManifest "$extract_root"
+
+    if [ "$PackageValidationFailed" -ne 0 ]; then
+        Fail "Package self-validation failed. No files were copied."
+        Fail "Validation report: $PackageValidationReport"
+        exit 1
+    fi
+
+    Ok "Package self-validation passed before any update copy."
+    Info "Validation report: $PackageValidationReport"
+}
+
 CanonicalPath()
 {
     local path="$1"
@@ -394,6 +691,8 @@ unzip -q "$ZipPath" -d "$TempRoot/extract" || {
     Fail "Could not extract archive."
     exit 1
 }
+
+ValidatePackageBeforeCopy "$ZipPath" "$TempRoot/extract" "$Mode" "$SelectedVersion" "$TempRoot/ZipEntries.txt"
 
 if [ "$Mode" = "full" ]; then
     ApplyFullSource "$TempRoot/extract"

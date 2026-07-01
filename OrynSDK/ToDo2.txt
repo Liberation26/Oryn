@@ -1,6 +1,6 @@
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.80
-Updated from package: 0.5.80 Build Plan Diagnostics
+Version: 0.5.81
+Updated from package: 0.5.81 Package Self Validation
 Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
@@ -56,9 +56,26 @@ Current SDK foundation already present:
 [ OK ] Build dependency graph is now module/archive resolver based.
 [ OK ] Prerequisite filling is now owned by the native oryn prerequisites app with cross-platform provider planning.
 [ OK ] Add stronger diagnostics for every build-plan decision and skipped source.
-[TOBE] Add package self-validation before update copies files.
+[ OK ] Add package self-validation before update copies files.
 [TOBE] Add update package manifest for FullSource and ChangedFiles.
 
+
+
+Current update/package validation foundation already present:
+[ OK ] Update extracts the selected archive into a temporary folder only.
+[ OK ] Update validates the zip entry list before trusting package paths.
+[ OK ] Update rejects empty, absolute, parent-traversal, backslash, double-slash, and nested unsafe paths.
+[ OK ] Update rejects extracted symlink entries.
+[ OK ] Update requires FullSource and ChangedFiles package roots before copy.
+[ OK ] Update requires critical SDK files before copy, including VERSION, launchers, updater scripts, BuildOryn.sh, and native OrynBuild sources.
+[ OK ] Update validates the requested mode payload before copy.
+[ OK ] Update validates FullSource and ChangedFiles VERSION agreement.
+[ OK ] Update validates package filename base version against VERSION.
+[ OK ] Update validates DeletedFiles.txt entries before any delete or copy operation.
+[ OK ] Update writes a PackageSelfValidationReport.txt in the temporary update folder.
+[ OK ] Update fails closed: if validation fails, no SDK/project files are copied.
+[TOBE] Add signed package hashes for release-grade package authenticity.
+[TOBE] Add generated file manifests for every package file in FullSource and ChangedFiles.
 
 Current build-plan diagnostics foundation already present:
 [ OK ] Build/Plan/BuildPlanDiagnostics.txt is reset for each kernel build.

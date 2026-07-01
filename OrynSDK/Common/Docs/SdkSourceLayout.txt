@@ -292,3 +292,10 @@ It writes its proof artifact to Common/Reports/PrerequisitesReport.txt.
 - Targets/UEFI/X64/OrynBuild/BuildPlanDiagnostics.c owns the build-plan diagnostics report.
 - Build/Plan/BuildPlanDiagnostics.txt records every resolver decision and skipped source.
 - Build/Archives/ArchiveManifest.txt records the resolved module archive graph, sources, objects, and diagnostics path.
+
+
+Package self-validation:
+- Common/Scripts/UpdateOrynCurrent.sh validates every selected OrynWsl package before it copies files.
+- Validation checks the zip entry list, extracted path safety, symlinks, package roots, critical SDK files, mode payload, version agreement, and DeletedFiles.txt safety.
+- A failed validation stops the update before any SDK or project copy operation.
+- The validation report is written as PackageSelfValidationReport.txt in the temporary updater folder for that run.
