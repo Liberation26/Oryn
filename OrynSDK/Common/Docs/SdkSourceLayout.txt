@@ -266,3 +266,23 @@ Keyboard scan-code handling is target-owned under Targets/UEFI/X64/KernelSupport
 0.5.49 Stable console proof presentation ownership
 
 Common/Kernel/Source/Console owns visible presentation stability. Scrollback proof operations are now state-only while the test moves the logical view up, down, page up, and page down, then the console restores the live-bottom view with one visible present. The same common console code wraps visible framebuffer/VGA presents so keyboard IRQ1 scroll events cannot interleave with a partially copied visible frame.
+
+Build resolver update 0.5.78:
+- OrynBuild no longer links a flat collected source list directly.
+- It builds a module graph covering OrynLibC, common kernel modules, UEFI x64 target modules, and the project kernel.
+- Each resolved module is compiled into Build/Archives/lib<Module>.a.
+- Build/Archives/ArchiveManifest.txt records the resolved archive order, module prerequisites, source roots, and archive paths.
+
+0.5.79 prerequisite app ownership
+----------------------------------
+The old prerequisite filler script is now only a thin compatibility wrapper.
+The native SDK command owns host prerequisite checks and install planning:
+
+  oryn prerequisites check
+  oryn prerequisites plan
+  oryn prerequisites install
+  oryn prerequisites manifest
+
+The implementation lives in Common/OrynBuild because host prerequisite discovery is SDK tooling, not kernel code and not UEFI target code.
+It detects common package providers: apt, dnf, pacman, zypper, Homebrew, and winget.
+It writes its proof artifact to Common/Reports/PrerequisitesReport.txt.

@@ -1,6 +1,6 @@
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.77
-Updated from package: 0.5.76 OrynLibC
+Version: 0.5.79
+Updated from package: 0.5.79 Prerequisite App
 Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
@@ -53,7 +53,7 @@ Current SDK foundation already present:
 [ OK ] UEFI x64 target-owned OrynBuild implementation exists.
 [ OK ] Incremental source hash and object rebuild logic exists.
 [ OK ] Build manifest source exists.
-[WARN] Build dependency graph is still source-list based and not yet a full module/archive resolver.
+[ OK ] Build dependency graph is now module/archive resolver based.
 [WARN] Prerequisite filling is present as a script, but it is not yet a complete cross-platform installer/app.
 [TOBE] Add stronger diagnostics for every build-plan decision and skipped source.
 [TOBE] Add package self-validation before update copies files.
@@ -360,13 +360,13 @@ Milestone 2.1 - Build system maturity:
 
 Milestone 2.2 - SDK prerequisites and host tooling:
 [ OK ] FillPrerequisites.sh exists.
-[TOBE] Turn prerequisite filling into a clear SDK app/command with checks, install hints, and final proof report.
-[TOBE] Detect clang, lld, qemu, ovmf, gcc, make, zip, unzip, git, and optional gdb.
-[TOBE] Print exact missing tool, expected path, selected provider, and remediation command.
-[TOBE] Support WSL/Linux first, then Windows host wrapper, then macOS where practical.
+[ OK ] Turn prerequisite filling into a clear SDK app/command with checks, install hints, and final proof report.
+[ OK ] Detect clang, lld, llvm-ar, llvm-objcopy, qemu, ovmf, FAT image tools, zip, unzip, and git.
+[ OK ] Print exact missing tool, selected provider, purpose, and remediation command.
+[ OK ] Support Linux/WSL, Windows winget discovery, macOS Homebrew, and common Linux package providers.
 [TOBE] Keep host prerequisites outside the kernel source tree.
-[TOBE] Avoid hiding failures behind generic "tool not found" messages.
-[TOBE] Add a prerequisites report artifact into Build/Reports.
+[ OK ] Avoid hiding failures behind generic "tool not found" messages.
+[ OK ] Add a prerequisites report artifact under Common/Reports/PrerequisitesReport.txt.
 
 Milestone 2.3 - Module manifests and selectable boot options:
 [ OK ] KernelModuleManifest has compiled-in module items and prerequisites.
@@ -409,7 +409,7 @@ Immediate next 10 SDK tasks:
 [TOBE] 4. Add WARN/FAIL policy for optional unselected modules versus required missing prerequisites.
 [TOBE] 5. Move remaining proof logic from KernelRuntimeBootSequence into KernelSelfTest/BootProof.
 [TOBE] 6. Add Diagnostics/Logger ring buffer and route serial details through it.
-[TOBE] 7. Expand FillPrerequisites into a complete command with detect/install/report phases.
+[ OK ] 7. Expand FillPrerequisites into a complete command with detect/install/report phases.
 [TOBE] 8. Add OrynLibC function-level manifests and unit tests.
 [TOBE] 9. Replace LibC textual symbol preparse with archive/dependency resolution.
 [TOBE] 10. Add Build/Reports outputs for prerequisites, manifest validation, dependency graph, and boot module status.
@@ -440,3 +440,10 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [TOBE] Provides POSIX/Linux-like wrappers above the Oryn ABI.
 [TOBE] Has clear OK/WARN/FAIL screen status and detailed serial diagnostics.
 [TOBE] Has automated QEMU regression tests for every major subsystem.
+
+[ OK ] Build dependency graph is now a module/archive resolver.
+       The build now discovers SDK, target, LibC, and project modules, resolves module prerequisites, compiles each module into a static archive, writes ArchiveManifest.txt, and links the kernel from the resolved archive graph instead of linking a flat source-list directly.
+
+[ OK ] Prerequisite filling is now a native SDK app/command.
+       Use `oryn prerequisites check`, `oryn prerequisites plan`, `oryn prerequisites install`, or `oryn prerequisites manifest`.
+       The command detects apt, dnf, pacman, zypper, Homebrew, and winget providers, reports exact missing tools, builds an install command, supports the old FillPrerequisites.sh wrapper, and writes Common/Reports/PrerequisitesReport.txt.

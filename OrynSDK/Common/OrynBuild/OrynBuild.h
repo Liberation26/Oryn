@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#define ORYN_VERSION "0.5.76"
+#define ORYN_VERSION "0.5.79"
 #define ORYN_MAX_PATH 4096
 #define ORYN_MAX_ITEMS 512
 
@@ -65,6 +65,7 @@ void OrynLogKeyValue(const char* key, const char* value);
 void OrynLogCommand(const char* command);
 
 int OrynCommandDoctor(const char* executable_path);
+int OrynCommandPrerequisites(const char* executable_path, int argument_count, char** arguments);
 int OrynCommandBuild(const char* executable_path, const char* project_file);
 int OrynCommandImage(const char* executable_path, const char* project_file);
 int OrynCommandRun(const char* executable_path, const char* project_file);

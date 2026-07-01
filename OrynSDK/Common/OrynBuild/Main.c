@@ -7,6 +7,8 @@ static void PrintUsage(void)
     printf("Oryn WSL SDK %s\n", ORYN_VERSION);
     printf("Usage:\n");
     printf("  oryn doctor\n");
+    printf("  oryn prerequisites [check|plan|install|manifest]\n");
+    printf("  oryn prereq [check|plan|install|manifest]\n");
     printf("  oryn version\n");
     printf("  oryn build <Project.oryn>\n");
     printf("  oryn image <Project.oryn>\n");
@@ -36,6 +38,11 @@ int main(int argc, char** argv)
     if (strcmp(argv[1], "doctor") == 0)
     {
         return OrynCommandDoctor(argv[0]);
+    }
+
+    if (strcmp(argv[1], "prerequisites") == 0 || strcmp(argv[1], "prereq") == 0)
+    {
+        return OrynCommandPrerequisites(argv[0], argc - 2, argv + 2);
     }
 
     if (argc < 3)
