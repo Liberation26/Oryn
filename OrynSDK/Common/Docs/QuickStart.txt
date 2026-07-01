@@ -542,7 +542,7 @@ Expected proof lines include:
   [KERNEL] PASS: Kernel command line received.
 
 0.5.26 x64 IDT
-  Kernel startup now installs a target-owned 256-entry x86_64 IDT before BootInfo consumers and virtual-memory work. CPU exceptions 0-31 print vector, error code, RIP, CS, RFLAGS, and CR2 for page faults.
+Kernel startup now installs a target-owned 256-entry x86_64 IDT before BootInfo consumers and virtual-memory work. CPU exceptions 0-31 print vector, error code, RIP, CS, RFLAGS, and CR2 for page faults.
 
 0.5.28 x64 GDT runtime call fix
 - The UEFI x64 SDK target now owns a kernel GDT/TSS path.
