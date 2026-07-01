@@ -3,3 +3,7 @@ Id=OrynKernelModuleIdt
 Name=IDT
 Items=256 gates, exception stubs, interrupt stubs
 Requires=OrynKernelModuleGdt
+CompiledIn=Yes
+Required=Yes
+FatalOnMissingPrerequisite=Yes
+Select=Always

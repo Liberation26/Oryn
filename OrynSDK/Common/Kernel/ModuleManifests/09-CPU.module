@@ -3,3 +3,7 @@ Id=OrynKernelModuleCpu
 Name=CPU
 Items=CPUID vendor, APIC, x2APIC, TSC deadline
 Requires=
+CompiledIn=Yes
+Required=Yes
+FatalOnMissingPrerequisite=Yes
+Select=Always

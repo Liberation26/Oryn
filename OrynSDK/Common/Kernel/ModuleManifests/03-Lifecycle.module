@@ -3,3 +3,7 @@ Id=OrynKernelModuleLifecycle
 Name=Lifecycle
 Items=state transitions, history, invalid transition count
 Requires=
+CompiledIn=Yes
+Required=Yes
+FatalOnMissingPrerequisite=Yes
+Select=Always

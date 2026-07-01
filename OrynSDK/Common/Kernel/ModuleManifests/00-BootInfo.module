@@ -3,3 +3,7 @@ Id=OrynKernelModuleBootInfo
 Name=BootInfo
 Items=ABI, checksum, command line, memory map, framebuffer
 Requires=
+CompiledIn=Yes
+Required=Yes
+FatalOnMissingPrerequisite=Yes
+Select=Always

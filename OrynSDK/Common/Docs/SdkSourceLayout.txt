@@ -362,3 +362,8 @@ OrynLibC 0.5.92 foundation:
 - The freestanding header set now includes stddef, stdint, stdbool, stdarg, stdalign, stdnoreturn, iso646, float, limits, errno, assert, string, ctype, stdlib, inttypes, and freestanding stdio formatting.
 - The libc includes extended string scanning/token support, ctype classification, robust integer conversion, inttypes conversion helpers, qsort/bsearch, rand/srand, snprintf/vsnprintf, and allocator hooks for future kernel heap binding.
 - Hosted file I/O, locale, time, signals, and process/environment APIs remain intentionally out of scope until kernel services exist behind them.
+0.5.100 notes:
+- Kernel module manifests now include CompiledIn, Required, FatalOnMissingPrerequisite, and Select fields.
+- KernelModuleManifestData.c and KernelModuleManifest.h are generated from per-module manifests and include the compiled-in module registry.
+- BootProof starts modules only when the supplied BootInfo and project-selected VM options satisfy the manifest selection tokens.
+- Optional modules with no selected start input WARN and skip; selected modules with fatal missing prerequisites FAIL.

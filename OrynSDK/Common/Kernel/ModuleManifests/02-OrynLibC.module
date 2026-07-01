@@ -3,3 +3,7 @@ Id=OrynKernelModuleLibC
 Name=OrynLibC
 Items=stddef, stdint, string, ctype, stdlib, errno, assert
 Requires=
+CompiledIn=Yes
+Required=Yes
+FatalOnMissingPrerequisite=Yes
+Select=Always

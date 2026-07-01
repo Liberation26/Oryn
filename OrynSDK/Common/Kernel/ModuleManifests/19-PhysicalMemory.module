@@ -3,3 +3,7 @@ Id=OrynKernelModulePhysicalMemory
 Name=PhysicalMemory
 Items=usable pages, free list, allocation proof
 Requires=OrynKernelModuleBootInfo
+CompiledIn=Yes
+Required=No
+FatalOnMissingPrerequisite=Yes
+Select=BootInfoMemoryMap

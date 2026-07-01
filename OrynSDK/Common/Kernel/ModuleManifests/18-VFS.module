@@ -3,3 +3,7 @@ Id=OrynKernelModuleVfs
 Name=VFS
 Items=root mount, stat, read, write, delete, list
 Requires=OrynKernelModuleFat32
+CompiledIn=Yes
+Required=No
+FatalOnMissingPrerequisite=No
+Select=BootInfoFramebuffer

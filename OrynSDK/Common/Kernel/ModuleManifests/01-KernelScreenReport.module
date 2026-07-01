@@ -3,3 +3,7 @@ Id=OrynKernelModuleScreenReport
 Name=KernelScreenReport
 Items=OK, WARN, FAIL, category emission, colour
 Requires=
+CompiledIn=Yes
+Required=Yes
+FatalOnMissingPrerequisite=Yes
+Select=Always

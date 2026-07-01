@@ -3,3 +3,7 @@ Id=OrynKernelModuleSysCalls
 Name=SysCalls
 Items=Get, Set, Event, Linux/MS translators
 Requires=OrynKernelModuleGdt,OrynKernelModuleIdt
+CompiledIn=Yes
+Required=Yes
+FatalOnMissingPrerequisite=Yes
+Select=Always

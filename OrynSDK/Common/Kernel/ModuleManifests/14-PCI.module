@@ -3,3 +3,7 @@ Id=OrynKernelModulePci
 Name=PCI
 Items=MCFG, ECAM, config mechanism, device report
 Requires=OrynKernelModuleBootInfo
+CompiledIn=Yes
+Required=No
+FatalOnMissingPrerequisite=No
+Select=BootInfoRsdp

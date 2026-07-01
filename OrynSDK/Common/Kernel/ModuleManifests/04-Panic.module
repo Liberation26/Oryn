@@ -3,3 +3,7 @@ Id=OrynKernelModulePanic
 Name=Panic
 Items=panic begin, report, active state, halt
 Requires=OrynKernelModuleBootInfo
+CompiledIn=Yes
+Required=Yes
+FatalOnMissingPrerequisite=Yes
+Select=Always

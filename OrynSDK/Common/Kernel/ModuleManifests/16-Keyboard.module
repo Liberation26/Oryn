@@ -3,3 +3,7 @@ Id=OrynKernelModuleKeyboard
 Name=Keyboard
 Items=IRQ1, scan decoder, scroll keys, release state
 Requires=OrynKernelModuleConsole,OrynKernelModuleInterrupts,OrynKernelModulePic
+CompiledIn=Yes
+Required=No
+FatalOnMissingPrerequisite=No
+Select=BootInfoFramebuffer,VmPic

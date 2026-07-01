@@ -72,15 +72,20 @@ static int Fat32ProofStep(int passed, const char* ok_text, const char* fail_text
 
 static int Fat32ProofMountFat32(void)
 {
+    if (!OrynKernelDiagnosticsShouldStartModule(0, OrynKernelModuleFat32))
+    {
+        return 0;
+    }
+
     if (!Fat32ProofStep(OrynFat32FormatMemoryImage(gFat32ProofImage, FAT32_PROOF_SECTORS, "ORYNROOT   "),
         "FAT32 formatter created a valid test volume.",
-        "FAT32 formatter could not create a valid test volume.")) return 0;
+        "FAT32 formatter could not create a valid test volume.")) { OrynKernelModuleManifestFailed(OrynKernelModuleFat32); return 0; }
     if (!Fat32ProofStep(OrynFat32Mount(&gFat32ProofVolume, &gFat32ProofDevice),
         "FAT32 boot sector mounted and validated.",
-        "FAT32 boot sector mount or validation failed.")) return 0;
+        "FAT32 boot sector mount or validation failed.")) { OrynKernelModuleManifestFailed(OrynKernelModuleFat32); return 0; }
     if (!Fat32ProofStep(gFat32ProofVolume.Info.RootCluster == 2U && gFat32ProofVolume.Info.FatCount == 2U,
         "FAT32 BPB, FSInfo, FAT and root cluster metadata decoded.",
-        "FAT32 BPB, FSInfo, FAT or root cluster metadata decode failed.")) return 0;
+        "FAT32 BPB, FSInfo, FAT or root cluster metadata decode failed.")) { OrynKernelModuleManifestFailed(OrynKernelModuleFat32); return 0; }
 
     OrynKernelModuleManifestReady(OrynKernelModuleFat32);
     return 1;

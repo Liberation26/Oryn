@@ -3,3 +3,7 @@ Id=OrynKernelModulePic
 Name=PIC
 Items=remap, masks, IRQ0 proof, EOI
 Requires=OrynKernelModuleCpu,OrynKernelModuleInterrupts
+CompiledIn=Yes
+Required=No
+FatalOnMissingPrerequisite=Yes
+Select=VmPic

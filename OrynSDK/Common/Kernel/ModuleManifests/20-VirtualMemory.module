@@ -3,3 +3,7 @@ Id=OrynKernelModuleVirtualMemory
 Name=VirtualMemory
 Items=PML4, CR3 switch, identity and higher-half maps
 Requires=OrynKernelModulePhysicalMemory
+CompiledIn=Yes
+Required=No
+FatalOnMissingPrerequisite=Yes
+Select=BootInfoMemoryMap,BootInfoKernelRange

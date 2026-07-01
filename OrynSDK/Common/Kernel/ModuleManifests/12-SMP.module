@@ -3,3 +3,7 @@ Id=OrynKernelModuleSmp
 Name=SMP
 Items=MADT topology, AP trampoline, INIT/SIPI
 Requires=OrynKernelModuleApic
+CompiledIn=Yes
+Required=No
+FatalOnMissingPrerequisite=No
+Select=VmSmp,BootInfoRsdp

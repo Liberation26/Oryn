@@ -3,3 +3,7 @@ Id=OrynKernelModuleGdt
 Name=GDT
 Items=kernel code/data selectors, TSS descriptor, IST stack
 Requires=
+CompiledIn=Yes
+Required=Yes
+FatalOnMissingPrerequisite=Yes
+Select=Always

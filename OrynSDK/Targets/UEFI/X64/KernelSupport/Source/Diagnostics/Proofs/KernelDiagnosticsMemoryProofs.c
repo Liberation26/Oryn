@@ -60,37 +60,46 @@ static void OrynKernelDiagnosticsReserveBootHandoffRanges(
 
 static void OrynKernelDiagnosticsRunVirtualMemoryProof(const OrynBootInfo* kernelBootInfo)
 {
+    if (!OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleVirtualMemory))
+    {
+        return;
+    }
     OrynKernelDiagnosticsLogText("[KERNEL] Virtual memory: starting\n");
     if (OrynVirtualMemoryInit(kernelBootInfo, &gKernelMemoryMap, &gPhysicalMemory, &gVirtualMemory))
     {
         OrynVirtualMemoryPrintProof(&gVirtualMemory);
         (void)OrynKernelLifecycleTransition(OrynKernelLifecycleVirtualMemoryReady);
+        OrynKernelModuleManifestReady(OrynKernelModuleVirtualMemory);
     }
     else
     {
         OrynVirtualMemoryPrintProof(&gVirtualMemory);
         OrynKernelDiagnosticsLogText("[KERNEL] Virtual memory: failed\n");
         OrynKernelScreenReportWarn(0, "SMP AP startup skipped because virtual memory did not activate.");
+        OrynKernelModuleManifestFailed(OrynKernelModuleVirtualMemory);
     }
 }
 
 static void OrynKernelDiagnosticsRunPhysicalMemoryProof(const OrynBootInfo* kernelBootInfo)
 {
+    if (!OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModulePhysicalMemory))
+    {
+        return;
+    }
     if (OrynPhysicalMemoryInit(&gKernelMemoryMap, &gPhysicalMemory))
     {
         OrynKernelDiagnosticsReserveBootHandoffRanges(kernelBootInfo, &gPhysicalMemory);
         OrynPhysicalMemoryPrintSummary(&gPhysicalMemory);
         (void)OrynKernelLifecycleTransition(OrynKernelLifecycleMemoryReady);
         OrynPhysicalMemoryRunSelfTest(&gPhysicalMemory);
-        if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleVirtualMemory))
-        {
-            OrynKernelDiagnosticsRunVirtualMemoryProof(kernelBootInfo);
-        }
+        OrynKernelModuleManifestReady(OrynKernelModulePhysicalMemory);
+        OrynKernelDiagnosticsRunVirtualMemoryProof(kernelBootInfo);
         OrynPhysicalMemoryPrintFinalState(&gPhysicalMemory);
     }
     else
     {
         OrynKernelDiagnosticsLogText("[KERNEL] Physical memory allocator: unavailable\n");
+        OrynKernelModuleManifestFailed(OrynKernelModulePhysicalMemory);
     }
 }
 
@@ -105,5 +114,6 @@ void OrynKernelDiagnosticsRunMemoryProofs(const OrynBootInfo* kernelBootInfo)
     {
         OrynKernelDiagnosticsLogText("[KERNEL] Memory map parser: unavailable.\n");
         OrynKernelDiagnosticsLogText("[KERNEL] Physical memory allocator: unavailable\n");
+        OrynKernelModuleManifestFailed(OrynKernelModulePhysicalMemory);
     }
 }

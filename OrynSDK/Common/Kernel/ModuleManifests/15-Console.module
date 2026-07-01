@@ -3,3 +3,7 @@ Id=OrynKernelModuleConsole
 Name=Console
 Items=framebuffer, scrollback, double buffer, glyphs
 Requires=OrynKernelModuleBootInfo
+CompiledIn=Yes
+Required=No
+FatalOnMissingPrerequisite=No
+Select=BootInfoFramebuffer

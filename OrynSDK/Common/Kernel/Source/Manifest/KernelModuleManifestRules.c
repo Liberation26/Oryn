@@ -10,15 +10,38 @@ int OrynKernelModuleManifestIsReady(OrynKernelModuleId id)
     return (item && item->State == OrynKernelModuleStateReady) ? 1 : 0;
 }
 
+int OrynKernelModuleManifestIsCompiledIn(OrynKernelModuleId id)
+{
+    const OrynKernelModuleManifestItem* item = OrynKernelModuleManifestGet(id);
+    return (item && item->CompiledIn) ? 1 : 0;
+}
+
+int OrynKernelModuleManifestIsRequired(OrynKernelModuleId id)
+{
+    const OrynKernelModuleManifestItem* item = OrynKernelModuleManifestGet(id);
+    return (item && item->Required) ? 1 : 0;
+}
+
+int OrynKernelModuleManifestFatalOnMissingPrerequisite(OrynKernelModuleId id)
+{
+    const OrynKernelModuleManifestItem* item = OrynKernelModuleManifestGet(id);
+    return (item && item->FatalOnMissingPrerequisite) ? 1 : 0;
+}
+
+const char* OrynKernelModuleManifestSelects(OrynKernelModuleId id)
+{
+    const OrynKernelModuleManifestItem* item = OrynKernelModuleManifestGet(id);
+    return item ? item->Selects : "";
+}
+
 static void ReportBlockedDependency(const OrynKernelModuleManifestItem* item)
 {
     OrynKernelScreenReportBeginFail();
     KernelIoWriteString("Module blocked by dependency order: ");
-    KernelIoWriteString(item->Name);
+    KernelIoWriteString(item ? item->Name : "unknown");
     KernelIoWriteString(".");
     KernelIoWriteString("\n");
 }
-
 
 unsigned int OrynKernelModuleManifestRequireCount(OrynKernelModuleId id)
 {
@@ -40,7 +63,7 @@ OrynKernelModuleId OrynKernelModuleManifestRequireAt(OrynKernelModuleId id, unsi
 int OrynKernelModuleManifestCanStart(OrynKernelModuleId id)
 {
     const OrynKernelModuleManifestItem* item = OrynKernelModuleManifestGet(id);
-    if (!item)
+    if (!item || !item->CompiledIn)
     {
         return 0;
     }
@@ -56,10 +79,19 @@ int OrynKernelModuleManifestCanStart(OrynKernelModuleId id)
     return 1;
 }
 
+void OrynKernelModuleManifestSelected(OrynKernelModuleId id)
+{
+    OrynKernelModuleManifestItem* item = OrynKernelModuleManifestMutable(id);
+    if (item && item->State == OrynKernelModuleStateRegistered)
+    {
+        item->State = OrynKernelModuleStateSelected;
+    }
+}
+
 int OrynKernelModuleManifestBegin(OrynKernelModuleId id)
 {
     OrynKernelModuleManifestItem* item = OrynKernelModuleManifestMutable(id);
-    if (!item)
+    if (!item || !item->CompiledIn)
     {
         return 0;
     }
@@ -108,6 +140,7 @@ const char* OrynKernelModuleManifestStateName(OrynKernelModuleState state)
     {
         case OrynKernelModuleStateAbsent: return "absent";
         case OrynKernelModuleStateRegistered: return "registered";
+        case OrynKernelModuleStateSelected: return "selected";
         case OrynKernelModuleStateStarting: return "starting";
         case OrynKernelModuleStateReady: return "ready";
         case OrynKernelModuleStateSkipped: return "skipped";

@@ -35,4 +35,9 @@ void OrynKernelDiagnosticsRunConsoleProofs(const OrynBootInfo* kernelBootInfo)
     }
 
     (void)OrynKernelDiagnosticsRunKeyboardScrollProof();
+    OrynKernelModuleManifestReady(OrynKernelModuleConsole);
+    if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleKeyboard))
+    {
+        OrynKernelModuleManifestReady(OrynKernelModuleKeyboard);
+    }
 }

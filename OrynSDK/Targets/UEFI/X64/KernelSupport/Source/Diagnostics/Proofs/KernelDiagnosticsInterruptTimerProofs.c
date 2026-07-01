@@ -9,7 +9,14 @@ static void OrynKernelDiagnosticsRunEarlySmpProof(const OrynBootInfo* kernelBoot
     }
 
     OrynKernelDiagnosticsLogText("[KERNEL] SMP: starting early after APIC/APIC2 enable.\n");
-    (void)OrynKernelSmpInit(kernelBootInfo);
+    if (OrynKernelSmpInit(kernelBootInfo))
+    {
+        OrynKernelModuleManifestReady(OrynKernelModuleSmp);
+    }
+    else
+    {
+        OrynKernelModuleManifestFailed(OrynKernelModuleSmp);
+    }
     OrynKernelSmpPrintProof();
 }
 
@@ -20,7 +27,14 @@ static void OrynKernelDiagnosticsRunPicProofs(const OrynBootInfo* kernelBootInfo
         return;
     }
 
-    (void)OrynKernelPicInitAndDisable();
+    if (OrynKernelPicInitAndDisable())
+    {
+        OrynKernelModuleManifestReady(OrynKernelModulePic);
+    }
+    else
+    {
+        OrynKernelModuleManifestFailed(OrynKernelModulePic);
+    }
     OrynKernelPicPrintProof();
     (void)OrynKernelInterruptsRunPicTimerProof();
     OrynKernelInterruptsPrintPicRuntimeProof();
@@ -35,11 +49,19 @@ static void OrynKernelDiagnosticsRunApicProofs(const OrynBootInfo* kernelBootInf
     }
 
 #if ORYN_VM_APIC2
-    (void)OrynKernelApicInit(1);
+    int ok = OrynKernelApicInit(1);
 #else
     OrynKernelDiagnosticsLogText("[KERNEL] INFO: APIC2/x2APIC disabled by VM profile.\n");
-    (void)OrynKernelApicInit(0);
+    int ok = OrynKernelApicInit(0);
 #endif
+    if (ok)
+    {
+        OrynKernelModuleManifestReady(OrynKernelModuleApic);
+    }
+    else
+    {
+        OrynKernelModuleManifestFailed(OrynKernelModuleApic);
+    }
     OrynKernelApicPrintProof();
     OrynKernelDiagnosticsRunEarlySmpProof(kernelBootInfo);
 }
@@ -51,7 +73,14 @@ static void OrynKernelDiagnosticsRunHpetProofs(const OrynBootInfo* kernelBootInf
         return;
     }
 
-    (void)OrynKernelHpetInit(kernelBootInfo);
+    if (OrynKernelHpetInit(kernelBootInfo))
+    {
+        OrynKernelModuleManifestReady(OrynKernelModuleHpet);
+    }
+    else
+    {
+        OrynKernelModuleManifestFailed(OrynKernelModuleHpet);
+    }
     OrynKernelHpetPrintProof();
 }
 
@@ -73,8 +102,12 @@ static void OrynKernelDiagnosticsRunActiveTimerProof(void)
 
 void OrynKernelDiagnosticsRunInterruptTimerProofs(const OrynBootInfo* kernelBootInfo)
 {
-    OrynKernelCpuDetect();
-    OrynKernelCpuPrintFeatures();
+    if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleCpu))
+    {
+        OrynKernelCpuDetect();
+        OrynKernelCpuPrintFeatures();
+        OrynKernelModuleManifestReady(OrynKernelModuleCpu);
+    }
     OrynKernelDiagnosticsRunPicProofs(kernelBootInfo);
     OrynKernelDiagnosticsRunApicProofs(kernelBootInfo);
     OrynKernelDiagnosticsRunHpetProofs(kernelBootInfo);

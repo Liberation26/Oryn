@@ -33,6 +33,7 @@ typedef enum OrynKernelModuleState
 {
     OrynKernelModuleStateAbsent = 0,
     OrynKernelModuleStateRegistered,
+    OrynKernelModuleStateSelected,
     OrynKernelModuleStateStarting,
     OrynKernelModuleStateReady,
     OrynKernelModuleStateSkipped,
@@ -44,10 +45,21 @@ typedef struct OrynKernelModuleManifestItem
     OrynKernelModuleId Id;
     const char* Name;
     const char* Items;
+    const char* Selects;
     OrynKernelModuleId Requires[6];
     unsigned int RequireCount;
+    int CompiledIn;
+    int Required;
+    int FatalOnMissingPrerequisite;
     OrynKernelModuleState State;
 } OrynKernelModuleManifestItem;
+
+typedef struct OrynKernelCompiledModuleRecord
+{
+    OrynKernelModuleId Id;
+    const char* Name;
+    int CompiledIn;
+} OrynKernelCompiledModuleRecord;
 
 void OrynKernelModuleManifestInit(void);
 const OrynKernelModuleManifestItem* OrynKernelModuleManifestGet(OrynKernelModuleId id);
@@ -55,11 +67,19 @@ int OrynKernelModuleManifestCanStart(OrynKernelModuleId id);
 unsigned int OrynKernelModuleManifestRequireCount(OrynKernelModuleId id);
 OrynKernelModuleId OrynKernelModuleManifestRequireAt(OrynKernelModuleId id, unsigned int index);
 int OrynKernelModuleManifestIsReady(OrynKernelModuleId id);
+int OrynKernelModuleManifestIsCompiledIn(OrynKernelModuleId id);
+int OrynKernelModuleManifestIsRequired(OrynKernelModuleId id);
+int OrynKernelModuleManifestFatalOnMissingPrerequisite(OrynKernelModuleId id);
+const char* OrynKernelModuleManifestSelects(OrynKernelModuleId id);
+void OrynKernelModuleManifestSelected(OrynKernelModuleId id);
 int OrynKernelModuleManifestBegin(OrynKernelModuleId id);
 void OrynKernelModuleManifestReady(OrynKernelModuleId id);
 void OrynKernelModuleManifestSkipped(OrynKernelModuleId id);
 void OrynKernelModuleManifestFailed(OrynKernelModuleId id);
 const char* OrynKernelModuleManifestStateName(OrynKernelModuleState state);
+unsigned int OrynKernelCompiledModuleCount(void);
+const OrynKernelCompiledModuleRecord* OrynKernelCompiledModuleGet(unsigned int index);
+void OrynKernelCompiledModuleRegistryPrintProof(void);
 void OrynKernelModuleManifestPrintProof(void);
 
 #endif

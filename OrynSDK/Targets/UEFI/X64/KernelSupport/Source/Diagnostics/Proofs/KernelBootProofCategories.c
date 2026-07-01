@@ -51,7 +51,23 @@ static void OrynKernelBootProofRunInitGraphCheck(void)
 
 static void OrynKernelBootProofRunAlwaysChecks(const OrynBootInfo* kernelBootInfo)
 {
-    OrynKernelDiagnosticsPrintEntryProofs(kernelBootInfo);
+    if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleBootInfo))
+    {
+        OrynKernelDiagnosticsPrintEntryProofs(kernelBootInfo);
+        OrynKernelModuleManifestReady(OrynKernelModuleBootInfo);
+    }
+    if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleScreenReport))
+    {
+        OrynKernelModuleManifestReady(OrynKernelModuleScreenReport);
+    }
+    if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleLifecycle))
+    {
+        OrynKernelModuleManifestReady(OrynKernelModuleLifecycle);
+    }
+    if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModulePanic))
+    {
+        OrynKernelModuleManifestReady(OrynKernelModulePanic);
+    }
     OrynKernelModuleManifestPrintProof();
     OrynKernelDiagnosticsRunLibCProof();
     OrynKernelDiagnosticsPrintBootOptionPlan(kernelBootInfo);

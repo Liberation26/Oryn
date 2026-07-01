@@ -3,3 +3,7 @@ Id=OrynKernelModuleHpet
 Name=HPET
 Items=ACPI HPET table, MMIO base, main counter
 Requires=OrynKernelModuleBootInfo,OrynKernelModuleInterrupts
+CompiledIn=Yes
+Required=No
+FatalOnMissingPrerequisite=No
+Select=VmHpet,BootInfoRsdp
