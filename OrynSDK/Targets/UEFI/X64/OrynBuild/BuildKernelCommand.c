@@ -140,36 +140,41 @@ int OrynBuildKernel(const OrynProject* project)
     OrynLogStep("Building kernel.");
     LogSelectedBootInfoVariant(project);
     OrynMakeDirectoryRecursive(project->object_dir);
+    ResetBuildPlanDiagnostics(project);
+    LogBuildPlanDecision(project, "build-start", "Kernel build entered native module/archive resolver.");
+
+    OrynBuildArchivePlan plan;
+    if (!BuildKernelArchivePlan(project, &plan))
+    {
+        LogBuildPlanSkip(project, "build-plan", "Module/archive plan could not be built or resolved.");
+        return 0;
+    }
 
     OrynStringList sources;
-    if (!CollectKernelSources(project, &sources))
-    {
-        return 0;
-    }
-
-    if (sources.count == 0)
-    {
-        OrynLogFail("No kernel source files were found.");
-        return 0;
-    }
-
-    char message[256];
-    snprintf(message, sizeof(message), "Kernel source units: %d", sources.count);
-    OrynLogInfo(message);
-
     OrynStringList objects;
     OrynBuildObjectStats stats;
-    if (!CompileKernelSources(project, &sources, &objects, &stats))
+    if (!CompileKernelArchivePlan(project, &plan, &sources, &objects, &stats))
     {
         return 0;
     }
 
+    if (stats.SourceCount == 0)
+    {
+        LogBuildPlanSkip(project, "link", "No source files were found in the resolved module graph, so link was blocked.");
+        OrynLogFail("No kernel source files were found in the resolved module graph.");
+        return 0;
+    }
+
+    WriteObjectManifest(project, &sources, &objects, &stats);
+    WriteArchiveManifest(project, &plan, &stats);
     LogIncrementalSummary(&stats);
-    if (!LinkKernelObjects(project, &objects))
+    if (!LinkKernelArchives(project, &plan))
     {
+        LogBuildPlanSkip(project, "link", "Resolved archive link command failed.");
         return 0;
     }
 
+    LogBuildPlanDecision(project, "build-complete", "Kernel build completed from resolved module archives.");
     LogKernelLayout(project);
     return 1;
 }

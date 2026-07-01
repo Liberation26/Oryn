@@ -18,12 +18,29 @@ int CompileSourceFile(
 
     unsigned long long source_hash = ComputeSourceBuildHash(project, source_file, dependency_file);
     unsigned long long stored_hash = 0ULL;
+    char detail[ORYN_MAX_PATH * 2];
+    snprintf(detail, sizeof(detail), "source=%s object=%s dependency=%s", source_file, object_file, dependency_file);
+
     if (OrynFileExists(object_file) && ReadStoredHash(hash_file, &stored_hash) && stored_hash == source_hash)
     {
         char message[ORYN_MAX_PATH + 64];
         snprintf(message, sizeof(message), "C object unchanged: %s", source_file);
+        LogBuildPlanDecision(project, "compile-skipped-object-current", detail);
         OrynLogOk(message);
         return 1;
+    }
+
+    if (!OrynFileExists(object_file))
+    {
+        LogBuildPlanDecision(project, "compile-required-object-missing", detail);
+    }
+    else if (!ReadStoredHash(hash_file, &stored_hash))
+    {
+        LogBuildPlanDecision(project, "compile-required-hash-missing", detail);
+    }
+    else
+    {
+        LogBuildPlanDecision(project, "compile-required-hash-changed", detail);
     }
 
     char message[ORYN_MAX_PATH + 64];
@@ -32,13 +49,16 @@ int CompileSourceFile(
 
     char command[ORYN_MAX_PATH * 10];
     BuildCompileCommand(project, source_file, object_file, dependency_file, command, sizeof(command));
+    LogBuildPlanDecision(project, "compile-command", command);
     if (!OrynRunCommand(command))
     {
+        LogBuildPlanSkip(project, "compile-command-failed", detail);
         return 0;
     }
 
     unsigned long long compiled_hash = ComputeSourceBuildHash(project, source_file, dependency_file);
     WriteStoredHash(hash_file, compiled_hash);
+    LogBuildPlanDecision(project, "compile-finished", detail);
     *was_compiled = 1;
     return 1;
 }

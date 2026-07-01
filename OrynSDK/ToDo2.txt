@@ -1,6 +1,6 @@
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.79
-Updated from package: 0.5.79 Prerequisite App
+Version: 0.5.80
+Updated from package: 0.5.80 Build Plan Diagnostics
 Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
 
 Meaning of "Linux-like":
@@ -54,10 +54,21 @@ Current SDK foundation already present:
 [ OK ] Incremental source hash and object rebuild logic exists.
 [ OK ] Build manifest source exists.
 [ OK ] Build dependency graph is now module/archive resolver based.
-[WARN] Prerequisite filling is present as a script, but it is not yet a complete cross-platform installer/app.
-[TOBE] Add stronger diagnostics for every build-plan decision and skipped source.
+[ OK ] Prerequisite filling is now owned by the native oryn prerequisites app with cross-platform provider planning.
+[ OK ] Add stronger diagnostics for every build-plan decision and skipped source.
 [TOBE] Add package self-validation before update copies files.
 [TOBE] Add update package manifest for FullSource and ChangedFiles.
+
+
+Current build-plan diagnostics foundation already present:
+[ OK ] Build/Plan/BuildPlanDiagnostics.txt is reset for each kernel build.
+[ OK ] Module discovery logs present/missing source roots, recursive mode, requirements, and archive paths.
+[ OK ] Dependency resolution logs root modules, requirement checks, found dependencies, cycles, missing dependencies, and final order.
+[ OK ] Source collection logs included .c files and skipped non-C files/directories.
+[ OK ] Compile decisions log object missing, hash missing, hash changed, and unchanged-object reuse.
+[ OK ] Archive decisions log skipped empty archives, archive commands, archive start, and archive finish.
+[ OK ] Link decisions log every included archive, skipped archive, final link command, and link finish.
+[ OK ] ArchiveManifest.txt now points at the diagnostics file and lists per-module sources and objects.
 
 Current kernel foundation already present:
 [ OK ] UEFI x64 BOOTX64.EFI loader exists.
@@ -99,7 +110,7 @@ Current OrynLibC foundation already present:
 [ OK ] Errno and assert foundations exist.
 [ OK ] OrynLibC proof source exists.
 [WARN] LibC is enough for the current kernel/SDK proof but not yet a full freestanding libc.
-[WARN] LibC object selection exists, but archive-style dependency resolution is not complete.
+[ OK ] LibC is included through the module/archive resolver as libOrynLibC.a.
 [TOBE] Split remaining multi-function LibC files further where practical.
 [TOBE] Add complete function-level manifests for each LibC unit.
 [TOBE] Add tests for every LibC function.

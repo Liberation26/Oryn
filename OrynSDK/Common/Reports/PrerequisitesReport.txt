@@ -1,0 +1,16 @@
+Oryn prerequisite report
+Version=0.5.79
+Mode=check
+Provider=apt
+MissingCount=0
+PackageList=
+[ OK ] clang=/usr/bin/clang
+[ OK ] ld.lld=/usr/bin/ld.lld
+[ OK ] llvm-ar=/usr/bin/llvm-ar
+[ OK ] llvm-objcopy=/usr/bin/llvm-objcopy
+[ OK ] git=/usr/bin/git
+[ OK ] qemu-system-x86_64=/usr/bin/qemu-system-x86_64
+[ OK ] mkfs.vfat=/usr/sbin/mkfs.vfat
+[ OK ] mcopy=/usr/bin/mcopy
+[ OK ] zip=/usr/bin/zip
+[ OK ] unzip=/usr/bin/unzip

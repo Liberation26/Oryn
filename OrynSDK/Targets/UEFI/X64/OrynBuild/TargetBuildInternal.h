@@ -309,4 +309,49 @@ void BuildProfileManifestPath(const OrynProject* project, char* output, size_t o
 int WriteProfileBuildManifest(const OrynProject* project, const OrynVmMatrixProfile* profile);
 int SnapshotProfileSources(const OrynProject* project, const OrynVmMatrixProfile* profile);
 
+
+#define ORYN_MAX_BUILD_MODULES 96
+#define ORYN_MAX_MODULE_REQUIRES 8
+
+typedef struct OrynBuildModule
+{
+    char Name[128];
+    char SourceRoot[ORYN_MAX_PATH];
+    char ArchivePath[ORYN_MAX_PATH];
+    char Requires[ORYN_MAX_MODULE_REQUIRES][128];
+    int RequireCount;
+    int Recursive;
+    int Present;
+    int Visiting;
+    int Resolved;
+    OrynStringList* Sources;
+    OrynStringList* Objects;
+} OrynBuildModule;
+
+typedef struct OrynBuildArchivePlan
+{
+    OrynBuildModule Modules[ORYN_MAX_BUILD_MODULES];
+    int ModuleCount;
+    int ResolvedOrder[ORYN_MAX_BUILD_MODULES];
+    int ResolvedCount;
+} OrynBuildArchivePlan;
+
+void BuildArchiveDirectory(const OrynProject* project, char* output, size_t output_size);
+void BuildArchivePath(const OrynProject* project, const char* module_name, char* output, size_t output_size);
+int CollectCFilesFromDirectoryMode(const OrynProject* project, const char* module_name, const char* directory, int recursive, OrynStringList* list);
+int AddBuildModule(OrynBuildArchivePlan* plan, const OrynProject* project, const char* name, const char* source_root, int recursive, const char* requires);
+int BuildKernelArchivePlan(const OrynProject* project, OrynBuildArchivePlan* plan);
+int ResolveKernelArchivePlan(const OrynProject* project, OrynBuildArchivePlan* plan);
+int CompileKernelArchivePlan(const OrynProject* project, OrynBuildArchivePlan* plan, OrynStringList* all_sources, OrynStringList* all_objects, OrynBuildObjectStats* stats);
+int ArchiveKernelModule(const OrynProject* project, OrynBuildModule* module);
+void WriteArchiveManifest(const OrynProject* project, const OrynBuildArchivePlan* plan, const OrynBuildObjectStats* stats);
+void BuildKernelArchiveLinkCommand(const OrynProject* project, const OrynBuildArchivePlan* plan, char* command, size_t command_size);
+int LinkKernelArchives(const OrynProject* project, const OrynBuildArchivePlan* plan);
+
+void BuildPlanDiagnosticsPath(const OrynProject* project, char* output, size_t output_size);
+void ResetBuildPlanDiagnostics(const OrynProject* project);
+void AppendBuildPlanDiagnostic(const OrynProject* project, const char* category, const char* decision, const char* detail);
+void LogBuildPlanDecision(const OrynProject* project, const char* decision, const char* detail);
+void LogBuildPlanSkip(const OrynProject* project, const char* decision, const char* detail);
+
 #endif

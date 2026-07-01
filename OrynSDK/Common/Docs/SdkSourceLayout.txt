@@ -286,3 +286,9 @@ The native SDK command owns host prerequisite checks and install planning:
 The implementation lives in Common/OrynBuild because host prerequisite discovery is SDK tooling, not kernel code and not UEFI target code.
 It detects common package providers: apt, dnf, pacman, zypper, Homebrew, and winget.
 It writes its proof artifact to Common/Reports/PrerequisitesReport.txt.
+
+
+0.5.80 build diagnostics ownership:
+- Targets/UEFI/X64/OrynBuild/BuildPlanDiagnostics.c owns the build-plan diagnostics report.
+- Build/Plan/BuildPlanDiagnostics.txt records every resolver decision and skipped source.
+- Build/Archives/ArchiveManifest.txt records the resolved module archive graph, sources, objects, and diagnostics path.
