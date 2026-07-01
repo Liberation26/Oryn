@@ -22,3 +22,10 @@ OrynLibC function-unit manifests
 - The native build validates every LibC .c source against these manifests before archive resolution.
 - The validation report is written to Build/Plan/LibCFunctionUnitManifestReport.txt.
 
+
+
+0.5.97 LibC host conformance layout:
+- Common/OrynLibC/Tests/Host/TestOrynLibCHostConformance.c contains external host-side behavioral tests.
+- Common/Scripts/RunLibCHostConformance.sh compiles and runs the host conformance executable and writes reports.
+- Common/OrynBuild/LibCConformanceCommand.c exposes the test as oryn libc-test.
+- Common/Reports/LibCConformance/ is generated output and not package source.

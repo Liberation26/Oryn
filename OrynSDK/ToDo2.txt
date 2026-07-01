@@ -546,3 +546,15 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [ OK ] Build writes Build/Plan/LibCFunctionUnitManifestReport.txt.
 [ OK ] Build fails closed if a LibC source has no manifest, a manifest points to a missing source, or duplicate manifests claim the same source.
 
+
+
+[ OK ] 0.5.97 External host-side LibC conformance tests added.
+       Added Common/Scripts/RunLibCHostConformance.sh.
+       Added Common/OrynLibC/Tests/Host/TestOrynLibCHostConformance.c.
+       Added oryn libc-test / oryn libc-conformance command.
+       Host test compiles OrynLibC as normal host objects outside the kernel.
+       Host test validates every OrynLibC source has a function-unit manifest.
+       Host test validates every function-unit manifest points to an existing source.
+       Host test validates public symbol inventory through nm.
+       Host test runs behavioral checks for ctype, errno, string, OrynString wrappers, stdlib conversions, div family, inttypes, allocator hooks, malloc/calloc/realloc/free, bsearch, qsort, rand/srand, snprintf, and vsnprintf.
+       Reports are written to Common/Reports/LibCConformance/.

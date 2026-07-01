@@ -8,6 +8,7 @@ static void PrintUsage(void)
     printf("Usage:\n");
     printf("  oryn doctor\n");
     printf("  oryn prerequisites [check|plan|install|manifest]\n");
+    printf("  oryn libc-test                    Run host-side OrynLibC conformance tests\n");
     printf("  oryn prereq [check|plan|install|manifest]\n");
     printf("  oryn version\n");
     printf("  oryn build <Project.oryn>\n");
@@ -43,6 +44,11 @@ int main(int argc, char** argv)
     if (strcmp(argv[1], "prerequisites") == 0 || strcmp(argv[1], "prereq") == 0)
     {
         return OrynCommandPrerequisites(argv[0], argc - 2, argv + 2);
+    }
+
+    if (strcmp(argv[1], "libc-test") == 0 || strcmp(argv[1], "libc-conformance") == 0)
+    {
+        return OrynCommandLibCConformance(argv[0]);
     }
 
     if (argc < 3)

@@ -1,5 +1,5 @@
 ORYN_LIBC_FUNCTION_UNIT_MANIFEST_V1
-PackageVersion=0.5.96
+PackageVersion=0.5.97
 Category=OrynWrappers
 Unit=OrynMemcpy
 Source=OrynMemcpy.c
