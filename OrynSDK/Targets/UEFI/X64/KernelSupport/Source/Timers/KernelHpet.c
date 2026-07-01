@@ -260,6 +260,16 @@ const OrynKernelHpetState* OrynKernelHpetGetState(void)
     return &gHpetState;
 }
 
+unsigned long long OrynKernelHpetReadCounter(void)
+{
+    if (gHpetState.Initialized == 0U || gHpetState.BaseAddress == 0ULL)
+    {
+        return 0ULL;
+    }
+
+    return HpetRead(ORYN_HPET_MAIN_COUNTER);
+}
+
 void OrynKernelHpetPrintProof(void)
 {
     OrynKernelScreenReportOkOrWarn(gHpetState.RsdpPresent,

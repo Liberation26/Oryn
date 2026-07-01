@@ -1,4 +1,5 @@
 #include "KernelDiagnosticsProofsInternal.h"
+#include "KernelClock.h"
 #include "KernelScreenReport.h"
 
 static void OrynKernelDiagnosticsRunEarlySmpProof(const OrynBootInfo* kernelBootInfo)
@@ -84,6 +85,20 @@ static void OrynKernelDiagnosticsRunHpetProofs(const OrynBootInfo* kernelBootInf
     OrynKernelHpetPrintProof();
 }
 
+
+static void OrynKernelDiagnosticsRunClockProofs(const OrynBootInfo* kernelBootInfo)
+{
+    if (OrynKernelClockBootSelect(kernelBootInfo))
+    {
+        OrynKernelScreenReportOk(0, "Kernel clock boot selection completed.");
+    }
+    else
+    {
+        OrynKernelScreenReportFail(0, "Kernel clock boot selection failed.");
+    }
+    OrynKernelClockPrintProof();
+}
+
 static void OrynKernelDiagnosticsRunActiveTimerProof(void)
 {
     if (OrynKernelModuleManifestIsReady(OrynKernelModuleApic))
@@ -111,5 +126,6 @@ void OrynKernelDiagnosticsRunInterruptTimerProofs(const OrynBootInfo* kernelBoot
     OrynKernelDiagnosticsRunPicProofs(kernelBootInfo);
     OrynKernelDiagnosticsRunApicProofs(kernelBootInfo);
     OrynKernelDiagnosticsRunHpetProofs(kernelBootInfo);
+    OrynKernelDiagnosticsRunClockProofs(kernelBootInfo);
     OrynKernelDiagnosticsRunActiveTimerProof();
 }

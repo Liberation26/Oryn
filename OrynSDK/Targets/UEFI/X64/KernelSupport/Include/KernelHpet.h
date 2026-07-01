@@ -27,6 +27,7 @@ typedef struct OrynKernelHpetState
 
 int OrynKernelHpetInit(const OrynBootInfo* bootInfo);
 const OrynKernelHpetState* OrynKernelHpetGetState(void);
+unsigned long long OrynKernelHpetReadCounter(void);
 void OrynKernelHpetPrintProof(void);
 
 #endif

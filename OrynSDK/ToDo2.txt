@@ -207,10 +207,10 @@ Milestone 0.8 - Timers, clocks, and scheduler base:
 [ OK ] PIT/PIC one-shot proof exists.
 [ OK ] APIC timer proof exists.
 [ OK ] HPET proof exists.
-[TOBE] Select a monotonic kernel clock source at boot.
-[TOBE] Add clocksource registration and priority.
-[TOBE] Add clockevent/tick registration.
-[TOBE] Add calibration between TSC, APIC timer, and HPET where available.
+[ OK ] Select a monotonic kernel clock source at boot.
+[ OK ] Add clocksource registration and priority.
+[ OK ] Add clockevent/tick registration.
+[ OK ] Add calibration between TSC, APIC timer, and HPET where available.
 [TOBE] Add sleep queues that do not busy-wait.
 [TOBE] Add timer wheel or red-black tree timer queue.
 [TOBE] Add per-CPU scheduler tick.
