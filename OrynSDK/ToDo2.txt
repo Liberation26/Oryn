@@ -520,7 +520,15 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
        The native build regenerates KernelModuleManifest.h and KernelModuleManifestData.c before compiling the kernel.
        Build/Plan/KernelModuleManifestGeneration.txt records the manifest source files and generated outputs.
        Static hand-maintained C module tables are no longer the source of truth.
-
-[ OK ] 0.5.93 OrynLibC signed conversion proof fix.
-       strtoll now parses signed magnitudes correctly instead of treating negative values as wrapped unsigned output from strtoull.
-       OrynLibC freestanding self-proof now includes explicit negative strtol/strtoll coverage.
+
+
+[ OK ] 0.5.93 OrynLibC signed conversion proof fix.
+
+       strtoll now parses signed magnitudes correctly instead of treating negative values as wrapped unsigned output from strtoull.
+
+       OrynLibC freestanding self-proof now includes explicit negative strtol/strtoll coverage.
+
+[ OK ] 0.5.94 Split remaining multi-function LibC files where practical.
+       OrynLibC now keeps public C library entry points in separate object-ready source units where practical.
+       Split ctype, inttypes, stdlib conversion wrappers, allocator hooks, rand/srand, bsearch/qsort, stdio snprintf/vsnprintf, paired string functions, and OrynString wrappers.
+       Kept small private helpers inside the one public function file that owns them when splitting would add noise or unsafe shared state.

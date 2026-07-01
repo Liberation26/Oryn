@@ -1,6 +1,6 @@
 #include "stdlib.h"
 
-int abs(int value)
+long long llabs(long long value)
 {
     return value < 0 ? -value : value;
 }

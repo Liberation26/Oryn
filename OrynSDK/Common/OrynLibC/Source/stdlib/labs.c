@@ -1,6 +1,6 @@
 #include "stdlib.h"
 
-int abs(int value)
+long labs(long value)
 {
     return value < 0 ? -value : value;
 }

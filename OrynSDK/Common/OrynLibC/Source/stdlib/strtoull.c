@@ -68,10 +68,3 @@ unsigned long long strtoull(const char* restrict text, char** restrict end, int 
     if (end) { *end = (char*)((cursor == first) ? text : cursor); }
     return negative ? (0ULL - value) : value;
 }
-
-unsigned long strtoul(const char* restrict text, char** restrict end, int base)
-{
-    unsigned long long value = strtoull(text, end, base);
-    if (value > ULONG_MAX) { errno = ERANGE; return ULONG_MAX; }
-    return (unsigned long)value;
-}

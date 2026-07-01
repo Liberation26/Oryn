@@ -9,9 +9,12 @@ static int ContainsByte(const char* text, char value)
     return 0;
 }
 
-size_t strspn(const char* text, const char* accept)
+char* strpbrk(const char* text, const char* accept)
 {
-    size_t count = 0U;
-    while (text[count] != 0 && ContainsByte(accept, text[count])) { ++count; }
-    return count;
+    while (*text != 0)
+    {
+        if (ContainsByte(accept, *text)) { return (char*)text; }
+        ++text;
+    }
+    return 0;
 }

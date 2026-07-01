@@ -2,20 +2,7 @@
 
 size_t strlen(const char* text)
 {
-    size_t length = 0U;
-    while (text[length] != 0)
-    {
-        ++length;
-    }
-    return length;
-}
-
-size_t strnlen(const char* text, size_t max_size)
-{
-    size_t length = 0U;
-    while (length < max_size && text[length] != 0)
-    {
-        ++length;
-    }
-    return length;
+    const char* start = text;
+    while (*text != 0) { ++text; }
+    return (size_t)(text - start);
 }
