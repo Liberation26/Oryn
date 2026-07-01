@@ -211,6 +211,7 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
     OrynKernelThread* thread;
     const OrynKernelHeapStats* heapBefore;
     const OrynKernelHeapStats* heapAfter;
+    unsigned long long stackGuardPagesBefore;
     gProcessProofFailure = 0;
     if (physicalMemory == 0 || physicalMemory->Initialized == 0U)
     {
@@ -224,6 +225,7 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
         gProcessProofFailure = "kernel heap is not initialized";
         return 0;
     }
+    stackGuardPagesBefore = heapBefore->StackGuardPages;
     process = OrynKernelProcessCreate(physicalMemory, "init", 0U);
     if (process == 0)
     {
@@ -250,7 +252,7 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
         return 0;
     }
     heapAfter = OrynKernelHeapGetStats();
-    if (heapAfter == 0 || heapAfter->StackGuardPages <= heapBefore->StackGuardPages)
+    if (heapAfter == 0 || heapAfter->StackGuardPages <= stackGuardPagesBefore)
     {
         gProcessProofFailure = "stack guard page accounting did not advance";
         OrynKernelThreadDestroy(thread);

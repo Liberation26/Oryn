@@ -1,3 +1,9 @@
+OrynWsl SDK ToDo2 update: 0.5.109
+
+[ OK ] Fixed Process/thread scheduler stack proof guard-page accounting by snapshotting heap stack-guard page count before stack allocation.
+[ OK ] Scheduler prerequisite policy is no longer blocked by a false Process proof failure after the guarded stack helper succeeds.
+[ OK ] Process proof detail remains available through Diagnostics/Logger if a later process/thread sub-step fails.
+
 Oryn WSL SDK ToDo2 - 0.5.108
 
 OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
