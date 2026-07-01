@@ -248,6 +248,7 @@ int LinkKernelObjects(const OrynProject* project, const OrynStringList* objects)
 void LogKernelLayout(const OrynProject* project);
 int OrynBuildKernel(const OrynProject* project);
 int GenerateKernelModuleManifestTables(const OrynProject* project);
+int ValidateLibCFunctionUnitManifests(const OrynProject* project);
 void BuildObjectManifestPath(const OrynProject* project, char* output, size_t output_size);
 void WriteObjectManifest( const OrynProject* project, const OrynStringList* sources, const OrynStringList* objects, const OrynBuildObjectStats* stats);
 void BuildObjectFileName(const OrynProject* project, const char* source_file, char* object_file, size_t object_file_size);

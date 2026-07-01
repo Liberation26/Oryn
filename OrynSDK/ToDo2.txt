@@ -537,3 +537,12 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
        Fixed split-source duplicate symbol failures by rebuilding module archives from a clean archive file on every module archive pass.
        Old archive members from removed grouped LibC files can no longer survive inside libOrynLibC.a.
        DeletedFiles also removes the old LibC grouped source files and known stale object/archive outputs from existing Kernel-5 builds.
+
+0.5.96 - LibC function-level manifests
+[ OK ] Added complete function-level manifests for each OrynLibC C source unit.
+[ OK ] Added Common/OrynLibC/FunctionManifests with one .libcunit file per LibC unit.
+[ OK ] Each manifest records category, unit name, source path, public symbol list, static helper list, freestanding status, and object granularity.
+[ OK ] Native build validates LibC source/manifests before module/archive resolution.
+[ OK ] Build writes Build/Plan/LibCFunctionUnitManifestReport.txt.
+[ OK ] Build fails closed if a LibC source has no manifest, a manifest points to a missing source, or duplicate manifests claim the same source.
+

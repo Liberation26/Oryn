@@ -16,3 +16,9 @@
 0.5.95 archive rebuild rule:
 - Module archives are deleted before llvm-ar recreates them.
 - This prevents stale archive members from removed/split source files causing duplicate symbols after ChangedFiles updates.
+OrynLibC function-unit manifests
+- Common/OrynLibC/FunctionManifests/<category>/<unit>.libcunit is the per-function/per-unit inventory contract.
+- Common/OrynLibC/Source remains the implementation authority.
+- The native build validates every LibC .c source against these manifests before archive resolution.
+- The validation report is written to Build/Plan/LibCFunctionUnitManifestReport.txt.
+

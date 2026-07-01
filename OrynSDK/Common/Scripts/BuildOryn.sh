@@ -63,6 +63,8 @@ RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildArchiveManifest.c"
 RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildModuleAdd.c"
 RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildPlanModules.c"
 RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildKernelModuleManifests.c"
+RequireBuildSource "Targets/UEFI/X64/OrynBuild/BuildLibCFunctionManifests.c"
+RequireBuildSource "Common/OrynLibC/FunctionManifests/string/strlen.libcunit"
 RequireBuildSource "Common/BuildModuleManifests/00-OrynLibC.buildmodule"
 RequireBuildSource "Targets/UEFI/X64/BuildModuleManifests/12-TargetRuntime.buildmodule"
 

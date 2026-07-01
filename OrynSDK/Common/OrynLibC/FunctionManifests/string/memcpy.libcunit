@@ -1,0 +1,12 @@
+ORYN_LIBC_FUNCTION_UNIT_MANIFEST_V1
+PackageVersion=0.5.96
+Category=string
+Unit=memcpy
+Source=string/memcpy.c
+SourceLanguage=C11
+Freestanding=yes
+ObjectGranularity=function-unit
+PublicSymbols=memcpy
+StaticHelpers=-
+RequiredBy=OrynLibC
+Notes=Generated from OrynLibC source unit; source remains implementation authority, manifest is the build/proof inventory contract.

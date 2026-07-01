@@ -149,6 +149,12 @@ int OrynBuildKernel(const OrynProject* project)
         return 0;
     }
 
+    if (!ValidateLibCFunctionUnitManifests(project))
+    {
+        LogBuildPlanSkip(project, "libc-function-manifest", "LibC function-level unit manifest validation failed.");
+        return 0;
+    }
+
     OrynBuildArchivePlan plan;
     if (!BuildKernelArchivePlan(project, &plan))
     {
