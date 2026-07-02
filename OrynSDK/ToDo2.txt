@@ -1,3 +1,9 @@
+OrynWsl SDK ToDo2 update: 0.5.155
+
+[100%] Added IOAPIC legacy IRQ routing records with source-override resolution and redirection programming foundation.
+[100%] Added PCI MSI/MSI-X capability detection and interrupt vector assignment foundation.
+[100%] Added interrupt handler registration by vector and by PCI bus/device/function identity.
+
 OrynWsl SDK ToDo2 update: 0.5.153
 
 [100%] Process prerequisite proof now reaches Scheduler after the process/thread stack and scheduler self-tests pass.
@@ -50,9 +56,9 @@ OrynWsl SDK ToDo2 update: 0.5.127
 OrynWsl SDK ToDo2 update: 0.5.120
 
 [100%] Added IOAPIC discovery from ACPI MADT using BootInfo RSDP handoff data.
-[050%] Added IOAPIC legacy IRQ routing records with source-override resolution and redirection programming foundation.
-[050%] Added PCI MSI/MSI-X capability detection and interrupt vector assignment foundation.
-[050%] Added interrupt handler registration by vector and by PCI bus/device/function identity.
+[100%] Added IOAPIC legacy IRQ routing records with source-override resolution and redirection programming foundation.
+[100%] Added PCI MSI/MSI-X capability detection and interrupt vector assignment foundation.
+[100%] Added interrupt handler registration by vector and by PCI bus/device/function identity.
 
 OrynWsl SDK ToDo2 update: 0.5.115
 
@@ -812,3 +818,8 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [025%] VirtIO-GPU binds to transitional and modern QEMU/Red Hat PCI display devices.
 [050%] Added feature negotiation, control virtqueue, cursor virtqueue, display-output, 2D resource, 3D resource, DMA buffer, EDID/display-mode, interrupt, and display-subsystem bridge foundations.
 [025%] PCI init invokes VirtIO-GPU after class-code display discovery and PCI proof reports VirtIO-GPU readiness.
+
+0.5.156 - Updater temporary extraction permission cleanup fix
+[100%] Update cleanup now restores user read/write/traverse permissions on the temporary extraction tree before deleting it.
+[100%] Update now normalizes extracted package directory permissions after unzip so FullSource and ChangedFiles can be traversed and removed safely.
+[100%] Package directory entries are emitted with executable/traversable permissions so WSL update cleanup no longer reports permission denied for extracted directories.

@@ -12,6 +12,15 @@ Ok() { printf "%b[ OK ]%b %s\n" "$ColorOk" "$ColorReset" "$1"; }
 Warn() { printf "%b[WARN]%b %s\n" "$ColorWarn" "$ColorReset" "$1"; }
 Fail() { printf "%b[FAIL]%b %s\n" "$ColorFail" "$ColorReset" "$1" >&2; }
 
+
+CleanupTempRoot()
+{
+    if [ -n "${TempRoot:-}" ] && [ -d "$TempRoot" ]; then
+        chmod -R u+rwX "$TempRoot" 2>/dev/null || true
+        rm -rf "$TempRoot"
+    fi
+}
+
 RequireCommand()
 {
     if ! command -v "$1" >/dev/null 2>&1; then
@@ -1289,7 +1298,7 @@ Info "Mode: $Mode"
 
 TempRoot="$(mktemp -d)"
 CandidatesFile="$TempRoot/candidates.txt"
-trap 'rm -rf "$TempRoot"' EXIT
+trap 'CleanupTempRoot' EXIT
 
 if [ -n "$ZipPath" ]; then
     [ -f "$ZipPath" ] || {
@@ -1315,6 +1324,7 @@ unzip -q "$ZipPath" -d "$TempRoot/extract" || {
     Fail "Could not extract archive."
     exit 1
 }
+chmod -R u+rwX "$TempRoot/extract" 2>/dev/null || true
 
 Warn "Package validation is disabled by SDK policy. Extracted files will be applied without package self-validation or signature checks."
 Info "No package validation was run for: $ZipPath"
