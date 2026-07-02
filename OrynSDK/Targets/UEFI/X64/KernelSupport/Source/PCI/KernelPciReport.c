@@ -190,6 +190,8 @@ void OrynKernelPciInit(const OrynBootInfo* bootInfo)
     OrynAhciRegisterPreparedBlockDevices();
     OrynNvmeInitFromPci();
     OrynNvmeRegisterPreparedBlockDevices();
+    OrynUsbMassStorageInitFromPci();
+    OrynUsbMassStorageRegisterPreparedBlockDevices();
     gPciState.Initialized = 1U;
 }
 
