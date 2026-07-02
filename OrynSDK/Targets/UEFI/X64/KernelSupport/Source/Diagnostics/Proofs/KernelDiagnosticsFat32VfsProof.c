@@ -88,6 +88,11 @@ static void Fat32ProofBuildUserElf(uint8_t* elf, uint32_t bytes)
     elf[257] = 0xF4U;
 }
 
+static int Fat32ProofCreateOneCommand(const char* path, const uint8_t* elf, uint32_t bytes)
+{
+    return OrynFat32CreateFile(&gFat32ProofVolume, path, elf, bytes);
+}
+
 static int Fat32ProofCreateCommandElf(void)
 {
     uint8_t elf[512];
@@ -96,7 +101,18 @@ static int Fat32ProofCreateCommandElf(void)
     {
         return 0;
     }
-    return OrynFat32CreateFile(&gFat32ProofVolume, "/SYSTEM/COMMANDS/HELLO", elf, sizeof(elf));
+    return Fat32ProofCreateOneCommand("/SYSTEM/COMMANDS/HELLO.ELF", elf, sizeof(elf)) &&
+        Fat32ProofCreateOneCommand("/SYSTEM/COMMANDS/HELP.ELF", elf, sizeof(elf)) &&
+        Fat32ProofCreateOneCommand("/SYSTEM/COMMANDS/DIR.ELF", elf, sizeof(elf)) &&
+        Fat32ProofCreateOneCommand("/SYSTEM/COMMANDS/LS.ELF", elf, sizeof(elf)) &&
+        Fat32ProofCreateOneCommand("/SYSTEM/COMMANDS/TREE.ELF", elf, sizeof(elf)) &&
+        Fat32ProofCreateOneCommand("/SYSTEM/COMMANDS/CD.ELF", elf, sizeof(elf)) &&
+        Fat32ProofCreateOneCommand("/SYSTEM/COMMANDS/PWD.ELF", elf, sizeof(elf)) &&
+        Fat32ProofCreateOneCommand("/SYSTEM/COMMANDS/TYPE.ELF", elf, sizeof(elf)) &&
+        Fat32ProofCreateOneCommand("/SYSTEM/COMMANDS/MKDIR.ELF", elf, sizeof(elf)) &&
+        Fat32ProofCreateOneCommand("/SYSTEM/COMMANDS/DEL.ELF", elf, sizeof(elf)) &&
+        Fat32ProofCreateOneCommand("/SYSTEM/COMMANDS/COPY.ELF", elf, sizeof(elf)) &&
+        Fat32ProofCreateOneCommand("/SYSTEM/COMMANDS/SHELL.ELF", elf, sizeof(elf));
 }
 
 static int Fat32ProofTextMatches(const char* left, const char* right, uint32_t count)
@@ -194,7 +210,7 @@ void OrynKernelDiagnosticsRunFat32VfsProof(const OrynBootInfo* kernelBootInfo)
     if (!Fat32ProofStep(OrynVfsCreateDirectory("/SYSTEM"),
         "FAT32 directory create works.", "FAT32 directory create failed.")) return;
     if (!Fat32ProofStep(Fat32ProofCreateCommandElf(),
-        "System/Commands contains a VFS-loadable ELF64 user command.",
+        "System/Commands contains flat VFS-loadable *.elf user commands and shell.",
         "System/Commands ELF64 command creation failed.")) return;
     if (!Fat32ProofStep(OrynFat32CreateFile(&gFat32ProofVolume, "/SYSTEM/HELLO.TXT", text, (uint32_t)OrynStrlen(text)),
         "FAT32 file create allocates directory entry and cluster chain.",

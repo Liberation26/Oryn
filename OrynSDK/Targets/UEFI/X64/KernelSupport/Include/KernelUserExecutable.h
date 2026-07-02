@@ -12,6 +12,8 @@
 #define ORYN_USER_EXEC_DEFAULT_COMMAND_ROOT "/SYSTEM/COMMANDS"
 #define ORYN_USER_EXEC_MAX_IMAGE_BYTES 65536U
 #define ORYN_USER_EXEC_MAX_PATH 128U
+#define ORYN_USER_EXEC_FLAG_SHARED_LIBRARY 1ULL
+#define ORYN_USER_EXEC_FLAG_STATIC_PROGRAM 2ULL
 
 typedef enum OrynUserExecStatus
 {
@@ -58,6 +60,11 @@ typedef struct OrynUserExecutableState
     unsigned int LoadedSegmentCount;
     unsigned int CreatedProcessCount;
     unsigned int CreatedThreadCount;
+    unsigned int StaticProgramOnlyReady;
+    unsigned int SharedLibraryDeniedCount;
+    unsigned int ExternalCommandImageCount;
+    unsigned int HelpCommandImageReady;
+    unsigned int ShellApplicationLoaded;
     unsigned int LastStatus;
     char CommandRoot[ORYN_USER_EXEC_MAX_PATH];
 } OrynUserExecutableState;
@@ -67,6 +74,7 @@ int OrynUserExecutableSetCommandRoot(const char* root);
 const char* OrynUserExecutableGetCommandRoot(void);
 int OrynUserExecutablePathAllowed(const char* path);
 int OrynUserExecutableValidateAbi(const OrynUserExecutableAbi* abi);
+int OrynUserExecutableValidateStaticPolicy(const OrynUserExecutableAbi* abi);
 int OrynUserExecutableLoadElf64FromVfs(
     OrynKernelPhysicalMemory* physicalMemory,
     const char* path,

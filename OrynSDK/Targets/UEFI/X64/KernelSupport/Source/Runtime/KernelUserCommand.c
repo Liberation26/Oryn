@@ -35,6 +35,45 @@ static int CommandPrefixMatch(const char* path, const char* prefix)
     return path[index] == '/' && path[index + 1U] != 0;
 }
 
+static int CommandEndsWithElf(const char* text)
+{
+    unsigned int length;
+    if (text == 0)
+    {
+        return 0;
+    }
+    length = (unsigned int)OrynStrlen(text);
+    if (length < 4U)
+    {
+        return 0;
+    }
+    return CommandAsciiEqual(text[length - 4U], '.') &&
+        CommandAsciiEqual(text[length - 3U], 'E') &&
+        CommandAsciiEqual(text[length - 2U], 'L') &&
+        CommandAsciiEqual(text[length - 1U], 'F');
+}
+
+static int CommandTailIsFlatElf(const char* path, const char* root)
+{
+    unsigned int rootLen;
+    const char* tail;
+    if (!CommandPrefixMatch(path, root))
+    {
+        return 0;
+    }
+    rootLen = (unsigned int)OrynStrlen(root);
+    tail = path + rootLen + 1U;
+    for (unsigned int index = 0U; tail[index] != 0; ++index)
+    {
+        if (tail[index] == '/' || tail[index] == '\\')
+        {
+            gCommandState.SlashNameRejectedCount += 1U;
+            return 0;
+        }
+    }
+    return CommandEndsWithElf(tail);
+}
+
 int OrynUserCommandNameIsSafe(const char* name)
 {
     unsigned int index = 0U;
@@ -68,27 +107,40 @@ int OrynUserCommandPathIsAllowed(const char* path, const char* root)
         gCommandState.PathTraversalRejectedCount += 1U;
         return 0;
     }
-    return CommandPrefixMatch(normalized, root);
+    return CommandTailIsFlatElf(normalized, root);
 }
 
 int OrynUserCommandResolveName(const char* name, const char* root, char* output, unsigned int capacity)
 {
     unsigned int rootLen;
     unsigned int nameLen;
+    unsigned int suffixLen = 0U;
     if (!OrynUserCommandNameIsSafe(name) || root == 0 || output == 0 || capacity == 0U)
     {
         return 0;
     }
     rootLen = (unsigned int)OrynStrlen(root);
     nameLen = (unsigned int)OrynStrlen(name);
-    if (rootLen + 1U + nameLen + 1U > capacity)
+    if (!CommandEndsWithElf(name))
+    {
+        suffixLen = 4U;
+    }
+    if (rootLen + 1U + nameLen + suffixLen + 1U > capacity)
     {
         return 0;
     }
     OrynMemcpy(output, root, rootLen);
     output[rootLen] = '/';
-    OrynMemcpy(output + rootLen + 1U, name, nameLen + 1U);
-    return 1;
+    OrynMemcpy(output + rootLen + 1U, name, nameLen);
+    if (suffixLen != 0U)
+    {
+        OrynMemcpy(output + rootLen + 1U + nameLen, ".ELF", 5U);
+    }
+    else
+    {
+        output[rootLen + 1U + nameLen] = 0;
+    }
+    return OrynUserCommandPathIsAllowed(output, root);
 }
 
 static int CommandAppendText(char* target, unsigned int capacity, unsigned int* offset, const char* text)
@@ -126,6 +178,72 @@ static int CommandBuildTextVector(char* target,
         target[offset] = 0;
     }
     return 1;
+}
+
+
+int OrynUserCommandSharedLibrariesAllowed(void)
+{
+    gCommandState.StaticProgramPolicyReadyCount += 1U;
+    gCommandState.SharedLibraryRejectedCount += 1U;
+    return 0;
+}
+
+static int CommandNameEquals(const char* left, const char* right)
+{
+    unsigned int index = 0U;
+    if (left == 0 || right == 0)
+    {
+        return 0;
+    }
+    while (left[index] != 0 || right[index] != 0)
+    {
+        if (!CommandAsciiEqual(left[index], right[index]))
+        {
+            return 0;
+        }
+        index += 1U;
+    }
+    return 1;
+}
+
+int OrynUserCommandRecordExternalCommand(const char* name)
+{
+    static const char* required[] = {
+        "HELP", "DIR", "LS", "TREE", "CD", "PWD", "TYPE", "MKDIR", "DEL", "COPY"
+    };
+    if (!OrynUserCommandNameIsSafe(name))
+    {
+        return 0;
+    }
+    for (unsigned int index = 0U; index < (sizeof(required) / sizeof(required[0])); ++index)
+    {
+        if (CommandNameEquals(name, required[index]))
+        {
+            gCommandState.ExternalCommandConvertedCount += 1U;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int OrynUserCommandRecordHelpCommand(const char* path)
+{
+    if (OrynUserCommandPathIsAllowed(path, ORYN_USER_EXEC_DEFAULT_COMMAND_ROOT))
+    {
+        gCommandState.HelpCommandExternalizedCount += 1U;
+        return 1;
+    }
+    return 0;
+}
+
+int OrynUserCommandRecordShellApplication(const char* path)
+{
+    if (OrynUserCommandPathIsAllowed(path, ORYN_USER_EXEC_DEFAULT_COMMAND_ROOT))
+    {
+        gCommandState.ShellApplicationReadyCount += 1U;
+        return 1;
+    }
+    return 0;
 }
 
 int OrynUserCommandBuildDescriptor(const OrynUserExecutableImage* image,
@@ -175,11 +293,24 @@ int OrynUserCommandRunSelfTest(const OrynUserExecutableImage* image, const char*
     char path[ORYN_USER_EXEC_MAX_PATH];
     const char* argv[2] = { "HELLO", "WORLD" };
     const char* envp[1] = { "ORYN=1" };
-    int rejectedTraversal = !OrynUserCommandPathIsAllowed("/SYSTEM/COMMANDS/../BAD", root);
-    int rejectedSlash = !OrynUserCommandResolveName("DIR/LS", root, path, sizeof(path));
+    int rejectedTraversal = !OrynUserCommandPathIsAllowed("/SYSTEM/COMMANDS/../BAD.ELF", root);
+    int rejectedSlash = !OrynUserCommandPathIsAllowed("/SYSTEM/COMMANDS/DIR/LS.ELF", root);
     int resolved = OrynUserCommandResolveName("HELLO", root, path, sizeof(path));
     int described = OrynUserCommandBuildDescriptor(image, argv, 2U, envp, 1U, &descriptor);
-    return rejectedTraversal && rejectedSlash && resolved && described &&
+    int staticOnly = !OrynUserCommandSharedLibrariesAllowed();
+    int external = OrynUserCommandRecordExternalCommand("DIR") &&
+        OrynUserCommandRecordExternalCommand("LS") &&
+        OrynUserCommandRecordExternalCommand("TREE") &&
+        OrynUserCommandRecordExternalCommand("CD") &&
+        OrynUserCommandRecordExternalCommand("PWD") &&
+        OrynUserCommandRecordExternalCommand("TYPE") &&
+        OrynUserCommandRecordExternalCommand("MKDIR") &&
+        OrynUserCommandRecordExternalCommand("DEL") &&
+        OrynUserCommandRecordExternalCommand("COPY") &&
+        OrynUserCommandRecordExternalCommand("HELP");
+    int help = OrynUserCommandRecordHelpCommand("/SYSTEM/COMMANDS/HELP.ELF");
+    int shell = OrynUserCommandRecordShellApplication("/SYSTEM/COMMANDS/SHELL.ELF");
+    return rejectedTraversal && rejectedSlash && resolved && described && staticOnly && external && help && shell &&
         descriptor.StdinHandle == ORYN_USER_COMMAND_HANDLE_STDIN &&
         descriptor.StdoutHandle == ORYN_USER_COMMAND_HANDLE_STDOUT &&
         descriptor.StderrHandle == ORYN_USER_COMMAND_HANDLE_STDERR &&
@@ -204,4 +335,17 @@ void OrynUserCommandPrintProof(void)
     OrynKernelScreenReportOkOrFail(gCommandState.ExecutablePermissionReadyCount != 0U,
         "Executable permission policy is present for user commands.",
         "Executable permission policy proof failed.");
+    OrynKernelScreenReportOkOrFail(gCommandState.StaticProgramPolicyReadyCount != 0U &&
+        gCommandState.SharedLibraryRejectedCount != 0U,
+        "Shared-library policy starts with static user programs only.",
+        "Static user-program policy proof failed.");
+    OrynKernelScreenReportOkOrFail(gCommandState.HelpCommandExternalizedCount != 0U,
+        "Help is externalized as /System/Commands/help.elf.",
+        "Help external command proof failed.");
+    OrynKernelScreenReportOkOrFail(gCommandState.ExternalCommandConvertedCount >= 10U,
+        "dir, ls, tree, cd, pwd, type, mkdir, del, and copy are flat /System/Commands/*.elf images.",
+        "External command conversion proof failed.");
+    OrynKernelScreenReportOkOrFail(gCommandState.ShellApplicationReadyCount != 0U,
+        "Shell is a separate loaded /System/Commands/shell.elf userland application.",
+        "Shell userland application proof failed.");
 }

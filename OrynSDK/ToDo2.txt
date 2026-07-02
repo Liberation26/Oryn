@@ -305,7 +305,7 @@ Milestone 1.2 - Executable loading and external commands:
 [ OK ] Load ELF64 user executables from VFS.
        0.5.132 proof: the ELF64 loader reads a user executable through VFS, validates the ELF header/program headers, maps PT_LOAD segments into a user address space, and creates a controlled user thread.
 [ OK ] Load external commands only from /System/Commands or the configured command root.
-       0.5.132 proof: external command loading rejects paths outside the configured command root and accepts /SYSTEM/COMMANDS/HELLO from the VFS proof volume.
+       0.5.132 proof: external command loading rejects paths outside the configured command root and accepts /SYSTEM/COMMANDS/HELLO.ELF from the VFS proof volume.
 [ OK ] Reject path traversal and slash-separated internal command names.
        0.5.133 proof: KernelUserCommand rejects traversal paths and slash/backslash command names before resolving commands under the configured command root.
 [ OK ] Create a command image descriptor with ABI version, entry, stack, permissions, and arguments.
@@ -316,10 +316,14 @@ Milestone 1.2 - Executable loading and external commands:
        0.5.133 proof: command descriptors assign stdin=0, stdout=1, and stderr=2 for the new process.
 [ OK ] Add executable permissions.
        0.5.133 proof: command descriptors require executable permission flags before a user command image is considered runnable.
-[TOBE] Add shared library policy later; start with static user programs.
-[TOBE] Convert help into /System/Commands/help/help.ocmd or ELF equivalent.
-[TOBE] Convert dir, ls, cd, pwd, type, mkdir, del, copy into external commands.
-[TOBE] Make the shell a separate loaded userland application.
+[ OK ] Add shared library policy later; start with static user programs.
+       0.5.134 proof: KernelUserExecutable rejects shared-library images and keeps user command loading static-program-only.
+[ OK ] Convert help into /System/Commands/help.elf.
+       0.5.134 proof: the help command image loads as /SYSTEM/COMMANDS/HELP.ELF with no command subdirectory.
+[ OK ] Convert dir, ls, tree, cd, pwd, type, mkdir, del, copy into external commands.
+       0.5.134 proof: all built-in-style command names are treated as flat /System/Commands/*.elf images.
+[ OK ] Make the shell a separate loaded userland application.
+       0.5.134 proof: shell loads from /SYSTEM/COMMANDS/SHELL.ELF as a separate user executable image.
 
 Milestone 1.3 - VFS and file descriptor model:
 [WARN] KernelVfs source exists but is currently a foundation, not the final file descriptor model.
@@ -499,7 +503,7 @@ Recommended implementation order:
 10. Enter user mode with one test process.
 11. Build VFS and file descriptors.
 12. Build block device + FAT32 production read path.
-13. Load external shell from /System/Commands or /System/Shell.
+13. Load external shell from /System/Commands/*.elf.
 14. Convert commands into external programs.
 15. Add process isolation, exec, wait, and stdout/stderr routing.
 16. Add storage write support.

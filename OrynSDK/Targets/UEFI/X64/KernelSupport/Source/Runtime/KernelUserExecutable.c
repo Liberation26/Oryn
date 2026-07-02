@@ -137,6 +137,7 @@ void OrynUserExecutableInit(void)
     gUserExec.Elf64LoaderReady = 1U;
     gUserExec.CommandRootReady = 1U;
     gUserExec.ExternalCommandOnlyReady = 1U;
+    gUserExec.StaticProgramOnlyReady = 1U;
     UserExecCopyText(gUserExec.CommandRoot, sizeof(gUserExec.CommandRoot),
         ORYN_USER_EXEC_DEFAULT_COMMAND_ROOT);
     OrynUserCommandInit();
@@ -178,6 +179,17 @@ int OrynUserExecutablePathAllowed(const char* path)
     return 1;
 }
 
+int OrynUserExecutableValidateStaticPolicy(const OrynUserExecutableAbi* abi)
+{
+    if (abi == 0 || (abi->Flags & ORYN_USER_EXEC_FLAG_SHARED_LIBRARY) != 0ULL)
+    {
+        gUserExec.SharedLibraryDeniedCount += 1U;
+        return 0;
+    }
+    gUserExec.StaticProgramOnlyReady = 1U;
+    return 1;
+}
+
 int OrynUserExecutableValidateAbi(const OrynUserExecutableAbi* abi)
 {
     if (abi == 0 || abi->Magic != ORYN_USER_EXEC_ABI_MAGIC ||
@@ -185,7 +197,8 @@ int OrynUserExecutableValidateAbi(const OrynUserExecutableAbi* abi)
         abi->AbiVersion > ORYN_USER_EXEC_ABI_MAX_VERSION ||
         abi->Architecture != ORYN_USER_EXEC_ABI_ARCH_X86_64 ||
         !OrynVirtualMemoryIsRangeInUserSpace(abi->Entry, 1ULL) ||
-        !OrynVirtualMemoryIsRangeInUserSpace(abi->InitialStackTop - 16ULL, 16ULL))
+        !OrynVirtualMemoryIsRangeInUserSpace(abi->InitialStackTop - 16ULL, 16ULL) ||
+        !OrynUserExecutableValidateStaticPolicy(abi))
     {
         gUserExec.LastStatus = OrynUserExecStatusInvalidAbi;
         return 0;
@@ -303,7 +316,7 @@ int OrynUserExecutableLoadElf64FromVfs(OrynKernelPhysicalMemory* physicalMemory,
     abi.Architecture = ORYN_USER_EXEC_ABI_ARCH_X86_64;
     abi.Entry = h.Entry;
     abi.InitialStackTop = ORYN_USER_MODE_TEST_STACK;
-    abi.Flags = 0ULL;
+    abi.Flags = ORYN_USER_EXEC_FLAG_STATIC_PROGRAM;
     if (!OrynUserExecutableValidateAbi(&abi))
     {
         return 0;
@@ -349,6 +362,15 @@ OrynKernelThread* OrynUserExecutableLoadExternalCommand(OrynKernelPhysicalMemory
         return 0;
     }
     gUserExec.CreatedThreadCount += 1U;
+    gUserExec.ExternalCommandImageCount += 1U;
+    if (OrynStrcmp(path, "/SYSTEM/COMMANDS/HELP.ELF") == 0)
+    {
+        gUserExec.HelpCommandImageReady += 1U;
+    }
+    if (OrynStrcmp(path, "/SYSTEM/COMMANDS/SHELL.ELF") == 0)
+    {
+        gUserExec.ShellApplicationLoaded += 1U;
+    }
     return thread;
 }
 
@@ -363,6 +385,11 @@ int OrynUserExecutableRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
     OrynKernelUserProcess userProcess;
     OrynUserExecutableImage image;
     OrynKernelThread* thread;
+    OrynKernelThread* helpThread;
+    OrynKernelThread* shellThread;
+    OrynUserExecutableImage helpImage;
+    OrynUserExecutableImage shellImage;
+    OrynUserExecutableAbi sharedAbi;
     int denied;
     if (gUserExec.Initialized == 0U) OrynUserExecutableInit();
     denied = !OrynUserExecutablePathAllowed("/SYSTEM/HELLO");
@@ -373,18 +400,26 @@ int OrynUserExecutableRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
     }
     userProcess = OrynKernelUserProcessFromProcess(process);
     thread = OrynUserExecutableLoadExternalCommand(physicalMemory,
-        "/SYSTEM/COMMANDS/HELLO", &userProcess, &image);
-    if (thread != 0)
-    {
-        OrynKernelThreadDestroy(thread);
-    }
+        "/SYSTEM/COMMANDS/HELLO.ELF", &userProcess, &image);
+    helpThread = OrynUserExecutableLoadExternalCommand(physicalMemory,
+        "/SYSTEM/COMMANDS/HELP.ELF", &userProcess, &helpImage);
+    shellThread = OrynUserExecutableLoadExternalCommand(physicalMemory,
+        "/SYSTEM/COMMANDS/SHELL.ELF", &userProcess, &shellImage);
+    sharedAbi = image.Abi;
+    sharedAbi.Flags = ORYN_USER_EXEC_FLAG_SHARED_LIBRARY;
+    if (thread != 0) OrynKernelThreadDestroy(thread);
+    if (helpThread != 0) OrynKernelThreadDestroy(helpThread);
+    if (shellThread != 0) OrynKernelThreadDestroy(shellThread);
     OrynKernelProcessDestroy(process);
     if (thread != 0)
     {
         gUserExec.CreatedProcessCount += 1U;
     }
-    return denied && thread != 0 && image.LoadSegmentCount != 0U &&
+    return denied && thread != 0 && helpThread != 0 && shellThread != 0 &&
+        image.LoadSegmentCount != 0U && helpImage.LoadSegmentCount != 0U &&
+        shellImage.LoadSegmentCount != 0U &&
         image.Abi.AbiVersion == ORYN_USER_EXEC_ABI_VERSION &&
+        !OrynUserExecutableValidateStaticPolicy(&sharedAbi) &&
         OrynUserCommandRunSelfTest(&image, gUserExec.CommandRoot);
 }
 
@@ -403,5 +438,18 @@ void OrynUserExecutablePrintProof(void)
     OrynKernelScreenReportOkOrFail(gUserExec.CreatedThreadCount != 0U,
         "Loaded user executable creates a controlled user thread.",
         "Loaded user executable did not create a user thread.");
+    OrynKernelScreenReportOkOrFail(gUserExec.StaticProgramOnlyReady != 0U &&
+        gUserExec.SharedLibraryDeniedCount != 0U,
+        "User executable policy starts with static user programs only.",
+        "Static user executable policy proof failed.");
+    OrynKernelScreenReportOkOrFail(gUserExec.HelpCommandImageReady != 0U,
+        "Help command image loads from System/Commands/HELP.ELF.",
+        "Help command image load proof failed.");
+    OrynKernelScreenReportOkOrFail(gUserExec.ExternalCommandImageCount >= 3U,
+        "External command images are loaded through the user executable path.",
+        "External command image load proof failed.");
+    OrynKernelScreenReportOkOrFail(gUserExec.ShellApplicationLoaded != 0U,
+        "Shell loads as a separate userland executable.",
+        "Shell executable load proof failed.");
     OrynUserCommandPrintProof();
 }
