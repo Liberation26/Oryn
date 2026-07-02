@@ -282,14 +282,22 @@ Milestone 1.1 - User mode and syscall entry:
 [ OK ] Choose syscall entry mechanisms: syscall/sysret where supported, interrupt fallback where needed.
        0.5.129 proof: CPUID extended feature detection records syscall/sysret support and KernelUserMode selects syscall/sysret when present, otherwise the existing interrupt-vector syscall fallback remains selected.
        0.5.130 fix: CPU feature detection now reads CPUID extended leaf 0x80000001 EDX bit 11 for syscall/sysret and reports fallback as OK because interrupt syscall fallback is an accepted policy path.
-[TOBE] Route all user requests into Get, Set, or Event packets.
-[TOBE] Add syscall ABI versioning.
-[TOBE] Add syscall argument validation.
-[TOBE] Add user pointer validation.
-[TOBE] Add process credentials placeholder.
-[TOBE] Add errno/status mapping for POSIX-like compatibility.
-[TOBE] Add syscall tracing for debug builds.
-[TOBE] Add syscall fuzz tests for invalid pointers and invalid packet sizes.
+[ OK ] Route all user requests into Get, Set, or Event packets.
+       0.5.131 proof: user request routing always creates an OrynSysCallPacket and maps supported requests to Get/Set/Event kinds before dispatch.
+[ OK ] Add syscall ABI versioning.
+       0.5.131 proof: syscall packets are checked against min/max ABI version fields before use.
+[ OK ] Add syscall argument validation.
+       0.5.131 proof: syscall entry checks packet arguments before namespace operation handling.
+[ OK ] Add user pointer validation.
+       0.5.131 proof: user pointer ranges are validated for null, underflow, overflow, and kernel-space rejection.
+[ OK ] Add process credentials placeholder.
+       0.5.131 proof: syscall packets carry placeholder uid/gid fields until the full credential module is added.
+[ OK ] Add errno/status mapping for POSIX-like compatibility.
+       0.5.131 proof: syscall status values map to negative POSIX-like errno values for compatibility wrappers.
+[ OK ] Add syscall tracing for debug builds.
+       0.5.131 proof: debug syscall tracing records and prints packet kind, namespace, and operation.
+[ OK ] Add syscall fuzz tests for invalid pointers and invalid packet sizes.
+       0.5.131 proof: syscall fuzz tests reject invalid user pointers and malformed packet sizes.
 
 Milestone 1.2 - Executable loading and external commands:
 [TOBE] Define Oryn user executable ABI.

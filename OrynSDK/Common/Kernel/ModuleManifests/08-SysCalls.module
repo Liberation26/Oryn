@@ -1,7 +1,7 @@
 Order=08
 Id=OrynKernelModuleSysCalls
 Name=SysCalls
-Items=Get, Set, Event, Linux/MS translators
+Items=Get, Set, Event, ABI versioning, argument validation, user pointer validation, credential placeholder, errno mapping, tracing, fuzz tests, Linux/MS translators
 Requires=OrynKernelModuleGdt,OrynKernelModuleIdt
 CompiledIn=Yes
 Required=Yes

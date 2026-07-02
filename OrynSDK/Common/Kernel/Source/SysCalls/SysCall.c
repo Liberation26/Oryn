@@ -1,4 +1,5 @@
 #include "SysCall.h"
+#include "SysCallPolicy.h"
 #include "LinuxSysCall.h"
 #include "MSSysCall.h"
 #include "KernelIo.h"
@@ -18,10 +19,7 @@ static void ClearBytes(void* target, uint64_t count)
 
 static int IsValidPacket(const OrynSysCallPacket* packet)
 {
-    return packet != 0 &&
-        packet->Magic == ORYN_SYSCALL_PACKET_MAGIC &&
-        packet->Version == ORYN_SYSCALL_PACKET_VERSION &&
-        packet->Size == sizeof(OrynSysCallPacket);
+    return OrynSysCallValidatePacket(packet, &gSysCallState);
 }
 
 static void RecordPacket(const OrynSysCallPacket* packet)
@@ -42,6 +40,8 @@ static void RecordPacket(const OrynSysCallPacket* packet)
     {
         gSysCallState.MsPackets += 1ULL;
     }
+
+    OrynSysCallTracePacket(packet, &gSysCallState);
 }
 
 static void WritePacketField(const char* label, uint64_t value)
@@ -63,6 +63,7 @@ void OrynSysCallInit(void)
     ClearBytes(&gSysCallState, sizeof(gSysCallState));
     gSysCallState.Initialized = 1U;
     gSysCallState.PacketSize = (uint32_t)sizeof(OrynSysCallPacket);
+    OrynSysCallPolicyInit(&gSysCallState);
 }
 
 const OrynSysCallState* OrynSysCallGetState(void)
@@ -90,6 +91,8 @@ void OrynSysCallPreparePacket(
     packet->Namespace = name_space;
     packet->Operation = operation;
     packet->Status = ORYN_SYSCALL_STATUS_UNKNOWN;
+    packet->CredentialUid = 0ULL;
+    packet->CredentialGid = 0ULL;
 }
 
 void OrynSysCallNoteUnknownPlatform(uint64_t platform, uint64_t platform_number)
@@ -136,6 +139,11 @@ int64_t SysCallGet(OrynSysCallPacket* packet)
         return ORYN_SYSCALL_STATUS_BAD_PACKET;
     }
 
+    if (!OrynSysCallValidateArguments(packet, &gSysCallState))
+    {
+        return Complete(packet, ORYN_SYSCALL_STATUS_BAD_POINTER);
+    }
+
     gSysCallState.GetPackets += 1ULL;
     RecordPacket(packet);
     if (packet->Namespace == ORYN_SYSCALL_NS_KERNEL &&
@@ -165,6 +173,11 @@ int64_t SysCallSet(OrynSysCallPacket* packet)
         return ORYN_SYSCALL_STATUS_BAD_PACKET;
     }
 
+    if (!OrynSysCallValidateArguments(packet, &gSysCallState))
+    {
+        return Complete(packet, ORYN_SYSCALL_STATUS_BAD_POINTER);
+    }
+
     gSysCallState.SetPackets += 1ULL;
     RecordPacket(packet);
     if (packet->Namespace == ORYN_SYSCALL_NS_DEBUG &&
@@ -186,6 +199,11 @@ int64_t SysCallEvent(OrynSysCallPacket* packet)
     if (!IsValidPacket(packet))
     {
         return ORYN_SYSCALL_STATUS_BAD_PACKET;
+    }
+
+    if (!OrynSysCallValidateArguments(packet, &gSysCallState))
+    {
+        return Complete(packet, ORYN_SYSCALL_STATUS_BAD_POINTER);
     }
 
     gSysCallState.EventPackets += 1ULL;
@@ -219,6 +237,17 @@ int64_t SysCallEvent(OrynSysCallPacket* packet)
 
     OrynSysCallPrintUnknown(packet);
     return Complete(packet, ORYN_SYSCALL_STATUS_UNKNOWN);
+}
+
+int OrynSysCallRouteUserRequest(
+    uint64_t platform,
+    uint64_t platform_number,
+    const uint64_t* arguments,
+    uint64_t argument_count,
+    OrynSysCallPacket* packet)
+{
+    return OrynSysCallPolicyRouteUserRequest(platform, platform_number, arguments,
+        argument_count, packet, &gSysCallState);
 }
 
 int64_t OrynSysCallDispatch(OrynSysCallPacket* packet)
@@ -269,11 +298,15 @@ int OrynSysCallRunInternalProof(void)
     OrynSysCallPreparePacket(&packet, ORYN_SYSCALL_KIND_GET,
         ORYN_SYSCALL_NS_KERNEL, 0xFFFFFFFFULL);
     gSysCallState.UnknownProofPassed = SysCallGet(&packet) == ORYN_SYSCALL_STATUS_UNKNOWN ? 1U : 0U;
+    OrynSysCallRunFuzzTests(&gSysCallState);
 
     return gSysCallState.GetProofPassed &&
         gSysCallState.SetProofPassed &&
         gSysCallState.EventProofPassed &&
-        gSysCallState.UnknownProofPassed;
+        gSysCallState.UnknownProofPassed &&
+        gSysCallState.RouteProofPassed &&
+        gSysCallState.FuzzInvalidPointerPassed &&
+        gSysCallState.FuzzInvalidPacketSizePassed;
 }
 
 void OrynSysCallPrintProof(void)
@@ -318,6 +351,7 @@ void OrynSysCallPrintRuntimeProof(void)
     OrynKernelScreenReportOkOrFail(gSysCallState.GetProofPassed && gSysCallState.SetProofPassed && gSysCallState.EventProofPassed,
         "SysCalls use Get/Set/Event message packets.",
         "SysCalls did not prove Get/Set/Event packets.");
+    OrynSysCallPrintPolicyProof(&gSysCallState);
     KernelIoWriteString("[KERNEL] SysCall total packets: ");
     KernelIoWriteDec64(gSysCallState.TotalPackets);
     KernelIoWriteString("\n");
