@@ -1,5 +1,6 @@
 #include "KernelDiagnosticsProofsInternal.h"
 #include "KernelFat32.h"
+#include "KernelPartition.h"
 #include "KernelVfs.h"
 #include "OrynString.h"
 #include "KernelUserExecutable.h"
@@ -9,6 +10,7 @@
 static uint8_t gFat32ProofImage[FAT32_PROOF_SECTORS * ORYN_FAT32_SECTOR_SIZE];
 static OrynKernelBlockDevice gFat32ProofDevice;
 static OrynFat32Volume gFat32ProofVolume;
+static OrynKernelPartitionTable gFat32ProofPartitionTable;
 
 typedef struct Fat32ProofDeviceContext
 {
@@ -42,6 +44,10 @@ static int Fat32ProofWrite(OrynKernelBlockDevice* device, uint32_t lba, uint32_t
     return 1;
 }
 
+static int Fat32ProofFlush(OrynKernelBlockDevice* device)
+{
+    return device != 0;
+}
 
 static void Fat32ProofWrite16(uint8_t* data, uint32_t offset, uint16_t value)
 {
@@ -61,6 +67,40 @@ static void Fat32ProofWrite64(uint8_t* data, uint32_t offset, uint64_t value)
 {
     Fat32ProofWrite32(data, offset, (uint32_t)(value & 0xFFFFFFFFULL));
     Fat32ProofWrite32(data, offset + 4U, (uint32_t)(value >> 32));
+}
+
+static void Fat32ProofBuildMbr(uint8_t* image)
+{
+    OrynMemset(image, 0, FAT32_PROOF_SECTORS * ORYN_FAT32_SECTOR_SIZE);
+    image[446U + 4U] = 0x0CU;
+    Fat32ProofWrite32(image, 446U + 8U, 32U);
+    Fat32ProofWrite32(image, 446U + 12U, 96U);
+    image[510U] = 0x55U;
+    image[511U] = 0xAAU;
+}
+
+static void Fat32ProofBuildGpt(uint8_t* image)
+{
+    uint8_t* header = image + ORYN_FAT32_SECTOR_SIZE;
+    uint8_t* entry = image + (2U * ORYN_FAT32_SECTOR_SIZE);
+    OrynMemset(image, 0, FAT32_PROOF_SECTORS * ORYN_FAT32_SECTOR_SIZE);
+    header[0] = 'E'; header[1] = 'F'; header[2] = 'I'; header[3] = ' ';
+    header[4] = 'P'; header[5] = 'A'; header[6] = 'R'; header[7] = 'T';
+    Fat32ProofWrite32(header, 12U, 92U);
+    Fat32ProofWrite64(header, 24U, 1ULL);
+    Fat32ProofWrite64(header, 32U, FAT32_PROOF_SECTORS - 1ULL);
+    Fat32ProofWrite64(header, 40U, 34ULL);
+    Fat32ProofWrite64(header, 48U, FAT32_PROOF_SECTORS - 34ULL);
+    Fat32ProofWrite64(header, 72U, 2ULL);
+    Fat32ProofWrite32(header, 80U, 4U);
+    Fat32ProofWrite32(header, 84U, 128U);
+    for (uint32_t index = 0U; index < 16U; ++index)
+    {
+        entry[index] = (uint8_t)(index + 1U);
+        entry[16U + index] = (uint8_t)(0xA0U + index);
+    }
+    Fat32ProofWrite64(entry, 32U, 40ULL);
+    Fat32ProofWrite64(entry, 40U, 120ULL);
 }
 
 static void Fat32ProofBuildUserElf(uint8_t* elf, uint32_t bytes)
@@ -133,11 +173,13 @@ static void Fat32ProofDeviceInit(void)
     gFat32ProofContext.SectorCount = FAT32_PROOF_SECTORS;
     gFat32ProofDevice.BytesPerSector = ORYN_FAT32_SECTOR_SIZE;
     gFat32ProofDevice.SectorCount = FAT32_PROOF_SECTORS;
+    gFat32ProofDevice.BlockCount = FAT32_PROOF_SECTORS;
     gFat32ProofDevice.Type = OrynKernelBlockDeviceTypeMemory;
     gFat32ProofDevice.Name = "FAT32 proof memory block device";
     gFat32ProofDevice.Context = &gFat32ProofContext;
     gFat32ProofDevice.Read = Fat32ProofRead;
     gFat32ProofDevice.Write = Fat32ProofWrite;
+    gFat32ProofDevice.Flush = Fat32ProofFlush;
 }
 
 static int Fat32ProofStep(int passed, const char* ok_text, const char* fail_text)
@@ -204,6 +246,20 @@ void OrynKernelDiagnosticsRunFat32VfsProof(const OrynBootInfo* kernelBootInfo)
     if (!Fat32ProofStep(!OrynKernelBlockValidateRange(&gFat32ProofDevice, FAT32_PROOF_SECTORS, 1U),
         "KernelBlockDevice rejects out-of-range sector requests.",
         "KernelBlockDevice accepted an out-of-range sector request.")) return;
+    if (!Fat32ProofStep(OrynKernelBlockFlushDevice(&gFat32ProofDevice),
+        "KernelBlockDevice production abstraction exposes flush.",
+        "KernelBlockDevice production abstraction flush failed.")) return;
+    Fat32ProofBuildMbr(gFat32ProofImage);
+    if (!Fat32ProofStep(OrynKernelPartitionParseMbr(&gFat32ProofDevice, &gFat32ProofPartitionTable) &&
+        gFat32ProofPartitionTable.EntryCount == 1U,
+        "MBR partition table parser decodes primary partitions.",
+        "MBR partition table parser failed.")) return;
+    Fat32ProofBuildGpt(gFat32ProofImage);
+    OrynKernelPartitionTableInit(&gFat32ProofPartitionTable);
+    if (!Fat32ProofStep(OrynKernelPartitionParseGpt(&gFat32ProofDevice, &gFat32ProofPartitionTable) &&
+        gFat32ProofPartitionTable.EntryCount == 1U,
+        "GPT partition table parser decodes GUID partition entries.",
+        "GPT partition table parser failed.")) return;
 
     if (!Fat32ProofMountFat32()) return;
     if (!Fat32ProofMountVfs(kernelBootInfo)) return;

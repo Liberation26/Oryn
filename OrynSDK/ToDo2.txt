@@ -345,8 +345,8 @@ Milestone 1.4 - Storage stack:
 [ OK ] PCI storage-class discovery records storage controllers and storage subclasses.
 [ OK ] KernelBlockDevice registry, range validation, read/write sector APIs and proof are implemented.
 [ OK ] FAT32 source is split into BPB/mount, FAT table, cluster I/O, directory, file read/write, format, mutate, names, path, validation, and free-space accounting helpers.
-[TOBE] Define production block device abstraction: sector size, block count, read, write, flush.
-[TOBE] Add partition table parser: MBR first, GPT next.
+[ OK ] Define production block device abstraction: sector size, block count, read, write, flush.
+[ OK ] Add partition table parser: MBR first, GPT next.
 [TOBE] Add AHCI/SATA driver.
 [TOBE] Add NVMe driver.
 [TOBE] Add USB mass storage driver later.
