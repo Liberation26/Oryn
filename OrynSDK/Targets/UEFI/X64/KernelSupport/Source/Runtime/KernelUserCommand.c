@@ -181,6 +181,97 @@ static int CommandBuildTextVector(char* target,
 }
 
 
+static int CommandCopyText(char* target, unsigned int capacity, const char* text)
+{
+    unsigned int length;
+    if (target == 0 || capacity == 0U || text == 0)
+    {
+        return 0;
+    }
+    length = (unsigned int)OrynStrlen(text);
+    if (length + 1U > capacity)
+    {
+        return 0;
+    }
+    OrynMemcpy(target, text, length + 1U);
+    return 1;
+}
+
+static int CommandAppendUpperStem(char* target,
+    unsigned int capacity,
+    unsigned int* offset,
+    const char* name,
+    const char* suffix)
+{
+    unsigned int index = 0U;
+    while (name[index] != 0 && name[index] != '.')
+    {
+        char ch = name[index];
+        if (ch >= 'a' && ch <= 'z')
+        {
+            ch = (char)(ch - ('a' - 'A'));
+        }
+        if (*offset + 1U >= capacity)
+        {
+            return 0;
+        }
+        target[*offset] = ch;
+        *offset += 1U;
+        index += 1U;
+    }
+    return CommandAppendText(target, capacity, offset, suffix);
+}
+
+static int CommandBuildVisiblePath(char* target,
+    unsigned int capacity,
+    const char* prefix,
+    const char* name,
+    const char* suffix)
+{
+    unsigned int offset = 0U;
+    if (!CommandCopyText(target, capacity, prefix))
+    {
+        return 0;
+    }
+    offset = (unsigned int)OrynStrlen(target);
+    return CommandAppendUpperStem(target, capacity, &offset, name, suffix);
+}
+
+int OrynUserCommandResolveVisiblePath(unsigned int personality,
+    const char* name,
+    char* output,
+    unsigned int capacity)
+{
+    int ok = 0;
+    if (!OrynUserCommandNameIsSafe(name) || output == 0 || capacity == 0U)
+    {
+        return 0;
+    }
+    if (personality == OrynUserCommandPersonalityLinux)
+    {
+        ok = CommandBuildVisiblePath(output, capacity, "/bin/", name, "");
+        gCommandState.LinuxVisiblePathReadyCount += ok ? 1U : 0U;
+    }
+    else if (personality == OrynUserCommandPersonalityWindows)
+    {
+        ok = CommandBuildVisiblePath(output, capacity, "C:\\Windows\\System32\\", name, ".EXE");
+        gCommandState.WindowsVisiblePathReadyCount += ok ? 1U : 0U;
+    }
+    else if (personality == OrynUserCommandPersonalityAmiga)
+    {
+        ok = CommandBuildVisiblePath(output, capacity, "C:", name, "");
+        gCommandState.AmigaVisiblePathReadyCount += ok ? 1U : 0U;
+    }
+    else
+    {
+        ok = CommandBuildVisiblePath(output, capacity, "/System/Commands/", name, ".elf");
+        gCommandState.NativeVisiblePathReadyCount += ok ? 1U : 0U;
+    }
+    gCommandState.PersonalityVisiblePathReadyCount += ok ? 1U : 0U;
+    return ok;
+}
+
+
 int OrynUserCommandSharedLibrariesAllowed(void)
 {
     gCommandState.StaticProgramPolicyReadyCount += 1U;
@@ -251,10 +342,13 @@ int OrynUserCommandBuildDescriptor(const OrynUserExecutableImage* image,
     unsigned int argc,
     const char* const* envp,
     unsigned int envc,
+    unsigned int personality,
+    const char* storedPath,
     OrynUserCommandDescriptor* descriptor)
 {
-    if (image == 0 || descriptor == 0 || argc > ORYN_USER_COMMAND_MAX_ARGS ||
-        envc > ORYN_USER_COMMAND_MAX_ENVS || image->Abi.Entry == 0ULL)
+    if (image == 0 || descriptor == 0 || argc == 0U ||
+        argc > ORYN_USER_COMMAND_MAX_ARGS || envc > ORYN_USER_COMMAND_MAX_ENVS ||
+        image->Abi.Entry == 0ULL)
     {
         return 0;
     }
@@ -269,6 +363,15 @@ int OrynUserCommandBuildDescriptor(const OrynUserExecutableImage* image,
     descriptor->StdinHandle = ORYN_USER_COMMAND_HANDLE_STDIN;
     descriptor->StdoutHandle = ORYN_USER_COMMAND_HANDLE_STDOUT;
     descriptor->StderrHandle = ORYN_USER_COMMAND_HANDLE_STDERR;
+    descriptor->Personality = personality;
+    if (!CommandCopyText(descriptor->StoredPath, sizeof(descriptor->StoredPath), storedPath) ||
+        !OrynUserCommandResolveVisiblePath(personality, argv[0],
+            descriptor->VisiblePath, sizeof(descriptor->VisiblePath)))
+    {
+        return 0;
+    }
+    gCommandState.PhysicalCommandStoreReadyCount +=
+        OrynUserCommandPathIsAllowed(storedPath, ORYN_USER_EXEC_DEFAULT_COMMAND_ROOT) ? 1U : 0U;
     if (!CommandBuildTextVector(descriptor->Arguments, sizeof(descriptor->Arguments), argv, argc) ||
         !CommandBuildTextVector(descriptor->Environment, sizeof(descriptor->Environment), envp, envc))
     {
@@ -296,7 +399,8 @@ int OrynUserCommandRunSelfTest(const OrynUserExecutableImage* image, const char*
     int rejectedTraversal = !OrynUserCommandPathIsAllowed("/SYSTEM/COMMANDS/../BAD.ELF", root);
     int rejectedSlash = !OrynUserCommandPathIsAllowed("/SYSTEM/COMMANDS/DIR/LS.ELF", root);
     int resolved = OrynUserCommandResolveName("HELLO", root, path, sizeof(path));
-    int described = OrynUserCommandBuildDescriptor(image, argv, 2U, envp, 1U, &descriptor);
+    int described = OrynUserCommandBuildDescriptor(image, argv, 2U, envp, 1U,
+        OrynUserCommandPersonalityLinux, path, &descriptor);
     int staticOnly = !OrynUserCommandSharedLibrariesAllowed();
     int external = OrynUserCommandRecordExternalCommand("DIR") &&
         OrynUserCommandRecordExternalCommand("LS") &&
@@ -310,10 +414,25 @@ int OrynUserCommandRunSelfTest(const OrynUserExecutableImage* image, const char*
         OrynUserCommandRecordExternalCommand("HELP");
     int help = OrynUserCommandRecordHelpCommand("/SYSTEM/COMMANDS/HELP.ELF");
     int shell = OrynUserCommandRecordShellApplication("/SYSTEM/COMMANDS/SHELL.ELF");
-    return rejectedTraversal && rejectedSlash && resolved && described && staticOnly && external && help && shell &&
+    char linuxPath[ORYN_USER_COMMAND_PATH_BYTES];
+    char windowsPath[ORYN_USER_COMMAND_PATH_BYTES];
+    char amigaPath[ORYN_USER_COMMAND_PATH_BYTES];
+    char nativePath[ORYN_USER_COMMAND_PATH_BYTES];
+    int visible = OrynUserCommandResolveVisiblePath(OrynUserCommandPersonalityLinux,
+        "LS", linuxPath, sizeof(linuxPath)) &&
+        OrynUserCommandResolveVisiblePath(OrynUserCommandPersonalityWindows,
+            "DIR", windowsPath, sizeof(windowsPath)) &&
+        OrynUserCommandResolveVisiblePath(OrynUserCommandPersonalityAmiga,
+            "COPY", amigaPath, sizeof(amigaPath)) &&
+        OrynUserCommandResolveVisiblePath(OrynUserCommandPersonalityNative,
+            "HELP", nativePath, sizeof(nativePath));
+    return rejectedTraversal && rejectedSlash && resolved && described && staticOnly && external && help && shell && visible &&
         descriptor.StdinHandle == ORYN_USER_COMMAND_HANDLE_STDIN &&
         descriptor.StdoutHandle == ORYN_USER_COMMAND_HANDLE_STDOUT &&
         descriptor.StderrHandle == ORYN_USER_COMMAND_HANDLE_STDERR &&
+        descriptor.Personality == OrynUserCommandPersonalityLinux &&
+        descriptor.StoredPath[0] == '/' &&
+        descriptor.VisiblePath[0] == '/' &&
         (descriptor.Permissions & ORYN_USER_COMMAND_PERMISSION_EXECUTE) != 0ULL;
 }
 
@@ -348,4 +467,14 @@ void OrynUserCommandPrintProof(void)
     OrynKernelScreenReportOkOrFail(gCommandState.ShellApplicationReadyCount != 0U,
         "Shell is a separate loaded /System/Commands/shell.elf userland application.",
         "Shell userland application proof failed.");
+    OrynKernelScreenReportOkOrFail(gCommandState.PhysicalCommandStoreReadyCount != 0U,
+        "Commands are physically stored only under /System/Commands/*.elf.",
+        "Physical command store proof failed.");
+    OrynKernelScreenReportOkOrFail(gCommandState.PersonalityVisiblePathReadyCount >= 4U &&
+        gCommandState.LinuxVisiblePathReadyCount != 0U &&
+        gCommandState.WindowsVisiblePathReadyCount != 0U &&
+        gCommandState.AmigaVisiblePathReadyCount != 0U &&
+        gCommandState.NativeVisiblePathReadyCount != 0U,
+        "Personality paths present Linux, Windows, Amiga, and Oryn command locations without changing storage.",
+        "Personality command path proof failed.");
 }
