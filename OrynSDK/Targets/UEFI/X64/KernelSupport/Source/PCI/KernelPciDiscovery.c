@@ -3,6 +3,7 @@
 #include "KernelAhci.h"
 #include "KernelUsbMassStorage.h"
 #include "KernelVirtioBlock.h"
+#include "KernelVirtioNet.h"
 #include "KernelBootInfo.h"
 #include "KernelIo.h"
 #include "KernelPortIo.h"
@@ -471,6 +472,11 @@ void CountClass(const OrynKernelPciDevice* pciDevice)
     else if (pciDevice->ClassCode == 0x02U)
     {
         gPciState.NetworkControllersFound += 1U;
+        if (pciDevice->VendorId == 0x1AF4U &&
+            (pciDevice->DeviceId == 0x1000U || pciDevice->DeviceId == 0x1041U))
+        {
+            gPciState.VirtioNetworkControllersFound += 1U;
+        }
     }
     else if (pciDevice->ClassCode == 0x03U)
     {

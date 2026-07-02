@@ -3,6 +3,7 @@
 #include "KernelNvme.h"
 #include "KernelUsbMassStorage.h"
 #include "KernelVirtioBlock.h"
+#include "KernelVirtioNet.h"
 #include "KernelInterrupts.h"
 #include "KernelScreenReport.h"
 static void PciInterruptStub(OrynIdtInterruptFrame* frame, void* context)
@@ -280,12 +281,14 @@ void OrynKernelPciPrintProof(void)
     KernelIoWriteString("[KERNEL] PCI devices discovered: ");
     KernelIoWriteDec64(gPciState.DevicesFound);
     KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] PCI bridges/storage/network/display: ");
+    KernelIoWriteString("[KERNEL] PCI bridges/storage/network/virtio-net/display: ");
     KernelIoWriteDec64(gPciState.BridgesFound);
     KernelIoWriteString("/");
     KernelIoWriteDec64(gPciState.StorageControllersFound);
     KernelIoWriteString("/");
     KernelIoWriteDec64(gPciState.NetworkControllersFound);
+    KernelIoWriteString("/");
+    KernelIoWriteDec64(gPciState.VirtioNetworkControllersFound);
     KernelIoWriteString("/");
     KernelIoWriteDec64(gPciState.DisplayControllersFound);
     KernelIoWriteString("\n");
@@ -304,6 +307,7 @@ void OrynKernelPciPrintProof(void)
     OrynAhciPrintProof();
     OrynNvmePrintProof();
     OrynVirtioBlockPrintProof();
+    OrynVirtioNetPrintProof();
     OrynUsbMassStoragePrintProof();
     KernelIoWriteString("[KERNEL] PCI storage IDE/AHCI/NVMe/VirtIO/USB-host counts: ");
     KernelIoWriteDec64(gPciState.IdeControllersFound);

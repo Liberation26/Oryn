@@ -59,6 +59,7 @@ typedef struct OrynKernelPciState
     unsigned int NvmeControllersFound;
     unsigned int VirtioBlockControllersFound;
     unsigned int NetworkControllersFound;
+    unsigned int VirtioNetworkControllersFound;
     unsigned int DisplayControllersFound;
     unsigned int UsbControllersFound;
     unsigned int ClassDecodeReady;
