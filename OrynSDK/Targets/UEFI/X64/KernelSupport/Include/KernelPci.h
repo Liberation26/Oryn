@@ -19,6 +19,7 @@ typedef struct OrynKernelPciDevice
     unsigned int ClassCode;
     unsigned int HeaderType;
     unsigned int Bar0;
+    unsigned int Bar5;
     unsigned int InterruptLine;
     unsigned int InterruptPin;
     unsigned int SecondaryBus;

@@ -1,5 +1,6 @@
 #include "KernelPciInternal.h"
 #include "KernelPci.h"
+#include "KernelAhci.h"
 #include "KernelBootInfo.h"
 #include "KernelIo.h"
 #include "KernelPortIo.h"

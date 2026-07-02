@@ -1,7 +1,7 @@
 Order=14
 Id=OrynKernelModulePci
 Name=PCI
-Items=bus scan, config space, class decode, MSI, MSI-X, device interrupt records
+Items=bus scan, config space, class decode, MSI, MSI-X, device interrupt records, AHCI/SATA driver binding
 Requires=OrynKernelModuleBootInfo
 CompiledIn=Yes
 Required=No
