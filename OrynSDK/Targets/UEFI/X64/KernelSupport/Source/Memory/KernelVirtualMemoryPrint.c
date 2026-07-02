@@ -152,20 +152,6 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
     KernelIoWriteDec64(virtualMemory->AnonymousRegionsCreated);
     KernelIoWriteString("\n");
 
-    KernelIoWriteString("[KERNEL] mmap-style regions created: ");
-    KernelIoWriteDec64(virtualMemory->MmapRegionsCreated);
-    KernelIoWriteString(" file=");
-    KernelIoWriteDec64(virtualMemory->FileMmapRegionsCreated);
-    KernelIoWriteString(" device=");
-    KernelIoWriteDec64(virtualMemory->DeviceMmapRegionsCreated);
-    KernelIoWriteString("\n");
-
-    KernelIoWriteString("[KERNEL] W^X policy checks: ");
-    KernelIoWriteDec64(virtualMemory->WriteExecutePolicyChecks);
-    KernelIoWriteString(" denied=");
-    KernelIoWriteDec64(virtualMemory->WriteExecuteDeniedCount);
-    KernelIoWriteString("\n");
-
     KernelIoWriteString("[KERNEL] Demand-allocated user pages: ");
     KernelIoWriteDec64(virtualMemory->DemandAllocatedUserPages);
     KernelIoWriteString("\n");
@@ -190,15 +176,6 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
         virtualMemory->CopyOnWriteResolvedPages != 0ULL,
         "Copy-on-write foundation can clone and privatize user pages.",
         "Copy-on-write foundation proof failed.");
-    OrynKernelScreenReportOkOrFail(virtualMemory->MmapRegionsCreated >= 3ULL &&
-        virtualMemory->FileMmapRegionsCreated != 0ULL &&
-        virtualMemory->DeviceMmapRegionsCreated != 0ULL,
-        "mmap-style region tracking covers anonymous, file, and device memory.",
-        "mmap-style region tracking proof failed.");
-    OrynKernelScreenReportOkOrFail(virtualMemory->WriteExecutePolicyChecks != 0ULL &&
-        virtualMemory->WriteExecuteDeniedCount != 0ULL,
-        "W^X page policy rejects writable executable mappings.",
-        "W^X page policy proof failed.");
 
     KernelIoWriteString("[KERNEL] Page-fault policy: ");
     KernelIoWriteString(virtualMemory->PageFaultPolicyReady ? "ready\n" : "not proven\n");

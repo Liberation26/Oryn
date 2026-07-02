@@ -91,13 +91,10 @@ unsigned long long OrynPhysicalMemoryAllocateConstrainedPage(
                 page,
                 ConstraintOwner(constraints),
                 ConstraintTag(constraints));
-            OrynPhysicalMemoryPressureRefresh(allocator);
             return page;
         }
     }
     allocator->ConstrainedAllocationFailures += 1ULL;
-    allocator->Pressure.AllocationFailures += 1ULL;
-    OrynPhysicalMemoryPressureRefresh(allocator);
     return ORYN_PHYSICAL_ALLOC_FAIL;
 }
 
@@ -169,13 +166,10 @@ unsigned long long OrynPhysicalMemoryAllocateContiguousPages(
             {
                 allocator->DmaSafeAllocations += pageCount;
             }
-            OrynPhysicalMemoryPressureRefresh(allocator);
             return base;
         }
     }
     allocator->ConstrainedAllocationFailures += 1ULL;
-    allocator->Pressure.AllocationFailures += 1ULL;
-    OrynPhysicalMemoryPressureRefresh(allocator);
     return ORYN_PHYSICAL_ALLOC_FAIL;
 }
 

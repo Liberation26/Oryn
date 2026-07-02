@@ -113,10 +113,6 @@ int OrynPhysicalMemoryInit(const OrynKernelMemoryMap* memoryMap, OrynKernelPhysi
     }
 
     allocator->Initialized = allocator->TrackedUsablePages > 0U ? 1U : 0U;
-    if (allocator->Initialized != 0U)
-    {
-        OrynPhysicalMemoryPressureConfigure(allocator, 0U, 0U);
-    }
     return allocator->Initialized ? 1 : 0;
 }
 
@@ -139,14 +135,10 @@ unsigned long long OrynPhysicalMemoryAllocatePageBelow(
             allocator->FreePages[pageIndex] = allocator->FreePages[allocator->FreePageCount];
             allocator->UsedPageCount += 1U;
             (void)OrynPhysicalMemorySetPageOwner(allocator, page, OrynPhysicalPageOwnerGeneric, 0ULL);
-            OrynPhysicalMemoryPressureRefresh(allocator);
             return page;
         }
     }
 
-    allocator->Pressure.AllocationFailures += 1ULL;
-    allocator->Pressure.OutOfMemoryEvents += allocator->FreePageCount == 0U ? 1ULL : 0ULL;
-    OrynPhysicalMemoryPressureRefresh(allocator);
     return ORYN_PHYSICAL_ALLOC_FAIL;
 }
 
@@ -155,12 +147,6 @@ unsigned long long OrynPhysicalMemoryAllocatePage(OrynKernelPhysicalMemory* allo
 {
     if (allocator == 0 || allocator->Initialized == 0U || allocator->FreePageCount == 0U)
     {
-        if (allocator != 0)
-        {
-            allocator->Pressure.AllocationFailures += 1ULL;
-            allocator->Pressure.OutOfMemoryEvents += allocator->FreePageCount == 0U ? 1ULL : 0ULL;
-            OrynPhysicalMemoryPressureRefresh(allocator);
-        }
         return ORYN_PHYSICAL_ALLOC_FAIL;
     }
 
@@ -168,7 +154,6 @@ unsigned long long OrynPhysicalMemoryAllocatePage(OrynKernelPhysicalMemory* allo
     allocator->UsedPageCount += 1U;
     unsigned long long page = allocator->FreePages[allocator->FreePageCount];
     (void)OrynPhysicalMemorySetPageOwner(allocator, page, OrynPhysicalPageOwnerGeneric, 0ULL);
-    OrynPhysicalMemoryPressureRefresh(allocator);
     return page;
 }
 
@@ -194,7 +179,6 @@ unsigned int OrynPhysicalMemoryReserveRange(
             allocator->FreePageCount -= 1U;
             allocator->FreePages[index] = allocator->FreePages[allocator->FreePageCount];
             allocator->ReservedPages += 1U;
-            OrynPhysicalMemoryPressureRefresh(allocator);
             (void)OrynPhysicalMemorySetPageOwner(allocator, page, OrynPhysicalPageOwnerReserved, physicalStart);
             removed += 1U;
             continue;
@@ -231,7 +215,6 @@ int OrynPhysicalMemoryFreePage(OrynKernelPhysicalMemory* allocator, unsigned lon
     {
         allocator->UsedPageCount -= 1U;
     }
-    OrynPhysicalMemoryPressureRefresh(allocator);
 
     return 1;
 }
@@ -352,7 +335,6 @@ int OrynPhysicalMemoryGetOwnershipStats(
     stats->ConstrainedAllocationFailures = allocator->ConstrainedAllocationFailures;
     stats->DmaSafeAllocations = allocator->DmaSafeAllocations;
     stats->ContiguousAllocationPages = allocator->ContiguousAllocationPages;
-    stats->Pressure = allocator->Pressure;
     for (unsigned int index = 0U; index < allocator->PageRecordCount; ++index)
     {
         const OrynPhysicalPageRecord* record = &allocator->PageRecords[index];

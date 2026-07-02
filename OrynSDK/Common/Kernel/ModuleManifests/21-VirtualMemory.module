@@ -1,7 +1,7 @@
 Order=21
 Id=OrynKernelModuleVirtualMemory
 Name=VirtualMemory
-Items=PML4, CR3 switch, identity and higher-half maps, copy-on-write clone and fault resolution, mmap-style regions, W^X page policy
+Items=PML4, CR3 switch, identity and higher-half maps, copy-on-write clone and fault resolution
 Requires=OrynKernelModuleHeap
 CompiledIn=Yes
 Required=No

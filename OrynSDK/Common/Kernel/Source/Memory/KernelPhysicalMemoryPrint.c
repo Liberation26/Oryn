@@ -153,10 +153,6 @@ void OrynPhysicalMemoryRunSelfTest(OrynKernelPhysicalMemory* allocator)
         dmaPage != ORYN_PHYSICAL_ALLOC_FAIL && dmaBlock != ORYN_PHYSICAL_ALLOC_FAIL,
         "DMA-safe physical allocation constraints are available.",
         "DMA-safe physical allocation constraint proof failed.");
-    OrynKernelScreenReportOkOrFail(
-        OrynPhysicalMemoryRunPressureSelfTest(allocator),
-        "Memory pressure and out-of-memory policy is available.",
-        "Memory pressure and out-of-memory policy proof failed.");
     KernelIoWriteString("[KERNEL] Physical allocator self-test: complete\n");
 }
 
@@ -192,17 +188,6 @@ void OrynPhysicalMemoryPrintOwnershipDiagnostics(const OrynKernelPhysicalMemory*
     KernelIoWriteString(" dma=");
     KernelIoWriteDec64(stats.DmaPages);
     KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Memory pressure level: ");
-    KernelIoWriteDec64(stats.Pressure.Level);
-    KernelIoWriteString(" free=");
-    KernelIoWriteDec64(stats.Pressure.FreePages);
-    KernelIoWriteString(" low=");
-    KernelIoWriteDec64(stats.Pressure.LowWatermarkPages);
-    KernelIoWriteString(" critical=");
-    KernelIoWriteDec64(stats.Pressure.CriticalWatermarkPages);
-    KernelIoWriteString(" allocation-failures=");
-    KernelIoWriteDec64(stats.Pressure.AllocationFailures);
-    KernelIoWriteString("\n");
     KernelIoWriteString("[KERNEL] Constrained physical allocations: ");
     KernelIoWriteDec64(stats.ConstrainedAllocations);
     KernelIoWriteString(" success, ");
@@ -221,7 +206,4 @@ void OrynPhysicalMemoryPrintOwnershipDiagnostics(const OrynKernelPhysicalMemory*
     OrynKernelScreenReportOkOrFail(stats.DmaSafeAllocations != 0ULL,
         "DMA-safe physical allocation constraints are proven.",
         "DMA-safe physical allocation constraints were not proven.");
-    OrynKernelScreenReportOkOrFail(stats.Pressure.Initialized != 0U,
-        "Memory pressure and out-of-memory policy is initialized.",
-        "Memory pressure and out-of-memory policy is not initialized.");
 }

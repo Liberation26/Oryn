@@ -228,15 +228,8 @@ int OrynVirtualMemoryMap(
     unsigned long long start = VmAlignDown(virtualAddress);
     unsigned long long end = VmAlignUp(virtualAddress + bytes);
     unsigned long long physical = VmAlignDown(physicalAddress);
-    if (addressSpace == 0 || bytes == 0ULL || end <= start ||
-        (flags & ORYN_VIRTUAL_FLAG_GUARD) != 0ULL)
+    if (bytes == 0ULL || end <= start || (flags & ORYN_VIRTUAL_FLAG_GUARD) != 0ULL)
     {
-        return 0;
-    }
-    addressSpace->WriteExecutePolicyChecks += 1ULL;
-    if (!OrynVirtualMemoryFlagsRespectWriteXorExecute(flags))
-    {
-        addressSpace->WriteExecuteDeniedCount += 1ULL;
         return 0;
     }
     for (unsigned long long address = start; address < end; address += ORYN_VIRTUAL_PAGE_SIZE)
@@ -285,14 +278,8 @@ int OrynVirtualMemoryProtect(
 {
     unsigned long long start = VmAlignDown(virtualAddress);
     unsigned long long end = VmAlignUp(virtualAddress + bytes);
-    if (addressSpace == 0 || bytes == 0ULL || end <= start)
+    if (bytes == 0ULL || end <= start)
     {
-        return 0;
-    }
-    addressSpace->WriteExecutePolicyChecks += 1ULL;
-    if (!OrynVirtualMemoryFlagsRespectWriteXorExecute(flags))
-    {
-        addressSpace->WriteExecuteDeniedCount += 1ULL;
         return 0;
     }
     for (unsigned long long address = start; address < end; address += ORYN_VIRTUAL_PAGE_SIZE)
@@ -318,8 +305,6 @@ int OrynVirtualMemoryRunAddressSpaceSelfTest(
     unsigned long long physical;
     unsigned long long userAddress = ORYN_VIRTUAL_USER_BASE + 0x200000ULL;
     unsigned long long demandAddress = ORYN_VIRTUAL_USER_BASE + 0x300000ULL;
-    unsigned long long fileAddress = ORYN_VIRTUAL_USER_BASE + 0x400000ULL;
-    unsigned long long deviceAddress = ORYN_VIRTUAL_USER_BASE + 0x500000ULL;
     unsigned char userSeed[8];
     unsigned char kernelCopy[8];
     OrynIdtInterruptFrame demandFrame;
@@ -408,24 +393,6 @@ int OrynVirtualMemoryRunAddressSpaceSelfTest(
     }
     if (ok)
     {
-        ok = OrynVirtualMemoryReserveMmapRegion(&processSpace, fileAddress,
-            ORYN_VIRTUAL_PAGE_SIZE, ORYN_VIRTUAL_FLAG_READ | ORYN_VIRTUAL_FLAG_USER,
-            OrynVirtualMmapRegionFile, 10ULL, 4096ULL, 0ULL);
-    }
-    if (ok)
-    {
-        ok = OrynVirtualMemoryReserveMmapRegion(&processSpace, deviceAddress,
-            ORYN_VIRTUAL_PAGE_SIZE, ORYN_VIRTUAL_FLAG_READ | ORYN_VIRTUAL_FLAG_WRITE | ORYN_VIRTUAL_FLAG_USER,
-            OrynVirtualMmapRegionDevice, 11ULL, 0ULL, 0xFEC00000ULL);
-    }
-    if (ok)
-    {
-        ok = !OrynVirtualMemoryReserveMmapRegion(&processSpace, deviceAddress + ORYN_VIRTUAL_PAGE_SIZE,
-            ORYN_VIRTUAL_PAGE_SIZE, ORYN_VIRTUAL_FLAG_WRITE | ORYN_VIRTUAL_FLAG_EXECUTE | ORYN_VIRTUAL_FLAG_USER,
-            OrynVirtualMmapRegionAnonymous, 0ULL, 0ULL, 0ULL);
-    }
-    if (ok)
-    {
         OrynKernelPageFaultPolicySetProcessContext(&processSpace);
         OrynKernelPageFaultPolicySetDemandAllocator(&processSpace, physicalMemory);
         ok = OrynKernelPageFaultPolicyHandle(&demandFrame, demandAddress) ==
@@ -445,11 +412,6 @@ int OrynVirtualMemoryRunAddressSpaceSelfTest(
         virtualMemory->ApiUnmappedPages += processSpace.UnmappedPages;
         virtualMemory->DemandAllocatedUserPages += processSpace.DemandAllocatedPages;
         virtualMemory->AnonymousRegionsCreated += processSpace.AnonymousRegionCount;
-        virtualMemory->MmapRegionsCreated += processSpace.MmapRegionCount;
-        virtualMemory->FileMmapRegionsCreated += processSpace.FileRegionCount;
-        virtualMemory->DeviceMmapRegionsCreated += processSpace.DeviceRegionCount;
-        virtualMemory->WriteExecutePolicyChecks += processSpace.WriteExecutePolicyChecks;
-        virtualMemory->WriteExecuteDeniedCount += processSpace.WriteExecuteDeniedCount;
         virtualMemory->UserCopyBytesIn += sizeof(kernelCopy);
         virtualMemory->UserCopyBytesOut += sizeof(userSeed);
         virtualMemory->CopyOnWriteCloneCount += 1ULL;
