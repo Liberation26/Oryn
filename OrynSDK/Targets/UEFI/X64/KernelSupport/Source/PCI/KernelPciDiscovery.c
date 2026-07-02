@@ -1,6 +1,7 @@
 #include "KernelPciInternal.h"
 #include "KernelPci.h"
 #include "KernelAhci.h"
+#include "KernelUsbMassStorage.h"
 #include "KernelBootInfo.h"
 #include "KernelIo.h"
 #include "KernelPortIo.h"
@@ -477,6 +478,10 @@ void CountClass(const OrynKernelPciDevice* pciDevice)
     else if (pciDevice->ClassCode == 0x06U)
     {
         gPciState.BridgesFound += 1U;
+    }
+    else if (pciDevice->ClassCode == 0x0CU && pciDevice->Subclass == 0x03U)
+    {
+        gPciState.UsbControllersFound += 1U;
     }
 }
 

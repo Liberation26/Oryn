@@ -13,7 +13,8 @@ typedef enum OrynKernelBlockDeviceType
     OrynKernelBlockDeviceTypeIde = 2,
     OrynKernelBlockDeviceTypeAhci = 3,
     OrynKernelBlockDeviceTypeNvme = 4,
-    OrynKernelBlockDeviceTypeVirtio = 5
+    OrynKernelBlockDeviceTypeVirtio = 5,
+    OrynKernelBlockDeviceTypeUsbMassStorage = 6
 } OrynKernelBlockDeviceType;
 
 typedef struct OrynKernelBlockDevice OrynKernelBlockDevice;

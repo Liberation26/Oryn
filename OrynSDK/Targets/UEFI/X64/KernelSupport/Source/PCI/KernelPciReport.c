@@ -1,6 +1,7 @@
 #include "KernelPciInternal.h"
 #include "KernelAhci.h"
 #include "KernelNvme.h"
+#include "KernelUsbMassStorage.h"
 #include "KernelInterrupts.h"
 #include "KernelScreenReport.h"
 static void PciInterruptStub(OrynIdtInterruptFrame* frame, void* context)
@@ -297,7 +298,8 @@ void OrynKernelPciPrintProof(void)
         "PCI MSI/MSI-X capability foundation ready; no capable device found.");
     OrynAhciPrintProof();
     OrynNvmePrintProof();
-    KernelIoWriteString("[KERNEL] PCI storage IDE/AHCI/NVMe/VirtIO counts: ");
+    OrynUsbMassStoragePrintProof();
+    KernelIoWriteString("[KERNEL] PCI storage IDE/AHCI/NVMe/VirtIO/USB-host counts: ");
     KernelIoWriteDec64(gPciState.IdeControllersFound);
     KernelIoWriteString("/");
     KernelIoWriteDec64(gPciState.AhciControllersFound);
@@ -305,6 +307,8 @@ void OrynKernelPciPrintProof(void)
     KernelIoWriteDec64(gPciState.NvmeControllersFound);
     KernelIoWriteString("/");
     KernelIoWriteDec64(gPciState.VirtioBlockControllersFound);
+    KernelIoWriteString("/");
+    KernelIoWriteDec64(gPciState.UsbControllersFound);
     KernelIoWriteString(gPciState.StorageListTruncated ? " truncated\n" : "\n");
     KernelIoWriteString("[KERNEL] PCI capability/MSI/MSI-X/vector/device-handler counts: ");
     KernelIoWriteDec64(gPciState.CapabilityDevicesFound);

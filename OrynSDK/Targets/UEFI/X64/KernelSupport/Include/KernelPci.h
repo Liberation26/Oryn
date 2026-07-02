@@ -60,6 +60,7 @@ typedef struct OrynKernelPciState
     unsigned int VirtioBlockControllersFound;
     unsigned int NetworkControllersFound;
     unsigned int DisplayControllersFound;
+    unsigned int UsbControllersFound;
     unsigned int ClassDecodeReady;
     unsigned int CapabilityDevicesFound;
     unsigned int MsiDevicesFound;
