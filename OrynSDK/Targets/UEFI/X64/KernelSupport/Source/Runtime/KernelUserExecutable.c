@@ -1,4 +1,5 @@
 #include "KernelUserExecutable.h"
+#include "KernelUserCommand.h"
 #include "KernelUserMode.h"
 #include "KernelVfs.h"
 #include "KernelScreenReport.h"
@@ -79,31 +80,6 @@ static void UserExecCopyText(char* target, unsigned int capacity, const char* so
     target[index] = 0;
 }
 
-static int UserExecAsciiEqual(char left, char right)
-{
-    if (left >= 'a' && left <= 'z') left = (char)(left - ('a' - 'A'));
-    if (right >= 'a' && right <= 'z') right = (char)(right - ('a' - 'A'));
-    return left == right;
-}
-
-static int UserExecPrefixMatch(const char* path, const char* prefix)
-{
-    unsigned int index = 0U;
-    if (path == 0 || prefix == 0 || path[0] != '/')
-    {
-        return 0;
-    }
-    while (prefix[index] != 0)
-    {
-        if (!UserExecAsciiEqual(path[index], prefix[index]))
-        {
-            return 0;
-        }
-        index += 1U;
-    }
-    return path[index] == '/' && path[index + 1U] != 0;
-}
-
 static int UserExecReadLe16(const unsigned char* p)
 {
     return (int)((unsigned int)p[0] | ((unsigned int)p[1] << 8));
@@ -163,6 +139,7 @@ void OrynUserExecutableInit(void)
     gUserExec.ExternalCommandOnlyReady = 1U;
     UserExecCopyText(gUserExec.CommandRoot, sizeof(gUserExec.CommandRoot),
         ORYN_USER_EXEC_DEFAULT_COMMAND_ROOT);
+    OrynUserCommandInit();
 }
 
 int OrynUserExecutableSetCommandRoot(const char* root)
@@ -193,7 +170,7 @@ int OrynUserExecutablePathAllowed(const char* path)
     {
         return 0;
     }
-    if (!UserExecPrefixMatch(normalized, gUserExec.CommandRoot))
+    if (!OrynUserCommandPathIsAllowed(normalized, gUserExec.CommandRoot))
     {
         gUserExec.CommandPathDeniedCount += 1U;
         return 0;
@@ -407,7 +384,8 @@ int OrynUserExecutableRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
         gUserExec.CreatedProcessCount += 1U;
     }
     return denied && thread != 0 && image.LoadSegmentCount != 0U &&
-        image.Abi.AbiVersion == ORYN_USER_EXEC_ABI_VERSION;
+        image.Abi.AbiVersion == ORYN_USER_EXEC_ABI_VERSION &&
+        OrynUserCommandRunSelfTest(&image, gUserExec.CommandRoot);
 }
 
 void OrynUserExecutablePrintProof(void)
@@ -425,4 +403,5 @@ void OrynUserExecutablePrintProof(void)
     OrynKernelScreenReportOkOrFail(gUserExec.CreatedThreadCount != 0U,
         "Loaded user executable creates a controlled user thread.",
         "Loaded user executable did not create a user thread.");
+    OrynUserCommandPrintProof();
 }

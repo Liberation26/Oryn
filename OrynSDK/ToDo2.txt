@@ -306,11 +306,16 @@ Milestone 1.2 - Executable loading and external commands:
        0.5.132 proof: the ELF64 loader reads a user executable through VFS, validates the ELF header/program headers, maps PT_LOAD segments into a user address space, and creates a controlled user thread.
 [ OK ] Load external commands only from /System/Commands or the configured command root.
        0.5.132 proof: external command loading rejects paths outside the configured command root and accepts /SYSTEM/COMMANDS/HELLO from the VFS proof volume.
-[TOBE] Reject path traversal and slash-separated internal command names.
-[TOBE] Create a command image descriptor with ABI version, entry, stack, permissions, and arguments.
-[TOBE] Add argv/envp construction.
-[TOBE] Add process standard handles: stdin, stdout, stderr.
-[TOBE] Add executable permissions.
+[ OK ] Reject path traversal and slash-separated internal command names.
+       0.5.133 proof: KernelUserCommand rejects traversal paths and slash/backslash command names before resolving commands under the configured command root.
+[ OK ] Create a command image descriptor with ABI version, entry, stack, permissions, and arguments.
+       0.5.133 proof: command descriptors carry ABI version, entry, stack top, permission flags, argc/envc, standard handles, argument text, and environment text.
+[ OK ] Add argv/envp construction.
+       0.5.133 proof: command descriptor construction builds bounded argv/envp text vectors for the initial user process image.
+[ OK ] Add process standard handles: stdin, stdout, stderr.
+       0.5.133 proof: command descriptors assign stdin=0, stdout=1, and stderr=2 for the new process.
+[ OK ] Add executable permissions.
+       0.5.133 proof: command descriptors require executable permission flags before a user command image is considered runnable.
 [TOBE] Add shared library policy later; start with static user programs.
 [TOBE] Convert help into /System/Commands/help/help.ocmd or ELF equivalent.
 [TOBE] Convert dir, ls, cd, pwd, type, mkdir, del, copy into external commands.

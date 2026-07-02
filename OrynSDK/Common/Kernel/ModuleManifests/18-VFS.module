@@ -1,7 +1,7 @@
 Order=18
 Id=OrynKernelModuleVfs
 Name=VFS
-Items=root mount, stat, read, write, delete, list, ELF64 user command loading
+Items=root mount, stat, read, write, delete, list, ELF64 user command loading, command descriptors, argv envp, standard handles, executable permissions
 Requires=OrynKernelModuleFat32
 CompiledIn=Yes
 Required=No
