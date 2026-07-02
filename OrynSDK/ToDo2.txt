@@ -300,9 +300,12 @@ Milestone 1.1 - User mode and syscall entry:
        0.5.131 proof: syscall fuzz tests reject invalid user pointers and malformed packet sizes.
 
 Milestone 1.2 - Executable loading and external commands:
-[TOBE] Define Oryn user executable ABI.
-[TOBE] Load ELF64 user executables from VFS.
-[TOBE] Load external commands only from /System/Commands.
+[ OK ] Define Oryn user executable ABI.
+       0.5.132 proof: KernelUserExecutable defines the Oryn user executable ABI magic, version range, x86_64 architecture id, entry point, initial user stack, and image descriptor.
+[ OK ] Load ELF64 user executables from VFS.
+       0.5.132 proof: the ELF64 loader reads a user executable through VFS, validates the ELF header/program headers, maps PT_LOAD segments into a user address space, and creates a controlled user thread.
+[ OK ] Load external commands only from /System/Commands or the configured command root.
+       0.5.132 proof: external command loading rejects paths outside the configured command root and accepts /SYSTEM/COMMANDS/HELLO from the VFS proof volume.
 [TOBE] Reject path traversal and slash-separated internal command names.
 [TOBE] Create a command image descriptor with ABI version, entry, stack, permissions, and arguments.
 [TOBE] Add argv/envp construction.

@@ -1,5 +1,7 @@
 #include "KernelDiagnosticsProofsInternal.h"
 #include "KernelScreenReport.h"
+#include "KernelUserExecutable.h"
+#include "KernelModuleManifest.h"
 
 static OrynKernelMemoryMap gKernelMemoryMap;
 static OrynKernelPhysicalMemory gPhysicalMemory;
@@ -147,6 +149,11 @@ static void OrynKernelDiagnosticsRunVirtualMemoryProof(const OrynBootInfo* kerne
                     OrynKernelModuleManifestReady(OrynKernelModuleProcess);
                     OrynKernelProcessPrintProof();
                     OrynKernelDiagnosticsRunUserModeProof();
+                    if (OrynKernelModuleManifestIsReady(OrynKernelModuleVfs))
+                    {
+                        (void)OrynUserExecutableRunSelfTest(&gPhysicalMemory);
+                        OrynUserExecutablePrintProof();
+                    }
 
                     if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleScheduler))
                     {

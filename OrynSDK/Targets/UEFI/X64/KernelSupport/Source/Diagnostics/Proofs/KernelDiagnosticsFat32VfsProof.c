@@ -2,6 +2,7 @@
 #include "KernelFat32.h"
 #include "KernelVfs.h"
 #include "OrynString.h"
+#include "KernelUserExecutable.h"
 
 #define FAT32_PROOF_SECTORS 256U
 
@@ -39,6 +40,63 @@ static int Fat32ProofWrite(OrynKernelBlockDevice* device, uint32_t lba, uint32_t
     OrynMemcpy(context->Image + (lba * ORYN_FAT32_SECTOR_SIZE), buffer,
         (size_t)sector_count * ORYN_FAT32_SECTOR_SIZE);
     return 1;
+}
+
+
+static void Fat32ProofWrite16(uint8_t* data, uint32_t offset, uint16_t value)
+{
+    data[offset] = (uint8_t)(value & 0xFFU);
+    data[offset + 1U] = (uint8_t)((value >> 8) & 0xFFU);
+}
+
+static void Fat32ProofWrite32(uint8_t* data, uint32_t offset, uint32_t value)
+{
+    data[offset] = (uint8_t)(value & 0xFFU);
+    data[offset + 1U] = (uint8_t)((value >> 8) & 0xFFU);
+    data[offset + 2U] = (uint8_t)((value >> 16) & 0xFFU);
+    data[offset + 3U] = (uint8_t)((value >> 24) & 0xFFU);
+}
+
+static void Fat32ProofWrite64(uint8_t* data, uint32_t offset, uint64_t value)
+{
+    Fat32ProofWrite32(data, offset, (uint32_t)(value & 0xFFFFFFFFULL));
+    Fat32ProofWrite32(data, offset + 4U, (uint32_t)(value >> 32));
+}
+
+static void Fat32ProofBuildUserElf(uint8_t* elf, uint32_t bytes)
+{
+    OrynMemset(elf, 0, bytes);
+    elf[0] = 0x7FU; elf[1] = 'E'; elf[2] = 'L'; elf[3] = 'F';
+    elf[4] = 2U; elf[5] = 1U; elf[6] = 1U;
+    Fat32ProofWrite16(elf, 16U, 2U);
+    Fat32ProofWrite16(elf, 18U, 62U);
+    Fat32ProofWrite32(elf, 20U, 1U);
+    Fat32ProofWrite64(elf, 24U, ORYN_USER_MODE_TEST_ENTRY);
+    Fat32ProofWrite64(elf, 32U, 64ULL);
+    Fat32ProofWrite16(elf, 52U, 64U);
+    Fat32ProofWrite16(elf, 54U, 56U);
+    Fat32ProofWrite16(elf, 56U, 1U);
+    Fat32ProofWrite32(elf, 64U, 1U);
+    Fat32ProofWrite32(elf, 68U, 5U);
+    Fat32ProofWrite64(elf, 72U, 256ULL);
+    Fat32ProofWrite64(elf, 80U, ORYN_USER_MODE_TEST_ENTRY);
+    Fat32ProofWrite64(elf, 88U, ORYN_USER_MODE_TEST_ENTRY);
+    Fat32ProofWrite64(elf, 96U, 2ULL);
+    Fat32ProofWrite64(elf, 104U, ORYN_VIRTUAL_PAGE_SIZE);
+    Fat32ProofWrite64(elf, 112U, ORYN_VIRTUAL_PAGE_SIZE);
+    elf[256] = 0x90U;
+    elf[257] = 0xF4U;
+}
+
+static int Fat32ProofCreateCommandElf(void)
+{
+    uint8_t elf[512];
+    Fat32ProofBuildUserElf(elf, sizeof(elf));
+    if (!OrynVfsCreateDirectory("/SYSTEM/COMMANDS"))
+    {
+        return 0;
+    }
+    return OrynFat32CreateFile(&gFat32ProofVolume, "/SYSTEM/COMMANDS/HELLO", elf, sizeof(elf));
 }
 
 static int Fat32ProofTextMatches(const char* left, const char* right, uint32_t count)
@@ -135,6 +193,9 @@ void OrynKernelDiagnosticsRunFat32VfsProof(const OrynBootInfo* kernelBootInfo)
     if (!Fat32ProofMountVfs(kernelBootInfo)) return;
     if (!Fat32ProofStep(OrynVfsCreateDirectory("/SYSTEM"),
         "FAT32 directory create works.", "FAT32 directory create failed.")) return;
+    if (!Fat32ProofStep(Fat32ProofCreateCommandElf(),
+        "System/Commands contains a VFS-loadable ELF64 user command.",
+        "System/Commands ELF64 command creation failed.")) return;
     if (!Fat32ProofStep(OrynFat32CreateFile(&gFat32ProofVolume, "/SYSTEM/HELLO.TXT", text, (uint32_t)OrynStrlen(text)),
         "FAT32 file create allocates directory entry and cluster chain.",
         "FAT32 file create did not allocate directory entry and cluster chain.")) return;
