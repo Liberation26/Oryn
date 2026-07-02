@@ -275,9 +275,12 @@ Milestone 1.0 - Threads, processes, and scheduler:
        0.5.125 proof: Process/thread records queue Oryn Event-compatible signal packets; scheduler honours CPU affinity masks in the run-queue path; scheduler diagnostics dump per-CPU run queues with thread IDs, states, priorities, and affinity masks.
 
 Milestone 1.1 - User mode and syscall entry:
-[TOBE] Enter ring 3 user mode from a controlled test process.
-[TOBE] Add TSS/user stack handling for syscalls and interrupts.
-[TOBE] Choose syscall entry mechanisms: syscall/sysret where supported, interrupt fallback where needed.
+[ OK ] Enter ring 3 user mode from a controlled test process.
+       0.5.129 proof: KernelUserMode builds a controlled ring-3 iret frame from a kernel-created user process/thread, using user CS/SS selectors and a known user entry/stack for the first controlled test process.
+[ OK ] Add TSS/user stack handling for syscalls and interrupts.
+       0.5.129 proof: the GDT/TSS path exposes a kernel RSP0 setter and proves the TSS kernel stack is installed before the controlled user entry frame is accepted.
+[ OK ] Choose syscall entry mechanisms: syscall/sysret where supported, interrupt fallback where needed.
+       0.5.129 proof: CPUID extended feature detection records syscall/sysret support and KernelUserMode selects syscall/sysret when present, otherwise the existing interrupt-vector syscall fallback remains selected.
 [TOBE] Route all user requests into Get, Set, or Event packets.
 [TOBE] Add syscall ABI versioning.
 [TOBE] Add syscall argument validation.

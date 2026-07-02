@@ -142,4 +142,7 @@ void OrynKernelCpuPrintFeatures(void)
     PrintCpuLocalApicStatus(features);
     PrintCpuApic2Status(features);
     PrintCpuTimerStatus(features);
+    OrynKernelScreenReportOkOrFail(features->HasSyscallSysret,
+        "CPU syscall/sysret feature present.",
+        "CPU syscall/sysret feature absent; interrupt syscall fallback will be used.");
 }

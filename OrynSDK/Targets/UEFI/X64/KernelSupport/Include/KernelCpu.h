@@ -10,6 +10,7 @@ typedef struct OrynKernelCpuFeatures
     unsigned int HasX2Apic;
     unsigned int HasTscDeadline;
     unsigned int HasInvariantTsc;
+    unsigned int HasSyscallSysret;
     char Vendor[13];
 } OrynKernelCpuFeatures;
 

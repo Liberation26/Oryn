@@ -148,6 +148,23 @@ unsigned short OrynKernelGdtCodeSelector(void)
     return ORYN_GDT_KERNEL_CODE_SELECTOR;
 }
 
+unsigned short OrynKernelGdtUserCodeSelector(void)
+{
+    return ORYN_GDT_USER_CODE_SELECTOR;
+}
+
+unsigned short OrynKernelGdtUserDataSelector(void)
+{
+    return ORYN_GDT_USER_DATA_SELECTOR;
+}
+
+void OrynKernelGdtSetKernelStack(unsigned long long rsp0)
+{
+    gTss.Rsp0 = rsp0;
+    gGdtState.KernelRsp0 = rsp0;
+    gGdtState.UserStackSwitchReady = (rsp0 != 0ULL && gGdtState.TssLoaded != 0U) ? 1U : 0U;
+}
+
 unsigned char OrynKernelGdtExceptionIstIndex(void)
 {
     return ORYN_GDT_EXCEPTION_IST;
@@ -205,6 +222,8 @@ int OrynKernelGdtInit(void)
     gGdtState.TssBase = (unsigned long long)&gTss;
     gGdtState.TssLimit = (unsigned int)(sizeof(gTss) - 1U);
     gGdtState.ExceptionIstTop = istTop;
+    gGdtState.KernelRsp0 = gTss.Rsp0;
+    gGdtState.UserStackSwitchReady = (gTss.Rsp0 != 0ULL) ? 1U : 0U;
     gGdtState.TssLoaded = (gGdtState.TaskRegister == ORYN_GDT_TSS_SELECTOR) ? 1U : 0U;
     gGdtState.Verified =
         (loaded.Base == pointer.Base &&
@@ -257,4 +276,7 @@ void OrynKernelGdtPrintProof(void)
     KernelIoWriteString("[KERNEL] Exception IST stack top: ");
     KernelIoWriteHex64(gGdtState.ExceptionIstTop);
     KernelIoWriteString("\n");
+    OrynKernelScreenReportOkOrFail(gGdtState.UserStackSwitchReady,
+        "TSS kernel stack is ready for user interrupts and syscalls.",
+        "TSS kernel stack for user entry is not ready.");
 }

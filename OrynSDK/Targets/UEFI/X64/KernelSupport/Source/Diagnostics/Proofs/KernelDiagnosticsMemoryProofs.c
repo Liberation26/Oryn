@@ -75,6 +75,32 @@ static void OrynKernelDiagnosticsRunHeapGuardProof(void)
     OrynKernelHeapPrintProof();
 }
 
+
+static void OrynKernelDiagnosticsRunUserModeProof(void)
+{
+    OrynKernelProcess* process;
+    OrynKernelUserProcess userProcess;
+    OrynKernelThread* userThread;
+
+    process = OrynKernelProcessCreate(&gPhysicalMemory, "ring3-proof", 0U);
+    if (process == 0)
+    {
+        OrynKernelUserModePrintProof();
+        return;
+    }
+
+    userProcess = OrynKernelUserProcessFromProcess(process);
+    userThread = OrynKernelThreadCreateUser(
+        &userProcess,
+        "ring3-main",
+        ORYN_USER_MODE_TEST_ENTRY,
+        ORYN_USER_MODE_TEST_STACK);
+    (void)OrynKernelUserModeRunProof(userThread);
+    OrynKernelUserModePrintProof();
+    OrynKernelThreadDestroy(userThread);
+    OrynKernelProcessDestroy(process);
+}
+
 static void OrynKernelDiagnosticsRunVirtualMemoryProof(const OrynBootInfo* kernelBootInfo)
 {
     if (!OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleVirtualMemory))
@@ -120,6 +146,7 @@ static void OrynKernelDiagnosticsRunVirtualMemoryProof(const OrynBootInfo* kerne
                      */
                     OrynKernelModuleManifestReady(OrynKernelModuleProcess);
                     OrynKernelProcessPrintProof();
+                    OrynKernelDiagnosticsRunUserModeProof();
 
                     if (OrynKernelDiagnosticsShouldStartModule(kernelBootInfo, OrynKernelModuleScheduler))
                     {

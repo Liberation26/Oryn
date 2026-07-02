@@ -29,6 +29,7 @@
 #include "KernelScheduler.h"
 #include "KernelSmp.h"
 #include "KernelSysCallInterrupts.h"
+#include "KernelUserMode.h"
 #include "KernelVirtualMemory.h"
 #include "SysCall.h"
 #include "OrynLibCProof.h"
