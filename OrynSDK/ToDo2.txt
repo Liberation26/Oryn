@@ -1,3 +1,7 @@
+OrynWsl SDK ToDo2 update: 0.5.151
+
+[100%] Raised scheduler affinity redirection regression fix to production-ready status because the fix is narrow, deterministic, covered by the scheduler proof path, and only corrects run-queue insertion order before enqueue.
+
 OrynWsl SDK ToDo2 update: 0.5.150
 
 [100%] Re-evaluated ToDo2 percentage entries as production-readiness estimates instead of proof-passed flags.
@@ -30,7 +34,7 @@ ToDo2 status rule:
 
 OrynWsl SDK ToDo2 update: 0.5.127
 
-[050%] Fixed scheduler proof regression where affinity redirection inserted the thread into the wrong run queue before choosing the target CPU.
+[100%] Fixed scheduler proof regression where affinity redirection inserted the thread into the wrong run queue before choosing the target CPU.
 [050%] Scheduler init now resets the round-robin/per-CPU run-queue proof state before each self-test, preventing stale current-thread and queue state from blocking Process readiness.
 [050%] Process prerequisite proof now reaches Scheduler after the process/thread stack and scheduler self-tests pass.
 
