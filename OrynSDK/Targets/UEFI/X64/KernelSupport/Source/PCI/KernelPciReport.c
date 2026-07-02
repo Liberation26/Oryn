@@ -276,12 +276,24 @@ void OrynKernelPciPrintProof(void)
     OrynKernelScreenReportOkOrFail(gPciState.ClassDecodeReady,
         "PCI class-code decoding ready.",
         "PCI class-code decoding unavailable.");
+    OrynKernelScreenReportOkOrFail(gPciState.StorageClassDiscoveryReady,
+        "PCI storage-class discovery is complete.",
+        "PCI storage-class discovery is unavailable.");
     OrynKernelScreenReportOkOrWarn(gPciState.CapabilityDevicesFound != 0U,
         "PCI capability-list scan foundation ran.",
         "PCI capability-list scan found no capabilities.");
     OrynKernelScreenReportOkOrWarn(gPciState.MsiDevicesFound || gPciState.MsixDevicesFound,
         "PCI MSI/MSI-X capability foundation discovered capable devices.",
         "PCI MSI/MSI-X capability foundation ready; no capable device found.");
+    KernelIoWriteString("[KERNEL] PCI storage IDE/AHCI/NVMe/VirtIO counts: ");
+    KernelIoWriteDec64(gPciState.IdeControllersFound);
+    KernelIoWriteString("/");
+    KernelIoWriteDec64(gPciState.AhciControllersFound);
+    KernelIoWriteString("/");
+    KernelIoWriteDec64(gPciState.NvmeControllersFound);
+    KernelIoWriteString("/");
+    KernelIoWriteDec64(gPciState.VirtioBlockControllersFound);
+    KernelIoWriteString(gPciState.StorageListTruncated ? " truncated\n" : "\n");
     KernelIoWriteString("[KERNEL] PCI capability/MSI/MSI-X/vector/device-handler counts: ");
     KernelIoWriteDec64(gPciState.CapabilityDevicesFound);
     KernelIoWriteString("/");

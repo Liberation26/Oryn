@@ -59,6 +59,8 @@ static void Fat32ProofDeviceInit(void)
     gFat32ProofContext.SectorCount = FAT32_PROOF_SECTORS;
     gFat32ProofDevice.BytesPerSector = ORYN_FAT32_SECTOR_SIZE;
     gFat32ProofDevice.SectorCount = FAT32_PROOF_SECTORS;
+    gFat32ProofDevice.Type = OrynKernelBlockDeviceTypeMemory;
+    gFat32ProofDevice.Name = "FAT32 proof memory block device";
     gFat32ProofDevice.Context = &gFat32ProofContext;
     gFat32ProofDevice.Read = Fat32ProofRead;
     gFat32ProofDevice.Write = Fat32ProofWrite;
@@ -117,7 +119,17 @@ void OrynKernelDiagnosticsRunFat32VfsProof(const OrynBootInfo* kernelBootInfo)
     uint32_t entry_count = 0;
 
     OrynKernelScreenReportOk(0, "FAT32/VFS kernel-side proof started.");
+    OrynKernelBlockDeviceRegistryInit();
     Fat32ProofDeviceInit();
+    if (!Fat32ProofStep(OrynKernelBlockRegisterDevice(&gFat32ProofDevice),
+        "KernelBlockDevice registry registers usable block devices.",
+        "KernelBlockDevice registry could not register the proof device.")) return;
+    if (!Fat32ProofStep(OrynKernelBlockGetDevice(0U) == &gFat32ProofDevice,
+        "KernelBlockDevice lookup returns registered devices.",
+        "KernelBlockDevice lookup failed for registered proof device.")) return;
+    if (!Fat32ProofStep(!OrynKernelBlockValidateRange(&gFat32ProofDevice, FAT32_PROOF_SECTORS, 1U),
+        "KernelBlockDevice rejects out-of-range sector requests.",
+        "KernelBlockDevice accepted an out-of-range sector request.")) return;
 
     if (!Fat32ProofMountFat32()) return;
     if (!Fat32ProofMountVfs(kernelBootInfo)) return;

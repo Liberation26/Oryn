@@ -4,6 +4,7 @@
 #include "OrynBootInfo.h"
 
 #define ORYN_PCI_MAX_RECORDED_DEVICES 128U
+#define ORYN_PCI_MAX_STORAGE_CONTROLLERS 32U
 
 typedef struct OrynKernelPciDevice
 {
@@ -28,6 +29,8 @@ typedef struct OrynKernelPciDevice
     unsigned int MsixCapabilityOffset;
     unsigned int AssignedInterruptVector;
     unsigned int DeviceInterruptRegistered;
+    unsigned int IsStorageController;
+    unsigned int StorageKind;
 } OrynKernelPciDevice;
 
 typedef struct OrynKernelPciState
@@ -47,6 +50,13 @@ typedef struct OrynKernelPciState
     unsigned int MultifunctionDevices;
     unsigned int BridgesFound;
     unsigned int StorageControllersFound;
+    unsigned int StorageControllersRecorded;
+    unsigned int StorageClassDiscoveryReady;
+    unsigned int StorageListTruncated;
+    unsigned int IdeControllersFound;
+    unsigned int AhciControllersFound;
+    unsigned int NvmeControllersFound;
+    unsigned int VirtioBlockControllersFound;
     unsigned int NetworkControllersFound;
     unsigned int DisplayControllersFound;
     unsigned int ClassDecodeReady;
@@ -60,6 +70,7 @@ typedef struct OrynKernelPciState
     unsigned int FirstMcfgEndBus;
     unsigned long long FirstMcfgBase;
     OrynKernelPciDevice Devices[ORYN_PCI_MAX_RECORDED_DEVICES];
+    OrynKernelPciDevice StorageControllers[ORYN_PCI_MAX_STORAGE_CONTROLLERS];
 } OrynKernelPciState;
 
 void OrynKernelPciInit(const OrynBootInfo* bootInfo);
@@ -82,5 +93,7 @@ const char* OrynKernelPciHeaderTypeName(unsigned int headerType);
 const char* OrynKernelPciInterruptPinName(unsigned int interruptPin);
 void OrynKernelPciPrintProof(void);
 int OrynKernelPciAssignInterruptVector(OrynKernelPciDevice* pciDevice, unsigned int vector);
+int OrynKernelPciIsStorageController(const OrynKernelPciDevice* pciDevice);
+const OrynKernelPciDevice* OrynKernelPciGetStorageController(unsigned int index);
 
 #endif

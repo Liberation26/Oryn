@@ -1,4 +1,4 @@
-OrynWsl SDK ToDo2 update: 0.5.126
+OrynWsl SDK ToDo2 update: 0.5.127
 
 [ OK ] Fixed scheduler proof regression where affinity redirection inserted the thread into the wrong run queue before choosing the target CPU.
 [ OK ] Scheduler init now resets the round-robin/per-CPU run-queue proof state before each self-test, preventing stale current-thread and queue state from blocking Process readiness.
@@ -318,8 +318,8 @@ Milestone 1.3 - VFS and file descriptor model:
 [TOBE] Add sync/flush policy.
 
 Milestone 1.4 - Storage stack:
-[WARN] PCI storage-class discovery exists.
-[WARN] KernelBlockDevice source exists as a foundation.
+[ OK ] PCI storage-class discovery records storage controllers and storage subclasses.
+[ OK ] KernelBlockDevice registry, range validation, read/write sector APIs and proof are implemented.
 [ OK ] FAT32 source is split into BPB/mount, FAT table, cluster I/O, directory, file read/write, format, mutate, names, path, validation, and free-space accounting helpers.
 [TOBE] Define production block device abstraction: sector size, block count, read, write, flush.
 [TOBE] Add partition table parser: MBR first, GPT next.

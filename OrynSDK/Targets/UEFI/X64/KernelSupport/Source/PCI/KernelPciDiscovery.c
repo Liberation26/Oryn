@@ -404,11 +404,66 @@ const char* OrynKernelPciInterruptPinName(unsigned int interruptPin)
     }
 }
 
+int OrynKernelPciIsStorageController(const OrynKernelPciDevice* pciDevice)
+{
+    if (pciDevice == 0)
+    {
+        return 0;
+    }
+    return pciDevice->ClassCode == 0x01U ||
+        (pciDevice->VendorId == 0x1AF4U && pciDevice->DeviceId >= 0x1001U &&
+        pciDevice->DeviceId <= 0x1042U);
+}
+
+const OrynKernelPciDevice* OrynKernelPciGetStorageController(unsigned int index)
+{
+    if (index >= gPciState.StorageControllersRecorded)
+    {
+        return 0;
+    }
+    return &gPciState.StorageControllers[index];
+}
+
+static void RecordStorageController(const OrynKernelPciDevice* pciDevice)
+{
+    if (gPciState.StorageControllersRecorded < ORYN_PCI_MAX_STORAGE_CONTROLLERS)
+    {
+        gPciState.StorageControllers[gPciState.StorageControllersRecorded] = *pciDevice;
+        gPciState.StorageControllersRecorded += 1U;
+    }
+    else
+    {
+        gPciState.StorageListTruncated = 1U;
+    }
+}
+
+static void CountStorageKind(const OrynKernelPciDevice* pciDevice)
+{
+    if (pciDevice->Subclass == 0x01U)
+    {
+        gPciState.IdeControllersFound += 1U;
+    }
+    else if (pciDevice->Subclass == 0x06U && pciDevice->ProgIf == 0x01U)
+    {
+        gPciState.AhciControllersFound += 1U;
+    }
+    else if (pciDevice->Subclass == 0x08U)
+    {
+        gPciState.NvmeControllersFound += 1U;
+    }
+    if (pciDevice->VendorId == 0x1AF4U)
+    {
+        gPciState.VirtioBlockControllersFound += 1U;
+    }
+}
+
 void CountClass(const OrynKernelPciDevice* pciDevice)
 {
-    if (pciDevice->ClassCode == 0x01U)
+    if (OrynKernelPciIsStorageController(pciDevice))
     {
         gPciState.StorageControllersFound += 1U;
+        CountStorageKind(pciDevice);
+        RecordStorageController(pciDevice);
     }
     else if (pciDevice->ClassCode == 0x02U)
     {
