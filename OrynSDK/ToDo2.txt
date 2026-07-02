@@ -1,3 +1,10 @@
+OrynWsl SDK ToDo2 update: 0.5.149
+
+[100%] Refreshed ToDo2 from the user-provided current copy.
+[100%] Converted the remaining completed OK entry to [100%] while leaving WARN, FAIL, and TOBE statuses unchanged.
+[100%] Updated VirtIO-Net and VirtIO-GPU milestones so the current driver foundations are no longer listed as TOBE.
+[100%] Kept this file focused on production-readiness status, with [100%] used only for completed production-ready foundation work.
+
 OrynWsl SDK ToDo2 update: 0.5.148
 
 [100%] Corrected ToDo2 production-readiness format so only completed OK items are shown as percentages.
@@ -367,6 +374,15 @@ Milestone 1.4 - Storage stack:
        0.5.140 proof: KernelUsbMassStorage binds to PCI USB host controllers, tracks USB mass-storage enumeration, bulk-only transport, SCSI command and DMA-buffer foundations, prepares USB mass-storage block-device records, and reports OK even when no USB storage device is attached.
 [100%] Add virtio-blk driver for QEMU if selected as a target profile.
        0.5.143 proof: KernelVirtioBlock binds to QEMU VirtIO block PCI devices when StorageInterface=virtio-blk is selected, prepares feature negotiation, virtqueue, request queue, DMA buffer, and block-device foundations, and the runner exposes the FAT32 disk through virtio-blk-pci for that profile.
+[100%] Add VirtIO-Net driver foundation for high-speed network cards.
+       0.5.145 proof: KernelVirtioNet binds to QEMU/Red Hat transitional and modern VirtIO network PCI devices, prepares feature negotiation, RX/TX/control virtqueues, packet DMA buffers, MAC address, interrupt and link-status foundations, and PCI init invokes it after network-class discovery.
+[TOBE] virtio-scsi
+[TOBE] virtio-balloon
+[TOBE] virtio-rng
+[100%] Add VirtIO-GPU driver foundation for 2D/3D graphics and display outputs.
+       0.5.146 proof: KernelVirtioGpu binds to QEMU/Red Hat transitional and modern VirtIO GPU PCI devices, prepares feature negotiation, control/cursor virtqueues, display outputs, 2D/3D resources, DMA buffers, EDID/display modes, interrupts and display-subsystem bridge foundations, and PCI init invokes it after display-class discovery.
+[TOBE] virtio-serial / console
+[TOBE] virtio-fs
 [TOBE] Add block cache.
 [TOBE] Add request queue and completion events.
 [TOBE] Add read-only mount mode for unsafe drivers.
@@ -376,6 +392,8 @@ Milestone 1.4 - Storage stack:
 
 Milestone 1.5 - Device model and drivers:
 [100%] PCI enumerator foundation exists.
+[100%] VirtIO-Net PCI driver foundation exists for QEMU high-speed network cards.
+[100%] VirtIO-GPU PCI driver foundation exists for QEMU 2D/3D display outputs.
 [WARN] ACPI parsing is currently table-specific, not a full shared ACPI module.
 [TOBE] Create a device object model: bus, device, driver, resource, class.
 [TOBE] Create driver registry and probe/bind/unbind lifecycle.
@@ -391,7 +409,8 @@ Milestone 1.5 - Device model and drivers:
 
 Milestone 1.6 - Console, display, text, and input:
 [100%] Framebuffer status output exists.
-[100%] Scrollback and keyboard scrolling proof exist.
+[100%] VirtIO-GPU display-output, EDID/display-mode, and display-subsystem bridge foundations exist.
+[100%] Scrollback and keyboard scr olling proof exist.
 [WARN] TTF loader/renderer foundation exists, but packaged fonts are not yet complete.
 [TOBE] Finalize Shell -> Console -> Display ownership.
 [TOBE] Ensure Shell never draws directly.
@@ -408,7 +427,8 @@ Milestone 1.6 - Console, display, text, and input:
 [TOBE] Add font get/set/set size command as external user commands.
 
 Milestone 1.7 - Networking stack:
-[TOBE] Add NIC driver model and at least one QEMU NIC driver.
+[TOBE] Add NIC driver model.
+[100%] Add at least one QEMU high-speed NIC driver foundation: VirtIO-Net.
 [TOBE] Add Ethernet frame receive/transmit.
 [TOBE] Add MAC address management.
 [TOBE] Add ARP.
@@ -760,7 +780,7 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [100%] 0.5.141 USB mass storage PCI init proof fix.
 
 [100%] 0.5.143 VirtIO block QEMU profile driver.
-[OK] 0.5.143 VirtIO block init is invoked from PCI init and registers prepared block devices.
+[100%] 0.5.143 VirtIO block init is invoked from PCI init and registers prepared block devices.
 
 
 0.5.145 - VirtIO-Net high-speed network driver foundation
