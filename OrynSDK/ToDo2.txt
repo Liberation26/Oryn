@@ -49,7 +49,7 @@ OrynWsl SDK ToDo2 update: 0.5.127
 
 OrynWsl SDK ToDo2 update: 0.5.120
 
-[050%] Added IOAPIC discovery from ACPI MADT using BootInfo RSDP handoff data.
+[100%] Added IOAPIC discovery from ACPI MADT using BootInfo RSDP handoff data.
 [050%] Added IOAPIC legacy IRQ routing records with source-override resolution and redirection programming foundation.
 [050%] Added PCI MSI/MSI-X capability detection and interrupt vector assignment foundation.
 [050%] Added interrupt handler registration by vector and by PCI bus/device/function identity.
