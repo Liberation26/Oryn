@@ -12,6 +12,8 @@
 #define ORYN_PHYSICAL_MAX_OWNERSHIP_RECORDS 8192U
 #define ORYN_PHYSICAL_DMA_32BIT_LIMIT 0x100000000ULL
 #define ORYN_PHYSICAL_DMA_24BIT_LIMIT 0x01000000ULL
+#define ORYN_PHYSICAL_PRESSURE_LOW_PERCENT 20U
+#define ORYN_PHYSICAL_PRESSURE_CRITICAL_PERCENT 5U
 
 typedef enum OrynPhysicalPageOwner
 {
@@ -44,6 +46,38 @@ typedef struct OrynPhysicalPageRecord
     unsigned long long Tag;
 } OrynPhysicalPageRecord;
 
+typedef enum OrynPhysicalMemoryPressureLevel
+{
+    OrynPhysicalMemoryPressureNormal = 0,
+    OrynPhysicalMemoryPressureLow = 1,
+    OrynPhysicalMemoryPressureCritical = 2,
+    OrynPhysicalMemoryPressureOutOfMemory = 3
+} OrynPhysicalMemoryPressureLevel;
+
+typedef enum OrynPhysicalOutOfMemoryAction
+{
+    OrynPhysicalOutOfMemoryActionContinue = 0,
+    OrynPhysicalOutOfMemoryActionReclaim = 1,
+    OrynPhysicalOutOfMemoryActionKillProcess = 2,
+    OrynPhysicalOutOfMemoryActionKernelPanic = 3
+} OrynPhysicalOutOfMemoryAction;
+
+typedef struct OrynPhysicalMemoryPressureState
+{
+    unsigned int Initialized;
+    unsigned int Level;
+    unsigned int LastAction;
+    unsigned int LowWatermarkPages;
+    unsigned int CriticalWatermarkPages;
+    unsigned int FreePages;
+    unsigned int UsedPages;
+    unsigned int TotalTrackedPages;
+    unsigned long long AllocationFailures;
+    unsigned long long LowTransitions;
+    unsigned long long CriticalTransitions;
+    unsigned long long OutOfMemoryEvents;
+} OrynPhysicalMemoryPressureState;
+
 typedef struct OrynPhysicalPageOwnershipStats
 {
     unsigned int RecordsUsed;
@@ -62,6 +96,7 @@ typedef struct OrynPhysicalPageOwnershipStats
     unsigned long long ConstrainedAllocationFailures;
     unsigned long long DmaSafeAllocations;
     unsigned long long ContiguousAllocationPages;
+    OrynPhysicalMemoryPressureState Pressure;
 } OrynPhysicalPageOwnershipStats;
 
 typedef struct OrynKernelPhysicalMemory
@@ -87,6 +122,7 @@ typedef struct OrynKernelPhysicalMemory
     unsigned long long ConstrainedAllocationFailures;
     unsigned long long DmaSafeAllocations;
     unsigned long long ContiguousAllocationPages;
+    OrynPhysicalMemoryPressureState Pressure;
 } OrynKernelPhysicalMemory;
 
 int OrynPhysicalMemoryInit(const OrynKernelMemoryMap* memoryMap, OrynKernelPhysicalMemory* allocator);
@@ -127,6 +163,17 @@ int OrynPhysicalMemoryReleasePageReference(
 int OrynPhysicalMemoryGetOwnershipStats(
     const OrynKernelPhysicalMemory* allocator,
     OrynPhysicalPageOwnershipStats* stats);
+void OrynPhysicalMemoryPressureConfigure(
+    OrynKernelPhysicalMemory* allocator,
+    unsigned int lowWatermarkPages,
+    unsigned int criticalWatermarkPages);
+void OrynPhysicalMemoryPressureRefresh(OrynKernelPhysicalMemory* allocator);
+const OrynPhysicalMemoryPressureState* OrynPhysicalMemoryGetPressureState(
+    const OrynKernelPhysicalMemory* allocator);
+unsigned int OrynPhysicalMemoryOutOfMemoryAction(
+    const OrynKernelPhysicalMemory* allocator,
+    unsigned int kernelRequest);
+int OrynPhysicalMemoryRunPressureSelfTest(OrynKernelPhysicalMemory* allocator);
 void OrynPhysicalMemoryPrintOwnershipDiagnostics(const OrynKernelPhysicalMemory* allocator);
 void OrynPhysicalMemoryPrintSummary(const OrynKernelPhysicalMemory* allocator);
 void OrynPhysicalMemoryPrintFinalState(const OrynKernelPhysicalMemory* allocator);
