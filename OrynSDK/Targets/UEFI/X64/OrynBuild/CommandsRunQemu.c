@@ -106,9 +106,13 @@ int OrynRunQemu(const OrynProject* project)
         return 0;
     }
 
-    if (!TextEqualsIgnoreCaseCommand(project->run_storage_interface, "ide"))
+    int storage_is_ide = TextEqualsIgnoreCaseCommand(project->run_storage_interface, "ide");
+    int storage_is_virtio = TextEqualsIgnoreCaseCommand(project->run_storage_interface, "virtio") ||
+        TextEqualsIgnoreCaseCommand(project->run_storage_interface, "virtio-blk") ||
+        TextEqualsIgnoreCaseCommand(project->run_storage_interface, "virtio_blk");
+    if (!storage_is_ide && !storage_is_virtio)
     {
-        OrynLogFail("Only StorageInterface=ide is currently supported by the UEFI FAT32 image runner.");
+        OrynLogFail("StorageInterface must be ide or virtio-blk for the QEMU FAT32 image runner.");
         return 0;
     }
 
@@ -174,9 +178,20 @@ int OrynRunQemu(const OrynProject* project)
 
     char firmware_argument[ORYN_MAX_PATH * 2];
     char drive_argument[ORYN_MAX_PATH * 2];
+    char storage_device_argument[128];
     char debug_argument[ORYN_MAX_PATH * 2];
     snprintf(firmware_argument, sizeof(firmware_argument), "if=pflash,format=raw,readonly=on,file=%s", ovmf_qemu);
-    snprintf(drive_argument, sizeof(drive_argument), "format=raw,if=ide,file=%s", disk_qemu);
+    if (storage_is_virtio)
+    {
+        snprintf(drive_argument, sizeof(drive_argument), "format=raw,if=none,id=oryndisk,file=%s", disk_qemu);
+        snprintf(storage_device_argument, sizeof(storage_device_argument),
+            "-device virtio-blk-pci,drive=oryndisk,bootindex=0 ");
+    }
+    else
+    {
+        snprintf(drive_argument, sizeof(drive_argument), "format=raw,if=ide,file=%s", disk_qemu);
+        storage_device_argument[0] = 0;
+    }
     snprintf(debug_argument, sizeof(debug_argument), "file:%s", stage_debug_qemu);
 
     char qemu_quoted[ORYN_MAX_PATH + 16];
@@ -210,7 +225,7 @@ int OrynRunQemu(const OrynProject* project)
     snprintf(qemu_command, sizeof(qemu_command),
         "%s -machine %s -cpu %s -smp %u -m %s -drive %s -no-reboot -display %s "
         "-monitor none %s -debugcon %s -global isa-debugcon.iobase=0xe9 "
-        "%s-boot order=c,menu=off -drive %s",
+        "%s-boot order=c,menu=off -drive %s %s",
         qemu_quoted,
         machine_argument,
         cpu_argument,
@@ -221,7 +236,8 @@ int OrynRunQemu(const OrynProject* project)
         serial_argument,
         debug_quoted,
         debug_exit_argument,
-        drive_quoted);
+        drive_quoted,
+        storage_device_argument);
 
     char command[ORYN_MAX_PATH * 9];
     if (interactive_display)

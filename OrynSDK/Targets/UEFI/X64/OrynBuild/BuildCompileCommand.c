@@ -33,6 +33,7 @@ void BuildCompileCommand(
         "-Wall -Wextra -MMD -MF \"%s\" "
         "-DORYN_VM_PIC=%d -DORYN_VM_APIC=%d -DORYN_VM_APIC2=%d "
         "-DORYN_VM_HPET=%d -DORYN_VM_SMP_CPUS=%u -DORYN_VM_INTERACTIVE_DISPLAY=%d "
+        "-DORYN_VM_STORAGE_VIRTIO_BLK=%d "
         "%s-I\"%s\" -I\"%s\" -I\"%s\" -I\"%s\" -I\"%s\" -I\"%s\" -c \"%s\" -o \"%s\"",
         dependency_file,
         ProjectBoolEnabledBuild(project->run_pic, 1),
@@ -41,6 +42,7 @@ void BuildCompileCommand(
         ProjectBoolEnabledBuild(project->run_hpet, 1),
         ProjectCpuCountBuild(project),
         ProjectDisplayIsInteractiveBuild(project),
+        ProjectStorageInterfaceIsVirtioBlockBuild(project),
         selection_include_argument,
         project->sdk_kernel_common_include_dir,
         project->sdk_kernel_target_include_dir,

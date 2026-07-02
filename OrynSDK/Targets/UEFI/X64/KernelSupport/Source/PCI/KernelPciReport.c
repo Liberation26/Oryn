@@ -2,6 +2,7 @@
 #include "KernelAhci.h"
 #include "KernelNvme.h"
 #include "KernelUsbMassStorage.h"
+#include "KernelVirtioBlock.h"
 #include "KernelInterrupts.h"
 #include "KernelScreenReport.h"
 static void PciInterruptStub(OrynIdtInterruptFrame* frame, void* context)
@@ -300,6 +301,7 @@ void OrynKernelPciPrintProof(void)
         "PCI MSI/MSI-X capability foundation ready; no capable device found.");
     OrynAhciPrintProof();
     OrynNvmePrintProof();
+    OrynVirtioBlockPrintProof();
     OrynUsbMassStoragePrintProof();
     KernelIoWriteString("[KERNEL] PCI storage IDE/AHCI/NVMe/VirtIO/USB-host counts: ");
     KernelIoWriteDec64(gPciState.IdeControllersFound);

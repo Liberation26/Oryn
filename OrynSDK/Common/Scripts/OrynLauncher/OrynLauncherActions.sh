@@ -42,10 +42,11 @@ RunVMSettingsQuestionnaire()
         *) Warn "The built-in image writer currently supports raw only; saving DiskFormat=raw."; NewDiskFormat="raw" ;;
     esac
 
-    NewStorage="$(AskValueShell 'VM storage interface' "$CurrentStorage" vm)"
+    NewStorage="$(AskValueShell 'VM storage interface: ide or virtio-blk' "$CurrentStorage" vm)"
     case "$NewStorage" in
         ide|IDE|Ide) NewStorage="ide" ;;
-        *) Warn "The current UEFI FAT32 runner supports ide only; saving StorageInterface=ide."; NewStorage="ide" ;;
+        virtio|VirtIO|VIRTIO|virtio-blk|VirtIO-BLK|VIRTIO-BLK|virtio_blk|VirtIO_BLK|VIRTIO_BLK) NewStorage="virtio-blk" ;;
+        *) Warn "The current UEFI FAT32 runner supports ide or virtio-blk; saving StorageInterface=ide."; NewStorage="ide" ;;
     esac
 
     if AskYesNoShell "Run this kernel VM headless, without a QEMU window?" "$(case "$CurrentDisplay" in ''|none|None|NONE|headless|Headless|HEADLESS|yes|Yes|YES|true|True|TRUE) echo 1 ;; *) echo 0 ;; esac)"; then

@@ -255,6 +255,7 @@ void BuildObjectFileName(const OrynProject* project, const char* source_file, ch
 void BuildObjectSidecarPath(char* output, size_t output_size, const char* object_file, const char* extension);
 int ProjectBoolEnabledBuild(const char* value, int default_value);
 unsigned int ProjectCpuCountBuild(const OrynProject* project);
+int ProjectStorageInterfaceIsVirtioBlockBuild(const OrynProject* project);
 int ProjectDisplayIsInteractiveBuild(const OrynProject* project);
 int IsLegacyProjectSharedSource(const OrynProject* project, const char* source_file);
 int AppendSourcesFromDirectory(const OrynProject* project, const char* directory, OrynStringList* sources, const char* label);

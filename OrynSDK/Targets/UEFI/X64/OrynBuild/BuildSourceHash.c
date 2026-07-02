@@ -20,6 +20,7 @@ void HashCompilerSignature(unsigned long long* hash, const OrynProject* project)
     *hash = OrynHashText(*hash, project->run_hpet);
     *hash = OrynHashText(*hash, project->run_smp);
     *hash = OrynHashText(*hash, project->run_display);
+    *hash = OrynHashText(*hash, project->run_storage_interface);
 }
 
 unsigned long long ComputeSourceBuildHash(

@@ -44,6 +44,13 @@ unsigned int ProjectCpuCountBuild(const OrynProject* project)
     return (unsigned int)value;
 }
 
+int ProjectStorageInterfaceIsVirtioBlockBuild(const OrynProject* project)
+{
+    return TextEqualsIgnoreCaseBuild(project->run_storage_interface, "virtio") ||
+        TextEqualsIgnoreCaseBuild(project->run_storage_interface, "virtio-blk") ||
+        TextEqualsIgnoreCaseBuild(project->run_storage_interface, "virtio_blk");
+}
+
 int ProjectDisplayIsInteractiveBuild(const OrynProject* project)
 {
     const char* display = project->run_display;

@@ -2,6 +2,7 @@
 #include "KernelPci.h"
 #include "KernelAhci.h"
 #include "KernelUsbMassStorage.h"
+#include "KernelVirtioBlock.h"
 #include "KernelBootInfo.h"
 #include "KernelIo.h"
 #include "KernelPortIo.h"

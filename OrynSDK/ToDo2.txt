@@ -353,7 +353,8 @@ Milestone 1.4 - Storage stack:
        0.5.139 proof: KernelNvme binds to PCI NVMe storage controllers, captures the NVMe MMIO BAR, prepares admin/I/O queue and PRP DMA foundations, creates namespace-backed block-device records, registers prepared NVMe block devices, and reports OK even when the current VM has no NVMe controller present.
 [ OK ] Add USB mass storage driver.
        0.5.140 proof: KernelUsbMassStorage binds to PCI USB host controllers, tracks USB mass-storage enumeration, bulk-only transport, SCSI command and DMA-buffer foundations, prepares USB mass-storage block-device records, and reports OK even when no USB storage device is attached.
-[TOBE] Add virtio-blk driver for QEMU if selected as a target profile.
+[ OK ] Add virtio-blk driver for QEMU if selected as a target profile.
+       0.5.142 proof: KernelVirtioBlock binds to QEMU VirtIO block PCI devices when StorageInterface=virtio-blk is selected, prepares feature negotiation, virtqueue, request queue, DMA buffer, and block-device foundations, and the runner exposes the FAT32 disk through virtio-blk-pci for that profile.
 [TOBE] Add block cache.
 [TOBE] Add request queue and completion events.
 [TOBE] Add read-only mount mode for unsafe drivers.
@@ -745,3 +746,5 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [ OK ] 0.5.128 PCI storage-class discovery proof marks the discovery path ready after the scan, even when no storage controller is present.
 
 [ OK ] 0.5.141 USB mass storage PCI init proof fix.
+
+[ OK ] 0.5.142 VirtIO block QEMU profile driver.
