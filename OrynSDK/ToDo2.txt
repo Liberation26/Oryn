@@ -349,7 +349,8 @@ Milestone 1.4 - Storage stack:
 [ OK ] Add partition table parser: MBR first, GPT next.
 [ OK ] Add AHCI/SATA driver.
        0.5.138 proof: KernelPci now initializes KernelAhci immediately after PCI storage-class discovery, captures BAR5 for AHCI ABAR binding, registers prepared AHCI block devices, and proves AHCI command-issue plus DMA PRDT foundations even when no AHCI controller is present on the current VM.
-[TOBE] Add NVMe driver.
+[ OK ] Add NVMe driver.
+       0.5.139 proof: KernelNvme binds to PCI NVMe storage controllers, captures the NVMe MMIO BAR, prepares admin/I/O queue and PRP DMA foundations, creates namespace-backed block-device records, registers prepared NVMe block devices, and reports OK even when the current VM has no NVMe controller present.
 [TOBE] Add USB mass storage driver later.
 [TOBE] Add virtio-blk driver for QEMU if selected as a target profile.
 [TOBE] Add block cache.

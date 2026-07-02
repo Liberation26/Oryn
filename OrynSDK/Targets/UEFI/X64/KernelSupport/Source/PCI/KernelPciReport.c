@@ -1,5 +1,6 @@
 #include "KernelPciInternal.h"
 #include "KernelAhci.h"
+#include "KernelNvme.h"
 #include "KernelInterrupts.h"
 #include "KernelScreenReport.h"
 static void PciInterruptStub(OrynIdtInterruptFrame* frame, void* context)
@@ -186,6 +187,8 @@ void OrynKernelPciInit(const OrynBootInfo* bootInfo)
     gPciState.StorageClassDiscoveryReady = 1U;
     OrynAhciInitFromPci();
     OrynAhciRegisterPreparedBlockDevices();
+    OrynNvmeInitFromPci();
+    OrynNvmeRegisterPreparedBlockDevices();
     gPciState.Initialized = 1U;
 }
 
@@ -293,6 +296,7 @@ void OrynKernelPciPrintProof(void)
         "PCI MSI/MSI-X capability foundation discovered capable devices.",
         "PCI MSI/MSI-X capability foundation ready; no capable device found.");
     OrynAhciPrintProof();
+    OrynNvmePrintProof();
     KernelIoWriteString("[KERNEL] PCI storage IDE/AHCI/NVMe/VirtIO counts: ");
     KernelIoWriteDec64(gPciState.IdeControllersFound);
     KernelIoWriteString("/");
