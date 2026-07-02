@@ -751,7 +751,7 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [OK] 0.5.143 VirtIO block init is invoked from PCI init and registers prepared block devices.
 
 
-0.5.144 - VirtIO-Net high-speed network driver foundation
+0.5.145 - VirtIO-Net high-speed network driver foundation
 [ OK ] Added VirtIO-Net PCI driver foundation for high-speed network cards.
 [ OK ] VirtIO-Net binds to transitional and modern QEMU/Red Hat PCI network devices.
 [ OK ] Added feature negotiation, RX/TX/control virtqueue, packet DMA buffer, MAC address, interrupt, and link-status foundations.
