@@ -129,6 +129,7 @@ void ReadDevice(
     outDevice->ClassCode = (classRegister >> 24) & 0xFFU;
     outDevice->HeaderType = (headerRegister >> 16) & 0xFFU;
     outDevice->Bar0 = OrynKernelPciConfigRead32(bus, device, function, 0x10U);
+    outDevice->Bar5 = OrynKernelPciConfigRead32(bus, device, function, 0x24U);
     outDevice->InterruptLine = PciRead8(bus, device, function, 0x3CU);
     outDevice->InterruptPin = PciRead8(bus, device, function, 0x3DU);
     outDevice->SecondaryBus = PciRead8(bus, device, function, 0x19U);
@@ -183,6 +184,8 @@ void OrynKernelPciInit(const OrynBootInfo* bootInfo)
     DiscoverMcfg(bootInfo);
     ScanConfigSpace();
     gPciState.StorageClassDiscoveryReady = 1U;
+    OrynAhciInitFromPci();
+    OrynAhciRegisterPreparedBlockDevices();
     gPciState.Initialized = 1U;
 }
 
@@ -223,6 +226,8 @@ void PrintDeviceLine(const OrynKernelPciDevice* pciDevice)
     KernelIoWriteHex64(pciDevice->HeaderType);
     KernelIoWriteString("), BAR0 ");
     KernelIoWriteHex64(pciDevice->Bar0);
+    KernelIoWriteString(", BAR5 ");
+    KernelIoWriteHex64(pciDevice->Bar5);
     KernelIoWriteString(", Interrupt Line ");
     KernelIoWriteDec64(pciDevice->InterruptLine);
     KernelIoWriteString(", Interrupt Pin ");

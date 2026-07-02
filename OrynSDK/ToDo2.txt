@@ -348,7 +348,7 @@ Milestone 1.4 - Storage stack:
 [ OK ] Define production block device abstraction: sector size, block count, read, write, flush.
 [ OK ] Add partition table parser: MBR first, GPT next.
 [ OK ] Add AHCI/SATA driver.
-       0.5.137 proof: KernelAhci binds to PCI AHCI storage controllers, reads AHCI BAR5/ABAR, enables AHCI mode, discovers implemented ports, classifies SATA/SATAPI/SEMB/port-multiplier signatures, prepares SATA block-device records, exposes flush/read/write callback hooks, and proves AHCI command-issue plus DMA PRDT foundations.
+       0.5.138 proof: KernelPci now initializes KernelAhci immediately after PCI storage-class discovery, captures BAR5 for AHCI ABAR binding, registers prepared AHCI block devices, and proves AHCI command-issue plus DMA PRDT foundations even when no AHCI controller is present on the current VM.
 [TOBE] Add NVMe driver.
 [TOBE] Add USB mass storage driver later.
 [TOBE] Add virtio-blk driver for QEMU if selected as a target profile.
