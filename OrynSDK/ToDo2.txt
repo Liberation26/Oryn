@@ -281,6 +281,7 @@ Milestone 1.1 - User mode and syscall entry:
        0.5.129 proof: the GDT/TSS path exposes a kernel RSP0 setter and proves the TSS kernel stack is installed before the controlled user entry frame is accepted.
 [ OK ] Choose syscall entry mechanisms: syscall/sysret where supported, interrupt fallback where needed.
        0.5.129 proof: CPUID extended feature detection records syscall/sysret support and KernelUserMode selects syscall/sysret when present, otherwise the existing interrupt-vector syscall fallback remains selected.
+       0.5.130 fix: CPU feature detection now reads CPUID extended leaf 0x80000001 EDX bit 11 for syscall/sysret and reports fallback as OK because interrupt syscall fallback is an accepted policy path.
 [TOBE] Route all user requests into Get, Set, or Event packets.
 [TOBE] Add syscall ABI versioning.
 [TOBE] Add syscall argument validation.

@@ -65,6 +65,12 @@ void OrynKernelCpuDetect(void)
 
     Cpuid(0x80000000U, 0U, &eax, &ebx, &ecx, &edx);
     gCpuFeatures.MaxExtendedLeaf = eax;
+    if (gCpuFeatures.MaxExtendedLeaf >= 0x80000001U)
+    {
+        Cpuid(0x80000001U, 0U, &eax, &ebx, &ecx, &edx);
+        gCpuFeatures.HasSyscallSysret = ((edx & (1U << 11)) != 0U) ? 1U : 0U;
+    }
+
     if (gCpuFeatures.MaxExtendedLeaf >= 0x80000007U)
     {
         Cpuid(0x80000007U, 0U, &eax, &ebx, &ecx, &edx);
@@ -142,7 +148,14 @@ void OrynKernelCpuPrintFeatures(void)
     PrintCpuLocalApicStatus(features);
     PrintCpuApic2Status(features);
     PrintCpuTimerStatus(features);
-    OrynKernelScreenReportOkOrFail(features->HasSyscallSysret,
-        "CPU syscall/sysret feature present.",
-        "CPU syscall/sysret feature absent; interrupt syscall fallback will be used.");
+    if (features->HasSyscallSysret != 0U)
+    {
+        OrynKernelScreenReportOk(0,
+            "CPU syscall/sysret feature present; syscall/sysret entry is available.");
+    }
+    else
+    {
+        OrynKernelScreenReportOk(0,
+            "CPU syscall/sysret feature absent; interrupt syscall fallback selected.");
+    }
 }
