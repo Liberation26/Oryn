@@ -714,3 +714,5 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [ OK ] Added horizontal documentation links at the top and bottom.
 [ OK ] Documented what Oryn SDK does for OS developers.
 [ OK ] Documented currently provided language support and planned language direction.
+
+[ OK ] 0.5.128 PCI storage-class discovery proof marks the discovery path ready after the scan, even when no storage controller is present.

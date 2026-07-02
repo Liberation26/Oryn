@@ -181,6 +181,7 @@ void OrynKernelPciInit(const OrynBootInfo* bootInfo)
     ClearState();
     DiscoverMcfg(bootInfo);
     ScanConfigSpace();
+    gPciState.StorageClassDiscoveryReady = 1U;
     gPciState.Initialized = 1U;
 }
 
