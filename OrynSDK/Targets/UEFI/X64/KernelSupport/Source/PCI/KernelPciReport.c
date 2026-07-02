@@ -4,6 +4,7 @@
 #include "KernelUsbMassStorage.h"
 #include "KernelVirtioBlock.h"
 #include "KernelVirtioNet.h"
+#include "KernelVirtioGpu.h"
 #include "KernelInterrupts.h"
 #include "KernelScreenReport.h"
 static void PciInterruptStub(OrynIdtInterruptFrame* frame, void* context)
@@ -197,6 +198,7 @@ void OrynKernelPciInit(const OrynBootInfo* bootInfo)
     OrynVirtioBlockInitFromPci();
     OrynVirtioBlockRegisterPreparedBlockDevices();
     OrynVirtioNetInitFromPci();
+    OrynVirtioGpuInitFromPci();
     gPciState.Initialized = 1U;
 }
 
@@ -282,7 +284,7 @@ void OrynKernelPciPrintProof(void)
     KernelIoWriteString("[KERNEL] PCI devices discovered: ");
     KernelIoWriteDec64(gPciState.DevicesFound);
     KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] PCI bridges/storage/network/virtio-net/display: ");
+    KernelIoWriteString("[KERNEL] PCI bridges/storage/network/virtio-net/display/virtio-gpu: ");
     KernelIoWriteDec64(gPciState.BridgesFound);
     KernelIoWriteString("/");
     KernelIoWriteDec64(gPciState.StorageControllersFound);
@@ -292,6 +294,8 @@ void OrynKernelPciPrintProof(void)
     KernelIoWriteDec64(gPciState.VirtioNetworkControllersFound);
     KernelIoWriteString("/");
     KernelIoWriteDec64(gPciState.DisplayControllersFound);
+    KernelIoWriteString("/");
+    KernelIoWriteDec64(gPciState.VirtioGpuControllersFound);
     KernelIoWriteString("\n");
     OrynKernelScreenReportOkOrFail(gPciState.ClassDecodeReady,
         "PCI class-code decoding ready.",
@@ -309,6 +313,7 @@ void OrynKernelPciPrintProof(void)
     OrynNvmePrintProof();
     OrynVirtioBlockPrintProof();
     OrynVirtioNetPrintProof();
+    OrynVirtioGpuPrintProof();
     OrynUsbMassStoragePrintProof();
     KernelIoWriteString("[KERNEL] PCI storage IDE/AHCI/NVMe/VirtIO/USB-host counts: ");
     KernelIoWriteDec64(gPciState.IdeControllersFound);

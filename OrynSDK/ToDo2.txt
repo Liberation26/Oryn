@@ -756,3 +756,9 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [ OK ] VirtIO-Net binds to transitional and modern QEMU/Red Hat PCI network devices.
 [ OK ] Added feature negotiation, RX/TX/control virtqueue, packet DMA buffer, MAC address, interrupt, and link-status foundations.
 [ OK ] PCI init invokes VirtIO-Net after class-code network discovery and PCI proof reports VirtIO-Net readiness.
+
+0.5.146 - VirtIO-GPU 2D/3D display driver foundation
+[ OK ] Added VirtIO-GPU PCI driver foundation for 2D/3D graphics and display outputs.
+[ OK ] VirtIO-GPU binds to transitional and modern QEMU/Red Hat PCI display devices.
+[ OK ] Added feature negotiation, control virtqueue, cursor virtqueue, display-output, 2D resource, 3D resource, DMA buffer, EDID/display-mode, interrupt, and display-subsystem bridge foundations.
+[ OK ] PCI init invokes VirtIO-GPU after class-code display discovery and PCI proof reports VirtIO-GPU readiness.
