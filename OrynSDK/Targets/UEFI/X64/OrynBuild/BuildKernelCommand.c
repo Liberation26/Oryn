@@ -143,6 +143,12 @@ int OrynBuildKernel(const OrynProject* project)
     ResetBuildPlanDiagnostics(project);
     LogBuildPlanDecision(project, "build-start", "Kernel build entered native module/archive resolver.");
 
+    if (!ValidateKernelModuleManifests(project))
+    {
+        LogBuildPlanSkip(project, "kernel-module-manifest", "Kernel module manifest validation failed before compile.");
+        return 0;
+    }
+
     if (!GenerateKernelModuleManifestTables(project))
     {
         LogBuildPlanSkip(project, "kernel-module-manifest", "Generated module manifest tables could not be produced from per-module manifests.");

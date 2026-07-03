@@ -9,6 +9,7 @@ static void PrintUsage(void)
     printf("  oryn doctor\n");
     printf("  oryn prerequisites [check|plan|install|manifest]\n");
     printf("  oryn libc-test                    Run host-side OrynLibC conformance tests\n");
+    printf("  oryn manifest-validate <Project.oryn>  Validate kernel module manifests before build\n");
     printf("  oryn prereq [check|plan|install|manifest]\n");
     printf("  oryn version\n");
     printf("  oryn build <Project.oryn>\n");
@@ -56,6 +57,11 @@ int main(int argc, char** argv)
         OrynLogFail("Project path is required.");
         PrintUsage();
         return 1;
+    }
+
+    if (strcmp(argv[1], "manifest-validate") == 0 || strcmp(argv[1], "validate-manifest") == 0)
+    {
+        return OrynCommandManifestValidate(argv[0], argv[2]);
     }
 
     if (strcmp(argv[1], "build") == 0)

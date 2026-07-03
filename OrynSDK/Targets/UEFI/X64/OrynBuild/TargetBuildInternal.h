@@ -248,6 +248,7 @@ int LinkKernelObjects(const OrynProject* project, const OrynStringList* objects)
 void LogKernelLayout(const OrynProject* project);
 int OrynBuildKernel(const OrynProject* project);
 int GenerateKernelModuleManifestTables(const OrynProject* project);
+int ValidateKernelModuleManifests(const OrynProject* project);
 
 #define ORYN_MAX_KERNEL_MODULE_MANIFESTS 96
 #define ORYN_MAX_KERNEL_MANIFEST_REQUIRE_TEXT 512
@@ -308,6 +309,7 @@ int OrynCommandBuild(const char* executable_path, const char* project_file);
 int OrynCommandImage(const char* executable_path, const char* project_file);
 int OrynCommandRun(const char* executable_path, const char* project_file);
 int OrynCommandClean(const char* executable_path, const char* project_file);
+int OrynCommandManifestValidate(const char* executable_path, const char* project_file);
 void BuildQemuStageProjectName(const OrynProject* project, char* output, size_t output_size);
 int OrynRunQemu(const OrynProject* project);
 int OrynCleanProject(const OrynProject* project);
