@@ -1,3 +1,10 @@
+[DONE 100%] 0.5.165: Boot proof category checks are owned by KernelSelfTest/BootProof instead of runtime boot sequence.
+OrynWsl SDK ToDo2 update: 0.5.165
+
+[100%] KernelRuntimeBootSequence only enters runtime, calls the boot proof runner, exits non-interactive VM mode, and halts; it does not own any category checks.
+[100%] KernelSelfTest now owns the category-check handoff and records that ownership through Diagnostics/Logger before invoking the BootProof category suite.
+[100%] BootProof remains the target-owned proof orchestrator while category checks stay outside runtime entry code.
+
 [DONE 100%] 0.5.164: Module stop, panic, and shutdown callbacks are production-ready for the current SDK scope.
 OrynWsl SDK ToDo2 update: 0.5.164
 
@@ -257,7 +264,7 @@ Current OrynLibC foundation already present:
 
 Milestone 0.6 - Clean kernel entry and module ownership:
 [100%] Reduce KernelMain to one responsibility: enter kernel runtime and start the boot sequence.
-[050%] Move all boot proof category checks out of the runtime boot sequence into KernelSelfTest or BootProof modules.
+[100%] Move all boot proof category checks out of the runtime boot sequence into KernelSelfTest or BootProof modules.
 [100%] Move screen status category emission into KernelScreenReport only for category lines.
 [050%] Move serial proof detail into Diagnostics/Logger only.
 [100%] Add a KernelInit graph with ordered stages and explicit dependencies.

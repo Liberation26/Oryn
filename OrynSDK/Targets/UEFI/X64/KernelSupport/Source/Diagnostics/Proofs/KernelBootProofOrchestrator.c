@@ -4,6 +4,7 @@
 #include "KernelLifecycle.h"
 #include "KernelPanic.h"
 #include "KernelModuleManifest.h"
+#include "KernelSelfTest.h"
 
 static void OrynKernelBootProofHandleActivePanic(void)
 {
@@ -24,7 +25,7 @@ static void OrynKernelBootProofEnterRunningState(void)
 
 void OrynKernelBootProofRunSequence(const OrynBootInfo* kernelBootInfo)
 {
-    OrynKernelBootProofRunCategoryChecks(kernelBootInfo);
+    OrynKernelSelfTestRunCategoryChecks(kernelBootInfo);
     OrynKernelBootProofHandleActivePanic();
     OrynKernelBootProofEnterRunningState();
     OrynKernelDiagnosticsRunHaltProofs();
