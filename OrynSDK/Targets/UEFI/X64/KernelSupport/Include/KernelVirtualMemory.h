@@ -24,8 +24,18 @@
 #define ORYN_VIRTUAL_KERNEL_BASE 0xFFFF800000000000ULL
 #define ORYN_VIRTUAL_KERNEL_LIMIT 0xFFFFFFFFFFFFFFFFULL
 #define ORYN_VIRTUAL_MAX_ANONYMOUS_REGIONS 32U
+#define ORYN_VIRTUAL_MAX_MMAP_REGIONS ORYN_VIRTUAL_MAX_ANONYMOUS_REGIONS
+#define ORYN_VIRTUAL_MMAP_SOURCE_NONE 0ULL
 #define ORYN_USER_COPY_OK 1
 #define ORYN_USER_COPY_FAIL 0
+
+typedef enum OrynVirtualMmapRegionType
+{
+    OrynVirtualMmapRegionUnused = 0,
+    OrynVirtualMmapRegionAnonymous = 1,
+    OrynVirtualMmapRegionFile = 2,
+    OrynVirtualMmapRegionDevice = 3
+} OrynVirtualMmapRegionType;
 
 typedef struct OrynVirtualAnonymousRegion
 {
@@ -35,6 +45,11 @@ typedef struct OrynVirtualAnonymousRegion
     unsigned long long Flags;
     unsigned long long CommittedPages;
     unsigned int CopyOnWriteInherited;
+    unsigned int Type;
+    unsigned long long SourceId;
+    unsigned long long SourceOffset;
+    unsigned long long DevicePhysical;
+    unsigned long long DeviceBytes;
 } OrynVirtualAnonymousRegion;
 
 typedef struct OrynKernelAddressSpace
@@ -55,6 +70,11 @@ typedef struct OrynKernelAddressSpace
     unsigned long long CopyOnWriteResolvedPages;
     unsigned long long CopyOnWriteClonePages;
     unsigned long long AnonymousRegionCount;
+    unsigned long long MmapRegionCount;
+    unsigned long long FileRegionCount;
+    unsigned long long DeviceRegionCount;
+    unsigned long long WriteExecuteDeniedCount;
+    unsigned long long WriteExecutePolicyChecks;
     OrynVirtualAnonymousRegion AnonymousRegions[ORYN_VIRTUAL_MAX_ANONYMOUS_REGIONS];
 } OrynKernelAddressSpace;
 
@@ -112,6 +132,11 @@ typedef struct OrynKernelVirtualMemory
     unsigned long long CopyOnWriteCloneCount;
     unsigned long long CopyOnWriteSharedPages;
     unsigned long long CopyOnWriteResolvedPages;
+    unsigned long long MmapRegionsCreated;
+    unsigned long long FileMmapRegionsCreated;
+    unsigned long long DeviceMmapRegionsCreated;
+    unsigned long long WriteExecutePolicyChecks;
+    unsigned long long WriteExecuteDeniedCount;
     OrynKernelAddressSpace KernelAddressSpace;
 } OrynKernelVirtualMemory;
 
@@ -147,6 +172,16 @@ int OrynVirtualMemoryResolveCopyOnWriteFault(
     OrynKernelPhysicalMemory* physicalMemory,
     unsigned long long faultAddress);
 
+int OrynVirtualMemoryFlagsRespectWriteXorExecute(unsigned long long flags);
+int OrynVirtualMemoryReserveMmapRegion(
+    OrynKernelAddressSpace* addressSpace,
+    unsigned long long virtualAddress,
+    unsigned long long bytes,
+    unsigned long long flags,
+    unsigned int type,
+    unsigned long long sourceId,
+    unsigned long long sourceOffset,
+    unsigned long long devicePhysical);
 int OrynVirtualMemoryReserveAnonymousRegion(
     OrynKernelAddressSpace* addressSpace,
     unsigned long long virtualAddress,
