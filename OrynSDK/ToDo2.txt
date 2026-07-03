@@ -1,3 +1,10 @@
+OrynWsl SDK ToDo2 update: 0.5.159
+
+[100%] Added beside-module kernel manifest files under the owning Common and UEFI x64 module source directories.
+[100%] KernelModuleManifestData.c and KernelModuleManifest.h are generated from the beside-module .module files instead of the old central manifest folder.
+[100%] Split kernel manifest generation reading into BuildKernelModuleManifestRead.c so changed OrynBuild sources stay under the 500-line rule.
+[100%] Verified the native OrynBuild tool compiles and Kernel-5 builds from 24 beside-module kernel manifest files.
+
 OrynWsl SDK ToDo2 update: 0.5.158
 
 [100%] Fixed ChangedFiles dependency coverage for physical memory pressure by carrying KernelPhysicalMemory.h with the pressure implementation.
@@ -212,7 +219,7 @@ Current kernel foundation already present:
 [050%] KernelBootProofConsole adapter owns the proof-only bridge to console metrics, scroll probes, and double-buffer probes.
 [050%] Console proof flow now uses KernelBootProofConsole adapter; Console remains runtime/user I/O and proof code no longer includes KernelConsole directly.
 [060%] FAT32 and VFS kernel modules now have production filesystem foundations: stricter mount validation, safe VFS path normalization, status reporting, free-space hints, FAT chain validation, write truncation, empty-directory protection, and short-name/path validation.
-[100%] Kernel runtime module manifests are generated from Common/Kernel/ModuleManifests/*.module.
+[100%] Kernel runtime module manifests are generated from beside-module .module files in Common/Kernel/Source, Common/OrynLibC, and Targets/UEFI/X64/KernelSupport/Source.
 [100%] Build/archive module manifests are generated from Common/BuildModuleManifests/*.buildmodule and Targets/UEFI/X64/BuildModuleManifests/*.buildmodule.
 [075%] Static hand-maintained module ADD tables have been removed from BuildPlanModules.c; it now loads per-module manifest files before dependency resolution.
 
@@ -545,9 +552,9 @@ Milestone 2.2 - SDK prerequisites and host tooling:
 Milestone 2.3 - Module manifests and selectable boot options:
 [100%] KernelModuleManifest has compiled-in module items and prerequisites.
 [050%] APIC is declared after PIC, CPU, and Interrupts.
-[TOBE] Create one manifest file per module directory.
+[100%] Create one manifest file per module directory.
 [TOBE] Add manifest fields: name, items, target, prerequisites, optional/required, starts-when, provides, consumes, test command, and report category.
-[TOBE] Generate KernelModuleManifestData.c from the per-module manifests.
+[100%] Generate KernelModuleManifestData.c from the per-module manifests.
 [TOBE] Generate build source inclusion from the same manifests.
 [TOBE] Ensure selected BootInfo items decide what actually starts.
 [TOBE] Ensure modules with no selected work emit WARN only when useful, and stay silent when intentionally disabled.
@@ -577,7 +584,7 @@ Recommended implementation order:
 19. Add POSIX/Linux compatibility wrappers on top of Get/Set/Event.
 
 Immediate next 10 SDK tasks:
-[TOBE] 1. Add per-module manifest files beside each module and generate KernelModuleManifestData.c.
+[100%] 1. Add per-module manifest files beside each module and generate KernelModuleManifestData.c.
 [TOBE] 2. Add OrynBuild manifest validation so APIC/PIC/CPU/Interrupts order and all other prerequisites are checked before compile/run.
 [TOBE] 3. Make runtime start decisions come from selected BootInfo/project options, not hardcoded proof order.
 [TOBE] 4. Add WARN/FAIL policy for optional unselected modules versus required missing prerequisites.
@@ -656,7 +663,7 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 
 
 [100%] 0.5.90 generated module manifests.
-       Kernel module metadata now comes from per-module files in Common/Kernel/ModuleManifests.
+       Kernel module metadata now comes from beside-module .module files under the owning Common and UEFI x64 source directories.
        The native build regenerates KernelModuleManifest.h and KernelModuleManifestData.c before compiling the kernel.
        Build/Plan/KernelModuleManifestGeneration.txt records the manifest source files and generated outputs.
        Static hand-maintained C module tables are no longer the source of truth.
@@ -832,4 +839,3 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [100%] Deleted-file cleanup for obsolete root recovery/bootstrap scripts is production-ready in the updater flow.
 [100%] Old OrynReleaseKeyRecovery and OrynNoValidationBootstrap scripts are removed from the workspace root on update.
 [100%] Windows Zone.Identifier sidecar cleanup is handled by the update-owned cleanup list.
-

@@ -248,6 +248,29 @@ int LinkKernelObjects(const OrynProject* project, const OrynStringList* objects)
 void LogKernelLayout(const OrynProject* project);
 int OrynBuildKernel(const OrynProject* project);
 int GenerateKernelModuleManifestTables(const OrynProject* project);
+
+#define ORYN_MAX_KERNEL_MODULE_MANIFESTS 96
+#define ORYN_MAX_KERNEL_MANIFEST_REQUIRE_TEXT 512
+#define ORYN_MAX_KERNEL_MANIFEST_SELECT_TEXT 256
+
+typedef struct OrynKernelModuleManifestSource
+{
+    char Order[16];
+    char Id[128];
+    char Name[128];
+    char Items[512];
+    char Requires[ORYN_MAX_KERNEL_MANIFEST_REQUIRE_TEXT];
+    char Select[ORYN_MAX_KERNEL_MANIFEST_SELECT_TEXT];
+    int CompiledIn;
+    int Required;
+    int FatalOnMissingPrerequisite;
+    char StopCallback[128];
+    char PanicCallback[128];
+    char ShutdownCallback[128];
+    char Path[ORYN_MAX_PATH];
+} OrynKernelModuleManifestSource;
+
+int ReadKernelModuleManifestSources(const OrynProject* project, OrynKernelModuleManifestSource* modules, int* module_count);
 int ValidateLibCFunctionUnitManifests(const OrynProject* project);
 void BuildObjectManifestPath(const OrynProject* project, char* output, size_t output_size);
 void WriteObjectManifest( const OrynProject* project, const OrynStringList* sources, const OrynStringList* objects, const OrynBuildObjectStats* stats);

@@ -1,0 +1,13 @@
+Order=07
+Id=OrynKernelModuleInterrupts
+Name=Interrupts
+Items=dispatcher, handler table, vector handlers, device handlers, PIC/APIC timer vectors, IRQ mask APIs, per-CPU accounting
+Requires=OrynKernelModuleGdt,OrynKernelModuleIdt
+CompiledIn=Yes
+Required=Yes
+FatalOnMissingPrerequisite=Yes
+Select=Always
+
+StopCallback=OrynKernelModuleDefaultStop
+PanicCallback=OrynKernelModuleDefaultPanic
+ShutdownCallback=OrynKernelModuleDefaultShutdown

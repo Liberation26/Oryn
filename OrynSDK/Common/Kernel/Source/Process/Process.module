@@ -1,0 +1,14 @@
+
+Order=22
+Id=OrynKernelModuleProcess
+Name=Process
+Items=process IDs, thread IDs, parent-child relationships, exit status, wait semantics, Oryn Event signal delivery, kernel thread structure, user process structure, user thread structure, per-process address spaces, ownership, lifecycle state, copy-on-write child foundation
+Requires=OrynKernelModuleVirtualMemory
+CompiledIn=Yes
+Required=No
+FatalOnMissingPrerequisite=Yes
+Select=BootInfoMemoryMap,BootInfoKernelRange
+
+StopCallback=OrynKernelModuleDefaultStop
+PanicCallback=OrynKernelModuleDefaultPanic
+ShutdownCallback=OrynKernelModuleDefaultShutdown

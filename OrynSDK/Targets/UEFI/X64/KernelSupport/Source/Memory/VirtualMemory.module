@@ -1,9 +1,8 @@
-
-Order=22
-Id=OrynKernelModuleProcess
-Name=Process
-Items=process structures, per-process address spaces, ownership, lifecycle state, copy-on-write child foundation
-Requires=OrynKernelModuleVirtualMemory
+Order=21
+Id=OrynKernelModuleVirtualMemory
+Name=VirtualMemory
+Items=PML4, CR3 switch, identity and higher-half maps, copy-on-write clone and fault resolution, mmap-style regions, W^X page policy
+Requires=OrynKernelModuleHeap
 CompiledIn=Yes
 Required=No
 FatalOnMissingPrerequisite=Yes
