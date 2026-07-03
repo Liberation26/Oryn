@@ -1,6 +1,7 @@
 #include "KernelDiagnostics.h"
 #include "KernelDiagnosticsProofsInternal.h"
 #include "KernelScreenReport.h"
+#include "KernelModuleManifest.h"
 
 #if ORYN_VM_INTERACTIVE_DISPLAY
 static void OrynKernelDiagnosticsRunInteractiveHaltProofs(void)
@@ -30,6 +31,8 @@ void OrynKernelDiagnosticsRunHaltProofs(void)
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleDebugExitRequested);
 #endif
 
+    (void)OrynKernelModuleManifestInvokeStopCallbacks();
+    (void)OrynKernelModuleManifestInvokeShutdownCallbacks();
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalting);
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalted);
     OrynKernelLifecyclePrintProof();

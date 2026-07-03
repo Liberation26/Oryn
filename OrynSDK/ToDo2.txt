@@ -1,3 +1,11 @@
+[DONE 100%] 0.5.164: Module stop, panic, and shutdown callbacks are production-ready for the current SDK scope.
+OrynWsl SDK ToDo2 update: 0.5.164
+
+[100%] Normal halt now invokes module stop callbacks and then module shutdown callbacks in reverse manifest order before the kernel lifecycle enters Halting/Halted.
+[100%] Panic halt now invokes module panic callbacks and then module shutdown callbacks from the kernel-owned panic path, not only from the boot proof orchestrator.
+[100%] Manifest callback state transitions now allow shutdown after stop while preventing duplicate stop, panic, and shutdown callback invocations.
+[100%] Every compiled-in module carries explicit StopCallback, PanicCallback, and ShutdownCallback metadata through beside-module manifests, generated headers, generated data, and validation.
+
 [DONE 100%] 0.5.163: OrynBuild validates kernel module manifests before compile/run.
 OrynWsl SDK ToDo2 update: 0.5.163
 
@@ -90,12 +98,12 @@ OrynWsl SDK ToDo2 update: 0.5.115
 
 OrynWsl SDK ToDo2 update: 0.5.110
 
-[050%] Added module stop, panic, and shutdown callbacks to generated KernelModuleManifest records.
-[075%] Added per-module callback metadata fields: StopCallback, PanicCallback, and ShutdownCallback.
-[075%] Added manifest-owned lifecycle callback APIs for stop, panic, and shutdown invocation in reverse module order.
-[075%] Panic flow now invokes registered module panic callbacks before halting.
-[075%] Shutdown flow now invokes registered module shutdown callbacks before final halt path.
-[050%] Module manifest proof now verifies every compiled-in module has stop, panic, and shutdown callbacks.
+[100%] Added module stop, panic, and shutdown callbacks to generated KernelModuleManifest records.
+[100%] Added per-module callback metadata fields: StopCallback, PanicCallback, and ShutdownCallback.
+[100%] Added manifest-owned lifecycle callback APIs for stop, panic, and shutdown invocation in reverse module order.
+[100%] Panic flow now invokes registered module panic callbacks before halting.
+[100%] Shutdown flow now invokes registered module shutdown callbacks before final halt path.
+[100%] Module manifest proof now verifies every compiled-in module has stop, panic, and shutdown callbacks.
 
 OrynWsl SDK ToDo2 update: 0.5.109
 
@@ -211,7 +219,7 @@ Current kernel foundation already present:
 [050%] KernelModuleManifest foundation exists.
 [100%] KernelModuleManifest has item names, owned items, prerequisites, and states.
 [100%] KernelModuleManifest prevents start before declared prerequisites are ready.
-[100%] KernelModuleManifest owns stop, panic, and shutdown callback metadata and lifecycle callback invocation.
+[100%] KernelModuleManifest owns stop, panic, and shutdown callback metadata, validation, lifecycle state transitions, and normal/panic halt callback invocation.
 [050%] Manifest currently orders APIC after PIC, CPU, and Interrupts.
 [050%] GDT and IDT foundations exist.
 [050%] CPU exception report path exists.
@@ -255,7 +263,7 @@ Milestone 0.6 - Clean kernel entry and module ownership:
 [100%] Add a KernelInit graph with ordered stages and explicit dependencies.
 [100%] Add per-module manifest items with OK/WARN/FAIL capable states.
 [050%] Add module init/start proof through manifest state transitions.
-[TOBE] Add module stop, panic, and shutdown callbacks.
+[100%] Add module stop, panic, and shutdown callbacks.
 [100%] Add a registry of compiled-in kernel modules.
 [100%] Add dependency validation so a module cannot start before its prerequisites.
 [100%] Add fatal/non-fatal boot policy per module.

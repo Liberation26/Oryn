@@ -12,7 +12,6 @@ static void OrynKernelBootProofHandleActivePanic(void)
         return;
     }
 
-    (void)OrynKernelModuleManifestInvokePanicCallbacks();
     OrynKernelDiagnosticsLogHaltMessage();
     OrynKernelPanicHalt();
 }
@@ -29,5 +28,4 @@ void OrynKernelBootProofRunSequence(const OrynBootInfo* kernelBootInfo)
     OrynKernelBootProofHandleActivePanic();
     OrynKernelBootProofEnterRunningState();
     OrynKernelDiagnosticsRunHaltProofs();
-    (void)OrynKernelModuleManifestInvokeShutdownCallbacks();
 }

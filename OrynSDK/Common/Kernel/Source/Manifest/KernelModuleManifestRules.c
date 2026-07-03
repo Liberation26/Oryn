@@ -141,7 +141,7 @@ int OrynKernelModuleManifestHasLifecycleCallbacks(OrynKernelModuleId id)
         item->StopCallbackName && item->PanicCallbackName && item->ShutdownCallbackName) ? 1 : 0;
 }
 
-static int ShouldRunLifecycleCallback(const OrynKernelModuleManifestItem* item)
+static int ShouldRunStopCallback(const OrynKernelModuleManifestItem* item)
 {
     if (!item || !item->CompiledIn)
     {
@@ -149,7 +149,40 @@ static int ShouldRunLifecycleCallback(const OrynKernelModuleManifestItem* item)
     }
 
     if (item->State == OrynKernelModuleStateAbsent || item->State == OrynKernelModuleStateSkipped ||
-        item->State == OrynKernelModuleStateStopped || item->State == OrynKernelModuleStateShutdown)
+        item->State == OrynKernelModuleStateStopping || item->State == OrynKernelModuleStateStopped ||
+        item->State == OrynKernelModuleStateShuttingDown || item->State == OrynKernelModuleStateShutdown)
+    {
+        return 0;
+    }
+
+    return 1;
+}
+
+static int ShouldRunPanicCallback(const OrynKernelModuleManifestItem* item)
+{
+    if (!item || !item->CompiledIn)
+    {
+        return 0;
+    }
+
+    if (item->State == OrynKernelModuleStateAbsent || item->State == OrynKernelModuleStateSkipped ||
+        item->State == OrynKernelModuleStatePanic || item->State == OrynKernelModuleStateShutdown)
+    {
+        return 0;
+    }
+
+    return 1;
+}
+
+static int ShouldRunShutdownCallback(const OrynKernelModuleManifestItem* item)
+{
+    if (!item || !item->CompiledIn)
+    {
+        return 0;
+    }
+
+    if (item->State == OrynKernelModuleStateAbsent || item->State == OrynKernelModuleStateSkipped ||
+        item->State == OrynKernelModuleStateShuttingDown || item->State == OrynKernelModuleStateShutdown)
     {
         return 0;
     }
@@ -160,7 +193,7 @@ static int ShouldRunLifecycleCallback(const OrynKernelModuleManifestItem* item)
 int OrynKernelModuleManifestStop(OrynKernelModuleId id)
 {
     OrynKernelModuleManifestItem* item = OrynKernelModuleManifestMutable(id);
-    if (!ShouldRunLifecycleCallback(item))
+    if (!ShouldRunStopCallback(item))
     {
         return 0;
     }
@@ -179,7 +212,7 @@ int OrynKernelModuleManifestStop(OrynKernelModuleId id)
 int OrynKernelModuleManifestPanic(OrynKernelModuleId id)
 {
     OrynKernelModuleManifestItem* item = OrynKernelModuleManifestMutable(id);
-    if (!ShouldRunLifecycleCallback(item))
+    if (!ShouldRunPanicCallback(item))
     {
         return 0;
     }
@@ -197,7 +230,7 @@ int OrynKernelModuleManifestPanic(OrynKernelModuleId id)
 int OrynKernelModuleManifestShutdown(OrynKernelModuleId id)
 {
     OrynKernelModuleManifestItem* item = OrynKernelModuleManifestMutable(id);
-    if (!ShouldRunLifecycleCallback(item))
+    if (!ShouldRunShutdownCallback(item))
     {
         return 0;
     }

@@ -1,6 +1,7 @@
 #include "KernelPanic.h"
 #include "KernelConsole.h"
 #include "KernelIo.h"
+#include "KernelModuleManifest.h"
 #include "KernelScreenReport.h"
 
 #define ORYN_KERNEL_PANIC_MAGIC 0x4F52594E50414E49ULL
@@ -225,6 +226,8 @@ void OrynKernelPanicWriteReport(void)
 void OrynKernelPanicHalt(void)
 {
     gPanicReport.HaltedByKernel = 1;
+    (void)OrynKernelModuleManifestInvokePanicCallbacks();
+    (void)OrynKernelModuleManifestInvokeShutdownCallbacks();
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalting);
     (void)OrynKernelLifecycleTransition(OrynKernelLifecycleHalted);
     OrynKernelLifecyclePrintProof();
