@@ -1,4 +1,5 @@
-OrynWsl SDK ToDo2 update: 0.5.159
+[DONE 100%] 0.5.160: Bash runtime scripts use LF endings so Linux/WSL bash does not read CR characters in set options.
+OrynWsl SDK ToDo2 update: 0.5.160
 
 [100%] Added beside-module kernel manifest files under the owning Common and UEFI x64 module source directories.
 [100%] KernelModuleManifestData.c and KernelModuleManifest.h are generated from the beside-module .module files instead of the old central manifest folder.
