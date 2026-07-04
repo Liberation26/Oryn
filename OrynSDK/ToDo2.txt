@@ -1,3 +1,11 @@
+[DONE 100%] 0.5.167: Runtime module start decisions are owned by the module start plan and selected from BootInfo/project manifest tokens.
+OrynWsl SDK ToDo2 update: 0.5.167
+
+[100%] Added KernelModuleStartPlan as the owner of module start decisions for compiled-in modules.
+[100%] Start decisions now evaluate manifest Select tokens against supplied BootInfo data and project VM options before a module can enter Starting.
+[100%] Diagnostics now only reports the start-plan result; it no longer owns the selection/prerequisite decision logic.
+[100%] Build and manifest validation pass with the start-plan source included in the target diagnostics archive.
+
 [DONE 100%] 0.5.166: Serial proof detail is owned by Diagnostics/Logger only.
 OrynWsl SDK ToDo2 update: 0.5.166
 
@@ -587,7 +595,7 @@ Milestone 2.3 - Module manifests and selectable boot options:
 [TOBE] Add manifest fields: name, items, target, prerequisites, optional/required, starts-when, provides, consumes, test command, and report category.
 [100%] Generate KernelModuleManifestData.c from the per-module manifests.
 [TOBE] Generate build source inclusion from the same manifests.
-[TOBE] Ensure selected BootInfo items decide what actually starts.
+[100%] Ensure selected BootInfo items decide what actually starts.
 [TOBE] Ensure modules with no selected work emit WARN only when useful, and stay silent when intentionally disabled.
 [TOBE] Ensure selected required modules with missing prerequisites emit FAIL.
 [100%] Add manifest validation command to OrynBuild.
@@ -617,7 +625,7 @@ Recommended implementation order:
 Immediate next 10 SDK tasks:
 [100%] 1. Add per-module manifest files beside each module and generate KernelModuleManifestData.c.
 [100%] 2. Add OrynBuild manifest validation so APIC/PIC/CPU/Interrupts order and all other prerequisites are checked before compile/run.
-[TOBE] 3. Make runtime start decisions come from selected BootInfo/project options, not hardcoded proof order.
+[100%] 3. Make runtime start decisions come from selected BootInfo/project options, not hardcoded proof order.
 [TOBE] 4. Add WARN/FAIL policy for optional unselected modules versus required missing prerequisites.
 [050%] 5. Move remaining proof orchestration from KernelRuntimeBootSequence into KernelBootProof.
 [TOBE] 6. Add Diagnostics/Logger ring buffer and route serial details through it.
