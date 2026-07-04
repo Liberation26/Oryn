@@ -70,7 +70,7 @@ static int ProveSelectedStartingReady(void)
         return 0;
     }
 
-    if (!OrynKernelModuleManifestBegin(OrynKernelModuleApic))
+    if (!OrynKernelModuleManifestBeginProof(OrynKernelModuleApic))
     {
         return 0;
     }
@@ -95,7 +95,7 @@ static int ProveBlockedStartFails(void)
     (void)SetState(OrynKernelModuleInterrupts, OrynKernelModuleStateRegistered);
     (void)SetState(OrynKernelModulePic, OrynKernelModuleStateRegistered);
 
-    if (OrynKernelModuleManifestBegin(OrynKernelModuleApic))
+    if (OrynKernelModuleManifestBeginProof(OrynKernelModuleApic))
     {
         return 0;
     }

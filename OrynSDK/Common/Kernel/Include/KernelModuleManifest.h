@@ -89,6 +89,7 @@ int OrynKernelModuleManifestFatalOnMissingPrerequisite(OrynKernelModuleId id);
 const char* OrynKernelModuleManifestSelects(OrynKernelModuleId id);
 void OrynKernelModuleManifestSelected(OrynKernelModuleId id);
 int OrynKernelModuleManifestBegin(OrynKernelModuleId id);
+int OrynKernelModuleManifestBeginProof(OrynKernelModuleId id);
 void OrynKernelModuleManifestReady(OrynKernelModuleId id);
 void OrynKernelModuleManifestSkipped(OrynKernelModuleId id);
 void OrynKernelModuleManifestFailed(OrynKernelModuleId id);

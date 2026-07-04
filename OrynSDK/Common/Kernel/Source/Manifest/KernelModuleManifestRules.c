@@ -88,7 +88,7 @@ void OrynKernelModuleManifestSelected(OrynKernelModuleId id)
     }
 }
 
-int OrynKernelModuleManifestBegin(OrynKernelModuleId id)
+static int BeginManifestModule(OrynKernelModuleId id, int reportBlockedDependency)
 {
     OrynKernelModuleManifestItem* item = OrynKernelModuleManifestMutable(id);
     if (!item || !item->CompiledIn)
@@ -99,12 +99,25 @@ int OrynKernelModuleManifestBegin(OrynKernelModuleId id)
     if (!OrynKernelModuleManifestCanStart(id))
     {
         item->State = OrynKernelModuleStateFailed;
-        ReportBlockedDependency(item);
+        if (reportBlockedDependency)
+        {
+            ReportBlockedDependency(item);
+        }
         return 0;
     }
 
     item->State = OrynKernelModuleStateStarting;
     return 1;
+}
+
+int OrynKernelModuleManifestBegin(OrynKernelModuleId id)
+{
+    return BeginManifestModule(id, 1);
+}
+
+int OrynKernelModuleManifestBeginProof(OrynKernelModuleId id)
+{
+    return BeginManifestModule(id, 0);
 }
 
 void OrynKernelModuleManifestReady(OrynKernelModuleId id)

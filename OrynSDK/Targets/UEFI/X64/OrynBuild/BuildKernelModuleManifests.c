@@ -143,6 +143,7 @@ static int WriteKernelModuleManifestHeader(const OrynProject* project, const Ory
     fprintf(file, "const char* OrynKernelModuleManifestSelects(OrynKernelModuleId id);\n");
     fprintf(file, "void OrynKernelModuleManifestSelected(OrynKernelModuleId id);\n");
     fprintf(file, "int OrynKernelModuleManifestBegin(OrynKernelModuleId id);\n");
+    fprintf(file, "int OrynKernelModuleManifestBeginProof(OrynKernelModuleId id);\n");
     fprintf(file, "void OrynKernelModuleManifestReady(OrynKernelModuleId id);\n");
     fprintf(file, "void OrynKernelModuleManifestSkipped(OrynKernelModuleId id);\n");
     fprintf(file, "void OrynKernelModuleManifestFailed(OrynKernelModuleId id);\n");
