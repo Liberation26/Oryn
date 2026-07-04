@@ -1,3 +1,11 @@
+[DONE 100%] 0.5.181: Per-process address spaces are production-ready for the current SDK scope.
+OrynWsl SDK ToDo2 update: 0.5.181
+
+[100%] Process address spaces now validate distinct process-owned PML4 roots, non-zero process address-space IDs, and stable user/kernel split limits.
+[100%] Process PML4 validation proves the user half is isolated from kernel mappings while the kernel half is shared from the kernel address space.
+[100%] Process and thread creation now prove process-owned address-space binding and CR3 context handoff for kernel and user threads.
+[100%] VM proof output now reports process address-space validation runs, failures, and shared kernel-half entry counts before accepting the proof.
+
 [DONE 100%] 0.5.180: Virtual memory map/unmap/protect APIs are production-ready for the current SDK scope.
 OrynWsl SDK ToDo2 update: 0.5.180
 
@@ -381,7 +389,7 @@ Milestone 0.7 - Production memory management:
 [100%] Add guard pages for kernel stacks and critical heaps.
 [100%] Add page-fault handler policy instead of only reporting faults.
 [100%] Add virtual memory map/unmap/protect APIs.
-[050%] Add per-process address spaces.
+[100%] Add per-process address spaces.
 [100%] Add user/kernel address split.
 [060%] Add copy_from_user and copy_to_user safety helpers using user/kernel split and page-fault-aware address validation.
 [060%] Add demand allocation for user pages and anonymous regions.

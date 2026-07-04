@@ -81,6 +81,12 @@ typedef struct OrynKernelAddressSpace
     unsigned long long ApiOverwriteRejects;
     unsigned long long ApiMissingMappingRejects;
     unsigned long long ApiPartialRollbackPages;
+    unsigned long long ProcessAddressSpaceValidationRuns;
+    unsigned long long ProcessAddressSpaceValidationFailures;
+    unsigned long long ProcessAddressSpaceKernelHalfEntries;
+    unsigned int ProcessAddressSpaceUserHalfIsolated;
+    unsigned int ProcessAddressSpaceKernelHalfShared;
+    unsigned int ProcessAddressSpaceDistinctPml4;
     OrynVirtualAnonymousRegion AnonymousRegions[ORYN_VIRTUAL_MAX_ANONYMOUS_REGIONS];
 } OrynKernelAddressSpace;
 
@@ -130,6 +136,12 @@ typedef struct OrynKernelVirtualMemory
     unsigned int AddressSpaceApiReady;
     unsigned int PageFaultPolicyReady;
     unsigned int ProcessAddressSpacesCreated;
+    unsigned long long ProcessAddressSpaceValidationRuns;
+    unsigned long long ProcessAddressSpaceValidationFailures;
+    unsigned long long ProcessAddressSpaceKernelHalfEntries;
+    unsigned long long ProcessAddressSpaceUserHalfIsolatedProofs;
+    unsigned long long ProcessAddressSpaceKernelHalfSharedProofs;
+    unsigned long long ProcessAddressSpaceDistinctPml4Proofs;
     unsigned long long DemandAllocatedUserPages;
     unsigned long long AnonymousRegionsCreated;
     unsigned long long UserCopyBytesIn;
@@ -168,6 +180,9 @@ int OrynVirtualMemoryInitKernelAddressSpace(OrynKernelVirtualMemory* virtualMemo
 int OrynVirtualMemoryCreateProcessAddressSpace(
     OrynKernelPhysicalMemory* physicalMemory,
     OrynKernelAddressSpace* addressSpace);
+int OrynVirtualMemoryValidateProcessAddressSpace(
+    OrynKernelAddressSpace* addressSpace,
+    const OrynKernelAddressSpace* kernelAddressSpace);
 int OrynVirtualMemoryMap(
     OrynKernelAddressSpace* addressSpace,
     OrynKernelPhysicalMemory* physicalMemory,

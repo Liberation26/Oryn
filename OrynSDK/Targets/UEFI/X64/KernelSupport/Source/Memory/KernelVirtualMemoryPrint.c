@@ -179,6 +179,24 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
     OrynKernelDiagnosticsLogDec64(virtualMemory->ProcessAddressSpacesCreated);
     OrynKernelDiagnosticsLogText("\n");
 
+    OrynKernelDiagnosticsLogText("[KERNEL] Process address-space validation runs: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->ProcessAddressSpaceValidationRuns);
+    OrynKernelDiagnosticsLogText(" failures=");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->ProcessAddressSpaceValidationFailures);
+    OrynKernelDiagnosticsLogText(" kernel-half-entries=");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->ProcessAddressSpaceKernelHalfEntries);
+    OrynKernelDiagnosticsLogText("\n");
+
+    OrynKernelScreenReportOkOrFail(
+        virtualMemory->ProcessAddressSpacesCreated >= 2U &&
+        virtualMemory->ProcessAddressSpaceValidationRuns >= 2ULL &&
+        virtualMemory->ProcessAddressSpaceValidationFailures == 0ULL &&
+        virtualMemory->ProcessAddressSpaceUserHalfIsolatedProofs >= 2ULL &&
+        virtualMemory->ProcessAddressSpaceKernelHalfSharedProofs >= 2ULL &&
+        virtualMemory->ProcessAddressSpaceDistinctPml4Proofs >= 2ULL,
+        "Per-process address spaces are isolated and share the kernel half only.",
+        "Per-process address-space validation proof failed.");
+
     OrynKernelDiagnosticsLogText("[KERNEL] Anonymous user regions created: ");
     OrynKernelDiagnosticsLogDec64(virtualMemory->AnonymousRegionsCreated);
     OrynKernelDiagnosticsLogText("\n");

@@ -43,6 +43,8 @@ int OrynVirtualMemoryRunAddressSpaceSelfTest(
 
     ok = OrynVirtualMemoryInitKernelAddressSpace(virtualMemory);
     ok = ok && OrynVirtualMemoryCreateProcessAddressSpace(physicalMemory, &processSpace);
+    ok = ok && OrynVirtualMemoryValidateProcessAddressSpace(
+        &processSpace, &virtualMemory->KernelAddressSpace);
     physical = OrynPhysicalMemoryAllocatePageBelow(physicalMemory, ORYN_PHYSICAL_EARLY_DIRECT_MAP_LIMIT);
     ok = ok && physical != ORYN_PHYSICAL_ALLOC_FAIL;
     if (ok)
@@ -82,6 +84,11 @@ int OrynVirtualMemoryRunAddressSpaceSelfTest(
     if (ok)
     {
         ok = OrynVirtualMemoryCreateCopyOnWriteClone(physicalMemory, &processSpace, &childSpace);
+    }
+    if (ok)
+    {
+        ok = OrynVirtualMemoryValidateProcessAddressSpace(
+            &childSpace, &virtualMemory->KernelAddressSpace);
     }
     if (ok)
     {
@@ -168,7 +175,25 @@ int OrynVirtualMemoryRunAddressSpaceSelfTest(
     }
     if (ok)
     {
-        virtualMemory->ProcessAddressSpacesCreated += 1U;
+        virtualMemory->ProcessAddressSpacesCreated += 2U;
+        virtualMemory->ProcessAddressSpaceValidationRuns +=
+            processSpace.ProcessAddressSpaceValidationRuns +
+            childSpace.ProcessAddressSpaceValidationRuns;
+        virtualMemory->ProcessAddressSpaceValidationFailures +=
+            processSpace.ProcessAddressSpaceValidationFailures +
+            childSpace.ProcessAddressSpaceValidationFailures;
+        virtualMemory->ProcessAddressSpaceKernelHalfEntries +=
+            processSpace.ProcessAddressSpaceKernelHalfEntries +
+            childSpace.ProcessAddressSpaceKernelHalfEntries;
+        virtualMemory->ProcessAddressSpaceUserHalfIsolatedProofs +=
+            processSpace.ProcessAddressSpaceUserHalfIsolated +
+            childSpace.ProcessAddressSpaceUserHalfIsolated;
+        virtualMemory->ProcessAddressSpaceKernelHalfSharedProofs +=
+            processSpace.ProcessAddressSpaceKernelHalfShared +
+            childSpace.ProcessAddressSpaceKernelHalfShared;
+        virtualMemory->ProcessAddressSpaceDistinctPml4Proofs +=
+            processSpace.ProcessAddressSpaceDistinctPml4 +
+            childSpace.ProcessAddressSpaceDistinctPml4;
         virtualMemory->ApiMappedPages += processSpace.MappedPages;
         virtualMemory->ApiProtectedPages += processSpace.ProtectedPages;
         virtualMemory->ApiUnmappedPages += processSpace.UnmappedPages;

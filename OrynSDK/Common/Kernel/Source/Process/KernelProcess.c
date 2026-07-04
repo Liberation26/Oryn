@@ -365,8 +365,14 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
         process, "init-main", DummyKernelThreadEntry, process,
         ORYN_KERNEL_THREAD_DEFAULT_STACK_BYTES);
     if (child == 0 || child->Parent != process || process->ChildCount == 0U ||
+        process->AddressSpace == 0 || child->AddressSpace == 0 ||
+        process->AddressSpace == child->AddressSpace ||
+        process->AddressSpace->Pml4Physical == child->AddressSpace->Pml4Physical ||
+        userProcess.AddressSpace != process->AddressSpace ||
         !OrynKernelThreadIsSchedulerReady(thread) ||
-        !OrynKernelThreadIsSchedulerReady(userThread) || userThread->IsUserThread == 0U)
+        !OrynKernelThreadIsSchedulerReady(userThread) || userThread->IsUserThread == 0U ||
+        thread->CpuContext.Cr3 != process->AddressSpace->Pml4Physical ||
+        userThread->CpuContext.Cr3 != process->AddressSpace->Pml4Physical)
     {
         gProcessProofFailure = "process/thread structure proof failed";
         OrynKernelThreadDestroy(userThread);
@@ -375,6 +381,9 @@ int OrynKernelProcessRunSelfTest(OrynKernelPhysicalMemory* physicalMemory)
         OrynKernelProcessDestroy(process);
         return 0;
     }
+    gProcessStats.AddressSpaceValidationCount += 1U;
+    gProcessStats.AddressSpaceDistinctCount += 1U;
+    gProcessStats.ThreadAddressSpaceContextCount += 2U;
     heapAfter = OrynKernelHeapGetStats();
     if (heapAfter == 0 || heapAfter->StackGuardPages <= stackGuardPagesBefore)
     {
@@ -442,9 +451,12 @@ void OrynKernelProcessPrintProof(void)
     OrynKernelScreenReportOkOrFail(gProcessStats.UserThreadStructureReady,
         "User thread structure is defined.",
         "User thread structure proof failed.");
-    OrynKernelScreenReportOkOrFail(gProcessStats.AddressSpaceBoundProcessCount > 0U,
-        "Process structures bind to per-process address spaces.",
-        "Process structures did not bind to per-process address spaces.");
+    OrynKernelScreenReportOkOrFail(gProcessStats.AddressSpaceBoundProcessCount > 0U &&
+        gProcessStats.AddressSpaceValidationCount > 0U &&
+        gProcessStats.AddressSpaceDistinctCount > 0U &&
+        gProcessStats.ThreadAddressSpaceContextCount >= 2U,
+        "Processes own distinct per-process address spaces and thread CR3 state.",
+        "Per-process address-space ownership proof failed.");
     OrynKernelScreenReportOkOrFail(gProcessStats.SchedulerReadyThreadCount > 0U,
         "Scheduler-ready kernel thread stacks use guarded heap/VM helpers.",
         "Scheduler-ready kernel thread stack allocation proof failed.");

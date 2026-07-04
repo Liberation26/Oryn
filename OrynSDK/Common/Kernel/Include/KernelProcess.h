@@ -134,6 +134,9 @@ typedef struct OrynKernelProcessStats
     unsigned long long KernelThreadStackBytes;
     unsigned long long KernelThreadGuardBytes;
     unsigned int AddressSpaceBoundProcessCount;
+    unsigned int AddressSpaceValidationCount;
+    unsigned int AddressSpaceDistinctCount;
+    unsigned int ThreadAddressSpaceContextCount;
     unsigned int CopyOnWriteChildProcessCount;
     unsigned int ProcessIdReady;
     unsigned int ThreadIdReady;
