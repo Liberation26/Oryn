@@ -115,7 +115,20 @@ int OrynKernelHeapInit(OrynKernelPhysicalMemory* physicalMemory)
         gOrynSlabCaches[index].Stats.ObjectSize = sizes[index];
     }
 
-    return OrynHeapAllocateRaw(ORYN_PHYSICAL_PAGE_SIZE / 2ULL, 0U) != 0;
+    void* seed = OrynHeapAllocateRaw(ORYN_PHYSICAL_PAGE_SIZE / 2ULL, 0U);
+    if (seed == 0)
+    {
+        return 0;
+    }
+
+    /*
+     * Prime the raw heap with one physical page, then release the seed
+     * allocation so the boot proof starts with an initialized heap and zero
+     * active allocations.  Keeping the seed allocation live made the self-test
+     * correctly report a leak and blocked VirtualMemory from starting.
+     */
+    OrynHeapFreeRaw(seed);
+    return OrynKernelHeapValidate();
 }
 
 void OrynKernelHeapAttachVirtualMemory(OrynKernelVirtualMemory* virtualMemory)
