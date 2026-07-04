@@ -29,6 +29,11 @@ typedef struct OrynKernelHeapStats
     unsigned long long SlabCacheCount;
     unsigned long long StackGuardPages;
     unsigned long long CriticalHeapGuardPages;
+    unsigned long long InvalidFreeCount;
+    unsigned long long DoubleFreeCount;
+    unsigned long long CoalesceCount;
+    unsigned long long ValidationRuns;
+    unsigned long long ValidationFailures;
 } OrynKernelHeapStats;
 
 typedef struct OrynKernelSlabCacheStats
@@ -52,6 +57,7 @@ void* OrynKernelHeapAllocCritical(unsigned long long size);
 void OrynKernelHeapInstallStackGuard(unsigned long long stackBase, unsigned long long stackBytes);
 const OrynKernelHeapStats* OrynKernelHeapGetStats(void);
 int OrynKernelHeapGetSlabCacheStats(unsigned int index, OrynKernelSlabCacheStats* stats);
+int OrynKernelHeapValidate(void);
 int OrynKernelHeapRunSelfTest(void);
 void OrynKernelHeapPrintProof(void);
 

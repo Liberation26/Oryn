@@ -1,3 +1,11 @@
+[DONE 100%] 0.5.174: Kernel heap kmalloc/kfree/krealloc/kcalloc is production-ready for the current SDK scope.
+OrynWsl SDK ToDo2 update: 0.5.174
+
+[100%] Split the heap implementation into raw allocation, slab allocation, validation, and public API units so every heap source stays under the 500-line rule.
+[100%] Added heap integrity validation for raw block links, slab cache accounting, allocated bytes, and active allocation counters.
+[100%] Hardened kfree against double-free accounting, added raw-block coalescing, preserved krealloc contents, and kept kcalloc overflow/zeroing checks.
+[100%] Heap proof now reports validation runs/failures, invalid free counters, double-free counters, and coalesce counters.
+
 [DONE 100%] 0.5.173: Higher-half kernel mapping is production-validated for the current SDK scope and reports success from validator state, not unrelated aggregate map counters.
 OrynWsl SDK ToDo2 update: 0.5.173
 
@@ -327,7 +335,7 @@ Milestone 0.6 - Clean kernel entry and module ownership:
 Milestone 0.7 - Production memory management:
 [100%] Physical page allocator foundation exists with production allocator safety for the current SDK scope.
 [100%] Higher-half kernel mapping foundation exists with canonical, split, entry, PML4, and page-table validation.
-[060%] Create a real kernel heap: kmalloc, kfree, krealloc, kcalloc.
+[100%] Create a real kernel heap: kmalloc, kfree, krealloc, kcalloc.
 [050%] Add heap statistics and leak counters.
 [060%] Add slab/object caches for fixed-size kernel structures.
 [060%] Add guard pages for kernel stacks and critical heaps.

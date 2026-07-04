@@ -1,0 +1,164 @@
+#include "KernelHeapInternal.h"
+
+static int ValidateRawBlocks(unsigned long long* freeBytes, unsigned long long* allocatedBytes, unsigned long long* activeCount)
+{
+    OrynKernelHeapBlock* cursor = gOrynHeapHead;
+    unsigned int guard = 0U;
+    while (cursor != 0)
+    {
+        if (cursor->Magic != ORYN_KERNEL_HEAP_MAGIC)
+        {
+            return 0;
+        }
+        if (cursor->Next != 0 && cursor->Next->Previous != cursor)
+        {
+            return 0;
+        }
+        if ((cursor->Flags & ORYN_KERNEL_HEAP_FLAG_SLAB) != 0U)
+        {
+            return 0;
+        }
+        if ((cursor->Flags & ORYN_KERNEL_HEAP_FLAG_FREE) != 0U)
+        {
+            *freeBytes += cursor->Size;
+        }
+        else
+        {
+            *allocatedBytes += cursor->Size;
+            *activeCount += 1ULL;
+        }
+        cursor = cursor->Next;
+        guard += 1U;
+        if (guard > 65535U)
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static int ValidateSlabCaches(unsigned long long* freeBytes, unsigned long long* allocatedBytes, unsigned long long* activeCount)
+{
+    for (unsigned int index = 0U; index < ORYN_KERNEL_HEAP_SLAB_CACHE_COUNT; ++index)
+    {
+        OrynKernelSlabCache* cache = &gOrynSlabCaches[index];
+        if (cache->ObjectSize == 0ULL || cache->Stats.ObjectSize != cache->ObjectSize)
+        {
+            return 0;
+        }
+        unsigned long long totalObjects = cache->Stats.FreeObjects + cache->Stats.ActiveObjects;
+        unsigned long long capacity = cache->Stats.PagesAllocated * cache->Stats.ObjectsPerPage;
+        if (totalObjects > capacity)
+        {
+            return 0;
+        }
+        *freeBytes += cache->Stats.FreeObjects * cache->ObjectSize;
+        *allocatedBytes += cache->Stats.ActiveObjects * cache->ObjectSize;
+        *activeCount += cache->Stats.ActiveObjects;
+    }
+    return 1;
+}
+
+int OrynKernelHeapValidate(void)
+{
+    unsigned long long freeBytes = 0ULL;
+    unsigned long long allocatedBytes = 0ULL;
+    unsigned long long activeCount = 0ULL;
+    int ok = 1;
+
+    gOrynHeapStats.ValidationRuns += 1ULL;
+    if (gOrynHeapStats.Initialized == 0U)
+    {
+        ok = 0;
+    }
+    if (!ValidateRawBlocks(&freeBytes, &allocatedBytes, &activeCount))
+    {
+        ok = 0;
+    }
+    if (!ValidateSlabCaches(&freeBytes, &allocatedBytes, &activeCount))
+    {
+        ok = 0;
+    }
+    if (allocatedBytes != gOrynHeapStats.AllocatedBytes)
+    {
+        ok = 0;
+    }
+    if (activeCount != gOrynHeapStats.ActiveAllocations)
+    {
+        ok = 0;
+    }
+    if (!ok)
+    {
+        gOrynHeapStats.ValidationFailures += 1ULL;
+    }
+    (void)freeBytes;
+    return ok;
+}
+
+int OrynKernelHeapRunSelfTest(void)
+{
+    unsigned long long beforeDouble = gOrynHeapStats.DoubleFreeCount;
+    void* small = kmalloc(24ULL);
+    void* medium = kmalloc(128ULL);
+    unsigned char* zeroed = (unsigned char*)kcalloc(8ULL, 8ULL);
+    char* grown = (char*)kmalloc(8ULL);
+    void* critical = OrynKernelHeapAllocCritical(64ULL);
+
+    if (small == 0 || medium == 0 || zeroed == 0 || grown == 0 || critical == 0)
+    {
+        return 0;
+    }
+    for (unsigned int index = 0U; index < 64U; ++index)
+    {
+        if (zeroed[index] != 0U)
+        {
+            return 0;
+        }
+    }
+
+    grown[0] = 'O';
+    grown[1] = 'K';
+    grown = (char*)krealloc(grown, 64ULL);
+    if (grown == 0 || grown[0] != 'O' || grown[1] != 'K')
+    {
+        return 0;
+    }
+
+    kfree(small);
+    kfree(medium);
+    kfree(zeroed);
+    kfree(grown);
+    kfree(critical);
+    kfree(critical);
+
+    if (gOrynHeapStats.DoubleFreeCount <= beforeDouble)
+    {
+        return 0;
+    }
+    return OrynKernelHeapValidate() && gOrynHeapStats.ActiveAllocations == 0ULL;
+}
+
+void OrynKernelHeapPrintProof(void)
+{
+    OrynKernelDiagnosticsLogText("[KERNEL] Heap pages: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.HeapPages);
+    OrynKernelDiagnosticsLogText("\n[KERNEL] Heap active allocations: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ActiveAllocations);
+    OrynKernelDiagnosticsLogText("\n[KERNEL] Heap leak counter: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.LeakCounter);
+    OrynKernelDiagnosticsLogText("\n[KERNEL] Heap slab caches: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.SlabCacheCount);
+    OrynKernelDiagnosticsLogText("\n[KERNEL] Heap guard pages: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.GuardPages);
+    OrynKernelDiagnosticsLogText("\n[KERNEL] Heap validation runs: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ValidationRuns);
+    OrynKernelDiagnosticsLogText(" failures: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ValidationFailures);
+    OrynKernelDiagnosticsLogText("\n[KERNEL] Heap invalid frees: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.InvalidFreeCount);
+    OrynKernelDiagnosticsLogText(" double frees: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.DoubleFreeCount);
+    OrynKernelDiagnosticsLogText(" coalesces: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.CoalesceCount);
+    OrynKernelDiagnosticsLogText("\n");
+}
