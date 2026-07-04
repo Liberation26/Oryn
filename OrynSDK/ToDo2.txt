@@ -1,5 +1,13 @@
+[DONE 100%] 0.5.179: Page-fault handler policy is production-ready for the current SDK scope.
+OrynWsl SDK ToDo2 update: 0.5.179
+
+[100%] Page-fault handling now uses an explicit policy decision path for recover, kill-process, and kernel-panic outcomes instead of only reporting fault details.
+[100%] The policy classifies kernel, user, guard-page, reserved-bit, instruction-fetch, null/malformed-frame, and user-range violation faults with dedicated counters.
+[100%] Demand-allocation and copy-on-write recoveries remain recoverable actions, while invalid user contexts, reserved-bit faults, guard faults, and kernel faults remain fatal.
+[100%] The page-fault self-test now exercises fatal, non-fatal, malformed, reserved-bit, instruction-fetch, and out-of-range decisions before the VM proof accepts the policy.
+
 [DONE 100%] 0.5.178: Kernel stack and critical-heap guard pages are production-ready for the current SDK scope.
-OrynWsl SDK ToDo2 update: 0.5.178
+OrynWsl SDK ToDo2 update: 0.5.179
 
 [100%] Added a heap-owned guard-page registry for stack and critical heap guard records with validation counters and install-failure accounting.
 [100%] Critical heap allocations now install dedicated guard-page records and tag their guard pages as kernel-heap guard ownership.
@@ -363,7 +371,7 @@ Milestone 0.7 - Production memory management:
 [100%] Add heap statistics and leak counters.
 [100%] Add slab/object caches for fixed-size kernel structures.
 [100%] Add guard pages for kernel stacks and critical heaps.
-[060%] Add page-fault handler policy instead of only reporting faults.
+[100%] Add page-fault handler policy instead of only reporting faults.
 [060%] Add virtual memory map/unmap/protect APIs.
 [050%] Add per-process address spaces.
 [100%] Add user/kernel address split.
