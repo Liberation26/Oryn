@@ -1,3 +1,13 @@
+[DONE 100%] 0.5.182: Selected kernel modules are real build/link roots.
+OrynWsl SDK ToDo2 update: 0.5.182
+
+[100%] Every selected manifest module is marked in the generated compiled-module registry.
+[100%] Every selected manifest module gets a generated forced root symbol named OrynKernelModuleLinkRoot_<ModuleId>.
+[100%] OrynBuild validates that selected module owned source roots contain C source material and are present in the resolved archive plan before link.
+[100%] The linker command passes --undefined for every selected module root and links resolved module archives through whole-archive/start-group.
+[100%] Boot proof verifies selected modules are physically present through forced link roots.
+[100%] Missing selected module source ownership is now a build-time FAIL, not a runtime surprise.
+
 [DONE 100%] 0.5.181: Per-process address spaces are production-ready for the current SDK scope.
 OrynWsl SDK ToDo2 update: 0.5.181
 

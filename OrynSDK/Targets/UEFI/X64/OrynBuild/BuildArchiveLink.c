@@ -16,11 +16,14 @@ void BuildKernelArchiveLinkCommand(const OrynProject* project, const OrynBuildAr
         "ld.lld -nostdlib -static -z max-page-size=0x1000 "
         "--defsym=ORYN_KERNEL_PHYSICAL_BASE=0x%llX "
         "--defsym=ORYN_KERNEL_VIRTUAL_BASE=0x%llX "
-        "-T \"%s\" -o \"%s\" --whole-archive --start-group",
+        "-T \"%s\" -o \"%s\"",
         project->kernel_physical_base,
         project->kernel_virtual_base,
         linker_script,
         kernel_elf);
+
+    AppendSelectedKernelModuleLinkRootFlags(project, command, command_size);
+    strncat(command, " --whole-archive --start-group", command_size - strlen(command) - 1U);
 
     for (int order = 0; order < plan->ResolvedCount; ++order)
     {

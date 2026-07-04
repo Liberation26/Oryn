@@ -49,6 +49,7 @@ typedef enum OrynKernelModuleState
 } OrynKernelModuleState;
 
 typedef int (*OrynKernelModuleLifecycleCallback)(OrynKernelModuleId id);
+typedef void (*OrynKernelModuleLinkRoot)(void);
 
 typedef struct OrynKernelModuleManifestItem
 {
@@ -75,7 +76,35 @@ typedef struct OrynKernelCompiledModuleRecord
     OrynKernelModuleId Id;
     const char* Name;
     int CompiledIn;
+    int SelectedInBuild;
+    const char* LinkRootName;
+    OrynKernelModuleLinkRoot LinkRoot;
 } OrynKernelCompiledModuleRecord;
+
+void OrynKernelModuleLinkRoot_OrynKernelModuleBootInfo(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleScreenReport(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleLibC(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleLifecycle(void);
+void OrynKernelModuleLinkRoot_OrynKernelModulePanic(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleGdt(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleIdt(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleInterrupts(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleSysCalls(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleCpu(void);
+void OrynKernelModuleLinkRoot_OrynKernelModulePic(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleApic(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleSmp(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleHpet(void);
+void OrynKernelModuleLinkRoot_OrynKernelModulePci(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleConsole(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleKeyboard(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleFat32(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleVfs(void);
+void OrynKernelModuleLinkRoot_OrynKernelModulePhysicalMemory(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleHeap(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleVirtualMemory(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleProcess(void);
+void OrynKernelModuleLinkRoot_OrynKernelModuleScheduler(void);
 
 void OrynKernelModuleManifestInit(void);
 const OrynKernelModuleManifestItem* OrynKernelModuleManifestGet(OrynKernelModuleId id);
@@ -108,6 +137,8 @@ void OrynKernelModuleManifestTransitionProof(void);
 const char* OrynKernelModuleManifestStateName(OrynKernelModuleState state);
 unsigned int OrynKernelCompiledModuleCount(void);
 const OrynKernelCompiledModuleRecord* OrynKernelCompiledModuleGet(unsigned int index);
+unsigned int OrynKernelSelectedModuleLinkRootCount(void);
+unsigned int OrynKernelSelectedModuleMissingLinkRootCount(void);
 void OrynKernelCompiledModuleRegistryPrintProof(void);
 void OrynKernelModuleManifestPrintProof(void);
 

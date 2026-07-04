@@ -107,7 +107,8 @@ static int WriteKernelModuleManifestHeader(const OrynProject* project, const Ory
     fprintf(file, "    OrynKernelModuleStateSkipped,\n");
     fprintf(file, "    OrynKernelModuleStateFailed\n");
     fprintf(file, "} OrynKernelModuleState;\n\n");
-    fprintf(file, "typedef int (*OrynKernelModuleLifecycleCallback)(OrynKernelModuleId id);\n\n");
+    fprintf(file, "typedef int (*OrynKernelModuleLifecycleCallback)(OrynKernelModuleId id);\n");
+    fprintf(file, "typedef void (*OrynKernelModuleLinkRoot)(void);\n\n");
     fprintf(file, "typedef struct OrynKernelModuleManifestItem\n{\n");
     fprintf(file, "    OrynKernelModuleId Id;\n");
     fprintf(file, "    const char* Name;\n");
@@ -130,7 +131,15 @@ static int WriteKernelModuleManifestHeader(const OrynProject* project, const Ory
     fprintf(file, "    OrynKernelModuleId Id;\n");
     fprintf(file, "    const char* Name;\n");
     fprintf(file, "    int CompiledIn;\n");
+    fprintf(file, "    int SelectedInBuild;\n");
+    fprintf(file, "    const char* LinkRootName;\n");
+    fprintf(file, "    OrynKernelModuleLinkRoot LinkRoot;\n");
     fprintf(file, "} OrynKernelCompiledModuleRecord;\n\n");
+    for (int index = 0; index < module_count; ++index)
+    {
+        fprintf(file, "void OrynKernelModuleLinkRoot_%s(void);\n", modules[index].Id);
+    }
+    fprintf(file, "\n");
     fprintf(file, "void OrynKernelModuleManifestInit(void);\n");
     fprintf(file, "const OrynKernelModuleManifestItem* OrynKernelModuleManifestGet(OrynKernelModuleId id);\n");
     fprintf(file, "int OrynKernelModuleManifestCanStart(OrynKernelModuleId id);\n");
@@ -162,6 +171,8 @@ static int WriteKernelModuleManifestHeader(const OrynProject* project, const Ory
     fprintf(file, "const char* OrynKernelModuleManifestStateName(OrynKernelModuleState state);\n");
     fprintf(file, "unsigned int OrynKernelCompiledModuleCount(void);\n");
     fprintf(file, "const OrynKernelCompiledModuleRecord* OrynKernelCompiledModuleGet(unsigned int index);\n");
+    fprintf(file, "unsigned int OrynKernelSelectedModuleLinkRootCount(void);\n");
+    fprintf(file, "unsigned int OrynKernelSelectedModuleMissingLinkRootCount(void);\n");
     fprintf(file, "void OrynKernelCompiledModuleRegistryPrintProof(void);\n");
     fprintf(file, "void OrynKernelModuleManifestPrintProof(void);\n\n");
     fprintf(file, "#endif\n");
@@ -195,6 +206,9 @@ static int WriteKernelModuleManifestData(const OrynProject* project, const OrynK
     fprintf(file, "    const OrynKernelModuleId* requires,\n");
     fprintf(file, "    unsigned int requireCount,\n");
     fprintf(file, "    int compiledIn,\n");
+    fprintf(file, "    int selectedInBuild,\n");
+    fprintf(file, "    const char* linkRootName,\n");
+    fprintf(file, "    OrynKernelModuleLinkRoot linkRoot,\n");
     fprintf(file, "    int required,\n");
     fprintf(file, "    int fatalOnMissingPrerequisite,\n");
     fprintf(file, "    const char* stopCallbackName,\n");
@@ -221,9 +235,17 @@ static int WriteKernelModuleManifestData(const OrynProject* project, const OrynK
     fprintf(file, "    gCompiledKernelModules[id].Id = id;\n");
     fprintf(file, "    gCompiledKernelModules[id].Name = name;\n");
     fprintf(file, "    gCompiledKernelModules[id].CompiledIn = compiledIn;\n");
+    fprintf(file, "    gCompiledKernelModules[id].SelectedInBuild = selectedInBuild;\n");
+    fprintf(file, "    gCompiledKernelModules[id].LinkRootName = linkRootName;\n");
+    fprintf(file, "    gCompiledKernelModules[id].LinkRoot = linkRoot;\n");
     fprintf(file, "    for (unsigned int index = 0U; index < requireCount && index < 6U; ++index)\n    {\n");
     fprintf(file, "        gKernelModuleManifest[id].Requires[index] = requires[index];\n");
     fprintf(file, "    }\n}\n\n");
+    for (int index = 0; index < module_count; ++index)
+    {
+        fprintf(file, "void OrynKernelModuleLinkRoot_%s(void)\n{\n    __asm__ __volatile__(\"\" ::: \"memory\");\n}\n\n", modules[index].Id);
+    }
+
     fprintf(file, "void OrynKernelModuleManifestInit(void)\n{\n");
     for (int index = 0; index < module_count; ++index)
     {
@@ -232,7 +254,7 @@ static int WriteKernelModuleManifestData(const OrynProject* project, const OrynK
     fprintf(file, "\n");
     for (int index = 0; index < module_count; ++index)
     {
-        fprintf(file, "    SetModule(%s, \"%s\", \"%s\", \"%s\", requires_%s, %dU, %d, %d, %d, \"%s\", \"%s\", \"%s\", %s, %s, %s);\n",
+        fprintf(file, "    SetModule(%s, \"%s\", \"%s\", \"%s\", requires_%s, %dU, %d, %d, \"OrynKernelModuleLinkRoot_%s\", OrynKernelModuleLinkRoot_%s, %d, %d, \"%s\", \"%s\", \"%s\", %s, %s, %s);\n",
             modules[index].Id,
             modules[index].Name,
             modules[index].Items,
@@ -240,6 +262,9 @@ static int WriteKernelModuleManifestData(const OrynProject* project, const OrynK
             modules[index].Id,
             CountRequires(modules[index].Requires),
             modules[index].CompiledIn,
+            modules[index].SelectedInBuild,
+            modules[index].Id,
+            modules[index].Id,
             modules[index].Required,
             modules[index].FatalOnMissingPrerequisite,
             modules[index].StopCallback,
@@ -256,6 +281,8 @@ static int WriteKernelModuleManifestData(const OrynProject* project, const OrynK
     fprintf(file, "const OrynKernelModuleManifestItem* OrynKernelModuleManifestGet(OrynKernelModuleId id)\n{\n");
     fprintf(file, "    return OrynKernelModuleManifestMutable(id);\n}\n\n");
     fprintf(file, "unsigned int OrynKernelCompiledModuleCount(void)\n{\n    return (unsigned int)OrynKernelModuleCount;\n}\n\n");
+    fprintf(file, "unsigned int OrynKernelSelectedModuleLinkRootCount(void)\n{\n    unsigned int count = 0U;\n    for (unsigned int index = 0U; index < (unsigned int)OrynKernelModuleCount; ++index)\n    {\n        if (gCompiledKernelModules[index].SelectedInBuild && gCompiledKernelModules[index].LinkRoot)\n        {\n            ++count;\n        }\n    }\n    return count;\n}\n\n");
+    fprintf(file, "unsigned int OrynKernelSelectedModuleMissingLinkRootCount(void)\n{\n    unsigned int count = 0U;\n    for (unsigned int index = 0U; index < (unsigned int)OrynKernelModuleCount; ++index)\n    {\n        if (gCompiledKernelModules[index].SelectedInBuild && !gCompiledKernelModules[index].LinkRoot)\n        {\n            ++count;\n        }\n    }\n    return count;\n}\n\n");
     fprintf(file, "const OrynKernelCompiledModuleRecord* OrynKernelCompiledModuleGet(unsigned int index)\n{\n");
     fprintf(file, "    if (index >= (unsigned int)OrynKernelModuleCount)\n    {\n        return 0;\n    }\n    return &gCompiledKernelModules[index];\n}\n");
 
@@ -283,17 +310,18 @@ static int WriteKernelModuleManifestReport(const OrynProject* project, const Ory
     fprintf(file, "GeneratedHeader=Common/Kernel/Include/KernelModuleManifest.h\n");
     fprintf(file, "GeneratedData=Common/Kernel/Source/Manifest/KernelModuleManifestData.c\n");
     fprintf(file, "ModuleCount=%d\n", module_count);
-    fprintf(file, "Fields=Order<TAB>Id<TAB>Name<TAB>Requires<TAB>Select<TAB>CompiledIn<TAB>Required<TAB>FatalOnMissingPrerequisite<TAB>StopCallback<TAB>PanicCallback<TAB>ShutdownCallback<TAB>SourcePath\n");
+    fprintf(file, "Fields=Order<TAB>Id<TAB>Name<TAB>Requires<TAB>Select<TAB>CompiledIn<TAB>SelectedInBuild<TAB>Required<TAB>FatalOnMissingPrerequisite<TAB>StopCallback<TAB>PanicCallback<TAB>ShutdownCallback<TAB>SourcePath\n");
     fprintf(file, "Modules:\n");
     for (int index = 0; index < module_count; ++index)
     {
-        fprintf(file, "%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\t%s\t%s\t%s\n",
+        fprintf(file, "%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\t%s\t%s\t%s\t%s\n",
             modules[index].Order,
             modules[index].Id,
             modules[index].Name,
             modules[index].Requires,
             modules[index].Select,
             modules[index].CompiledIn,
+            modules[index].SelectedInBuild,
             modules[index].Required,
             modules[index].FatalOnMissingPrerequisite,
             modules[index].StopCallback,
@@ -313,6 +341,11 @@ int GenerateKernelModuleManifestTables(const OrynProject* project)
     if (!ReadKernelModuleManifestSources(project, modules, &module_count))
     {
         return 0;
+    }
+
+    for (int index = 0; index < module_count; ++index)
+    {
+        modules[index].SelectedInBuild = KernelModuleSelectedForBuild(project, &modules[index]);
     }
 
     if (!WriteKernelModuleManifestHeader(project, modules, module_count))

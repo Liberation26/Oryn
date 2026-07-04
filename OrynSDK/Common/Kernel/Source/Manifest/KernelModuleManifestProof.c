@@ -76,6 +76,8 @@ void OrynKernelCompiledModuleRegistryPrintProof(void)
             ++compiled;
             OrynKernelDiagnosticsLogText("[KERNEL] Compiled-in module: ");
             OrynKernelDiagnosticsLogText(record->Name);
+            OrynKernelDiagnosticsLogText(record->SelectedInBuild ? " selected-root=" : " optional-root=");
+            OrynKernelDiagnosticsLogText(record->LinkRootName ? record->LinkRootName : "none");
             OrynKernelDiagnosticsLogText("\n");
         }
     }
@@ -83,6 +85,10 @@ void OrynKernelCompiledModuleRegistryPrintProof(void)
     OrynKernelScreenReportOkOrFail(compiled == (unsigned int)OrynKernelModuleCount,
         "Compiled-in kernel module registry contains every manifest module.",
         "Compiled-in kernel module registry is missing manifest modules.");
+    OrynKernelScreenReportOkOrFail(
+        OrynKernelSelectedModuleMissingLinkRootCount() == 0U && OrynKernelSelectedModuleLinkRootCount() > 0U,
+        "Selected kernel modules are physically present through forced link roots.",
+        "Selected kernel modules are missing forced link roots.");
 }
 
 void OrynKernelModuleManifestPrintProof(void)

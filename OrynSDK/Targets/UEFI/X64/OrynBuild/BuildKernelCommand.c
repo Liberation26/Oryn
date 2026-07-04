@@ -183,6 +183,12 @@ int OrynBuildKernel(const OrynProject* project)
         return 0;
     }
 
+    if (!ValidateSelectedKernelModuleSourceRoots(project, &sources))
+    {
+        LogBuildPlanSkip(project, "selected-module-link-roots", "Selected kernel module source ownership validation failed before link.");
+        return 0;
+    }
+
     WriteObjectManifest(project, &sources, &objects, &stats);
     WriteArchiveManifest(project, &plan, &stats);
     LogIncrementalSummary(&stats);
