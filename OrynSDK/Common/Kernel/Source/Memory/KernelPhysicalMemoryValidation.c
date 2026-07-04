@@ -10,28 +10,112 @@ static int IsAlignedPhysicalPage(unsigned long long physicalAddress)
     return (physicalAddress & (ORYN_PHYSICAL_PAGE_SIZE - 1ULL)) == 0ULL;
 }
 
-static int FreeListContains(
-    const OrynKernelPhysicalMemory* allocator,
-    unsigned long long physicalAddress,
-    unsigned int* matchCount)
+static void SwapFreePages(unsigned long long* left, unsigned long long* right)
 {
-    unsigned int matches = 0U;
+    unsigned long long temp = *left;
+    *left = *right;
+    *right = temp;
+}
+
+static void HeapSiftDown(
+    unsigned long long* pages,
+    unsigned int start,
+    unsigned int end)
+{
+    unsigned int root = start;
+
+    while ((root * 2U) + 1U <= end)
+    {
+        unsigned int child = (root * 2U) + 1U;
+        unsigned int swapIndex = root;
+
+        if (pages[swapIndex] < pages[child])
+        {
+            swapIndex = child;
+        }
+
+        if (child + 1U <= end && pages[swapIndex] < pages[child + 1U])
+        {
+            swapIndex = child + 1U;
+        }
+
+        if (swapIndex == root)
+        {
+            return;
+        }
+
+        SwapFreePages(&pages[root], &pages[swapIndex]);
+        root = swapIndex;
+    }
+}
+
+static void SortFreePages(OrynKernelPhysicalMemory* allocator)
+{
+    unsigned int count;
+    unsigned int start;
+    unsigned int end;
+
+    if (allocator == 0 || allocator->FreePageCount < 2U)
+    {
+        return;
+    }
+
+    count = allocator->FreePageCount;
+    start = (count - 2U) / 2U;
+    for (;;)
+    {
+        HeapSiftDown(allocator->FreePages, start, count - 1U);
+        if (start == 0U)
+        {
+            break;
+        }
+        start -= 1U;
+    }
+
+    end = count - 1U;
+    while (end > 0U)
+    {
+        SwapFreePages(&allocator->FreePages[end], &allocator->FreePages[0]);
+        end -= 1U;
+        HeapSiftDown(allocator->FreePages, 0U, end);
+    }
+}
+
+static int SortedFreeListContains(
+    const OrynKernelPhysicalMemory* allocator,
+    unsigned long long physicalAddress)
+{
+    unsigned int low = 0U;
+    unsigned int high;
     unsigned long long page = AlignPhysicalPage(physicalAddress);
 
-    for (unsigned int index = 0U; index < allocator->FreePageCount; ++index)
+    if (allocator == 0 || allocator->FreePageCount == 0U)
     {
-        if (allocator->FreePages[index] == page)
+        return 0;
+    }
+
+    high = allocator->FreePageCount;
+    while (low < high)
+    {
+        unsigned int mid = low + ((high - low) / 2U);
+        unsigned long long current = allocator->FreePages[mid];
+
+        if (current == page)
         {
-            matches += 1U;
+            return 1;
+        }
+
+        if (current < page)
+        {
+            low = mid + 1U;
+        }
+        else
+        {
+            high = mid;
         }
     }
 
-    if (matchCount != 0)
-    {
-        *matchCount = matches;
-    }
-
-    return matches != 0U;
+    return 0;
 }
 
 static const OrynPhysicalPageRecord* FindRecord(
@@ -51,11 +135,12 @@ static const OrynPhysicalPageRecord* FindRecord(
     return 0;
 }
 
-static int ValidateFreePages(const OrynKernelPhysicalMemory* allocator)
+static int ValidateFreePagesSorted(const OrynKernelPhysicalMemory* allocator)
 {
+    unsigned long long previous = 0ULL;
+
     for (unsigned int index = 0U; index < allocator->FreePageCount; ++index)
     {
-        unsigned int matches;
         const OrynPhysicalPageRecord* record;
         unsigned long long page = allocator->FreePages[index];
 
@@ -64,8 +149,7 @@ static int ValidateFreePages(const OrynKernelPhysicalMemory* allocator)
             return 0;
         }
 
-        (void)FreeListContains(allocator, page, &matches);
-        if (matches != 1U)
+        if (index != 0U && page <= previous)
         {
             return 0;
         }
@@ -75,6 +159,8 @@ static int ValidateFreePages(const OrynKernelPhysicalMemory* allocator)
         {
             return 0;
         }
+
+        previous = page;
     }
 
     return 1;
@@ -92,7 +178,7 @@ static int ValidateOwnershipRecords(const OrynKernelPhysicalMemory* allocator)
             return 0;
         }
 
-        inFreeList = FreeListContains(allocator, record->PhysicalAddress, 0);
+        inFreeList = SortedFreeListContains(allocator, record->PhysicalAddress);
         if (record->Owner == OrynPhysicalPageOwnerFree)
         {
             if (record->ReferenceCount != 0U || !inFreeList)
@@ -141,16 +227,13 @@ int OrynPhysicalMemoryValidateAllocator(const OrynKernelPhysicalMemory* allocato
         return 0;
     }
 
-    if (writable != 0)
-    {
-        writable->IntegrityChecks += 1ULL;
-    }
-
+    writable->IntegrityChecks += 1ULL;
+    SortFreePages(writable);
     ok = ValidatePageAccounting(allocator) &&
-        ValidateFreePages(allocator) &&
+        ValidateFreePagesSorted(allocator) &&
         ValidateOwnershipRecords(allocator);
 
-    if (!ok && writable != 0)
+    if (!ok)
     {
         writable->IntegrityFailures += 1ULL;
     }

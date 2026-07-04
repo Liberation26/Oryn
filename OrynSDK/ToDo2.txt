@@ -1,3 +1,10 @@
+[DONE 100%] 0.5.171: Physical allocator integrity validation no longer hangs the boot proof.
+OrynWsl SDK ToDo2 update: 0.5.171
+
+[100%] Replaced the allocator integrity proof's O(n²) free-list duplicate scan with bounded heap-sort plus binary-search validation.
+[100%] Boot proof now reaches the physical allocator integrity OK/FAIL line instead of timing out after the DMA and memory-pressure proof lines.
+[100%] The integrity proof still validates page accounting, aligned free pages, duplicate free-list entries, free-owner records, live-owner records, and reference counts.
+
 [DONE 100%] 0.5.170: Physical page allocator is production-ready for the current SDK scope.
 OrynWsl SDK ToDo2 update: 0.5.170
 
