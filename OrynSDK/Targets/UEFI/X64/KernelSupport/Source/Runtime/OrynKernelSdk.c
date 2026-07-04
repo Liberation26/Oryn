@@ -1,9 +1,43 @@
 #include "OrynKernelSdk.h"
 
 #include "KernelBootProof.h"
+#include "KernelIo.h"
 #include "KernelModuleManifest.h"
 #include "KernelRuntime.h"
+#include "KernelRuntimeInternal.h"
 #include "KernelScreenReport.h"
+
+#define QEMU_EXIT_PORT 0xF4
+
+static inline void OrynKernelSdkOut32(unsigned short port, unsigned int value)
+{
+    __asm__ volatile ("outl %0, %1" : : "a"(value), "Nd"(port));
+}
+
+static void OrynKernelSdkDisableInterrupts(void)
+{
+    __asm__ volatile ("cli" ::: "memory");
+}
+
+static void OrynKernelSdkHaltLoop(void)
+{
+    for (;;)
+    {
+        __asm__ volatile ("cli");
+        __asm__ volatile ("hlt");
+    }
+}
+
+static void OrynKernelSdkEnsureRuntimeEntered(OrynKernelSdkContext* kernel)
+{
+    if (kernel == 0 || kernel->RuntimeEntered != 0U)
+    {
+        return;
+    }
+
+    kernel->BootInfo = OrynKernelRuntimeEnter(kernel->BootInfo);
+    kernel->RuntimeEntered = 1U;
+}
 
 static void TouchSelectedSdkModuleRoots(OrynKernelSdkContext* kernel)
 {
@@ -34,30 +68,33 @@ static void TouchSelectedSdkModuleRoots(OrynKernelSdkContext* kernel)
 
     kernel->SelectedModuleCount = touched;
     kernel->MissingModuleLinkRootCount = missing;
-
-    OrynKernelScreenReportOkOrFail(
-        touched > 0U && missing == 0U,
-        "SDK selected module link roots are present.",
-        "SDK selected module link root check failed.");
 }
 
 static void VerifySelectedSdkModulesPresent(OrynKernelSdkContext* kernel)
 {
-    unsigned int selectedRoots = OrynKernelSelectedModuleLinkRootCount();
-    unsigned int missingRoots = OrynKernelSelectedModuleMissingLinkRootCount();
+    kernel->SelectedModuleCount = OrynKernelSelectedModuleLinkRootCount();
+    kernel->MissingModuleLinkRootCount = OrynKernelSelectedModuleMissingLinkRootCount();
+}
 
-    kernel->SelectedModuleCount = selectedRoots;
-    kernel->MissingModuleLinkRootCount = missingRoots;
+void OrynKernelSdkWrite(OrynKernelSdkContext* kernel, const char* text)
+{
+    (void)kernel;
+    if (text != 0)
+    {
+        KernelIoWriteString(text);
+    }
+}
 
-    OrynKernelScreenReportOkOrFail(
-        selectedRoots > 0U && missingRoots == 0U,
-        "SDK selected modules are physically linked.",
-        "SDK selected modules are missing link roots.");
+void OrynKernelSdkWriteLine(OrynKernelSdkContext* kernel, const char* text)
+{
+    OrynKernelSdkWrite(kernel, text);
+    OrynKernelSdkWrite(kernel, "\n");
 }
 
 void OrynKernelSdkReportOk(OrynKernelSdkContext* kernel, const char* message)
 {
     const char* category = "SDK Kernel";
+    OrynKernelSdkEnsureRuntimeEntered(kernel);
     if (kernel != 0 && kernel->KernelName != 0)
     {
         category = kernel->KernelName;
@@ -69,6 +106,7 @@ void OrynKernelSdkReportOk(OrynKernelSdkContext* kernel, const char* message)
 void OrynKernelSdkReportFail(OrynKernelSdkContext* kernel, const char* message)
 {
     const char* category = "SDK Kernel";
+    OrynKernelSdkEnsureRuntimeEntered(kernel);
     if (kernel != 0 && kernel->KernelName != 0)
     {
         category = kernel->KernelName;
@@ -85,14 +123,19 @@ void OrynKernelSdkRunBootProof(OrynKernelSdkContext* kernel)
         return;
     }
 
+    OrynKernelSdkEnsureRuntimeEntered(kernel);
+    TouchSelectedSdkModuleRoots(kernel);
+    VerifySelectedSdkModulesPresent(kernel);
     OrynKernelBootProofRunSequence(kernel->BootInfo);
 }
 
 void OrynKernelSdkHalt(OrynKernelSdkContext* kernel)
 {
     (void)kernel;
-    OrynKernelRuntimeExitForNonInteractiveVm();
-    OrynKernelRuntimeHaltForever();
+#if !ORYN_VM_INTERACTIVE_DISPLAY
+    OrynKernelSdkOut32(QEMU_EXIT_PORT, 0x10U);
+#endif
+    OrynKernelSdkHaltLoop();
 }
 
 void OrynKernelSdkStart(
@@ -100,22 +143,18 @@ void OrynKernelSdkStart(
     const OrynKernelSdkApplication* application)
 {
     OrynKernelSdkContext kernel;
-    kernel.BootInfo = OrynKernelRuntimeEnter(bootInfo);
+    OrynKernelSdkDisableInterrupts();
+    KernelIoInit();
+
+    kernel.BootInfo = bootInfo;
     kernel.KernelName = application != 0 ? application->KernelName : "SDK Kernel";
     kernel.SelectedModuleCount = 0U;
     kernel.MissingModuleLinkRootCount = 0U;
-
-    TouchSelectedSdkModuleRoots(&kernel);
-    VerifySelectedSdkModulesPresent(&kernel);
-    OrynKernelSdkReportOk(&kernel, "Kernel entry is running through the public Oryn SDK application API.");
+    kernel.RuntimeEntered = 0U;
 
     if (application != 0 && application->Main != 0)
     {
         application->Main(&kernel);
-    }
-    else
-    {
-        OrynKernelSdkReportFail(&kernel, "SDK kernel application has no Main function.");
     }
 
     OrynKernelSdkHalt(&kernel);

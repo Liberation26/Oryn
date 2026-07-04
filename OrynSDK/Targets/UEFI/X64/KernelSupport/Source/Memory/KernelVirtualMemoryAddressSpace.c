@@ -12,26 +12,6 @@ static unsigned long long* AddressSpacePml4(const OrynKernelAddressSpace* addres
     return (unsigned long long*)(addressSpace->Pml4Physical & ORYN_ADDRESS_SPACE_PAGE_MASK);
 }
 
-static unsigned int CountPresentEntries(
-    const unsigned long long* pml4,
-    unsigned int first,
-    unsigned int end)
-{
-    unsigned int count = 0U;
-    if (pml4 == 0)
-    {
-        return 0U;
-    }
-    for (unsigned int index = first; index < end; ++index)
-    {
-        if ((pml4[index] & ORYN_ADDRESS_SPACE_PRESENT) != 0ULL)
-        {
-            count += 1U;
-        }
-    }
-    return count;
-}
-
 static int UserHalfIsIsolated(
     const unsigned long long* processPml4,
     const unsigned long long* kernelPml4)

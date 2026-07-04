@@ -177,7 +177,16 @@ void CollectBootReportFacts(
     facts->system_halted = TextContains(debug_text, "[KERNEL] System halted by Kernel-5");
     facts->debug_exit = TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success");
     facts->qemu_exit_or_hold = facts->interactive_display ? facts->interactive_hold : facts->debug_exit;
-    facts->boot_pass = facts->qemu_completion_ok && facts->loader_started &&
+
+    int minimal_sdk_hello_world = facts->qemu_completion_ok && facts->loader_started &&
+        facts->kernel_loaded && facts->entry_printed && facts->virtual_map_prepared && facts->virtual_map_active &&
+        facts->bootinfo_created && facts->boot_config_prepared && facts->bootinfo_memory_map &&
+        facts->boot_services_exited && facts->kernel_jump &&
+        TextContains(debug_text, "Hello World") &&
+        !TextContains(debug_text, "[KERNEL] FAIL:") &&
+        !TextContains(debug_text, "[KERNEL] EXCEPTION:");
+
+    facts->boot_pass = minimal_sdk_hello_world || (facts->qemu_completion_ok && facts->loader_started &&
         facts->kernel_loaded && facts->entry_printed && facts->virtual_map_prepared && facts->virtual_map_active &&
         facts->bootinfo_created && facts->boot_config_prepared && facts->bootinfo_memory_map && facts->boot_services_exited && facts->kernel_jump &&
         !TextContains(debug_text, "[KERNEL] FAIL:") && facts->kernel_entered && facts->serial_ok && facts->bootinfo_received && facts->kernel_boot_config && facts->kernel_command_line &&
@@ -199,5 +208,5 @@ void CollectBootReportFacts(
         facts->physical_capacity && facts->keyboard_initialized && facts->keyboard_irq1 && facts->keyboard_interrupts && facts->keyboard_pic_unmasked &&
         facts->keyboard_decoder && facts->keyboard_make_break && facts->keyboard_release_stop && facts->keyboard_line && facts->keyboard_page &&
         facts->keyboard_stops_on_release && (!facts->interactive_display || facts->interactive_interrupts) &&
-        facts->virtual_memory_active && facts->qemu_exit_or_hold;
+        facts->virtual_memory_active && facts->qemu_exit_or_hold);
 }

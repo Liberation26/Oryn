@@ -9,6 +9,7 @@ typedef struct OrynKernelSdkContext
     const char* KernelName;
     unsigned int SelectedModuleCount;
     unsigned int MissingModuleLinkRootCount;
+    unsigned int RuntimeEntered;
 } OrynKernelSdkContext;
 
 typedef void (*OrynKernelSdkMain)(OrynKernelSdkContext* kernel);
@@ -23,6 +24,8 @@ void OrynKernelSdkStart(
     const OrynBootInfo* bootInfo,
     const OrynKernelSdkApplication* application);
 
+void OrynKernelSdkWrite(OrynKernelSdkContext* kernel, const char* text);
+void OrynKernelSdkWriteLine(OrynKernelSdkContext* kernel, const char* text);
 void OrynKernelSdkRunBootProof(OrynKernelSdkContext* kernel);
 void OrynKernelSdkReportOk(OrynKernelSdkContext* kernel, const char* message);
 void OrynKernelSdkReportFail(OrynKernelSdkContext* kernel, const char* message);

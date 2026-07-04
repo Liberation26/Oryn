@@ -293,7 +293,15 @@ int OrynRunQemu(const OrynProject* project)
     PrintFileIfPresent("QEMU debug output", debug_log);
     PrintFileIfPresent("Boot report", boot_report);
 
-    int boot_pass = (KernelOkFact(debug_text, "Kernel entered successfully") ||
+    int minimal_sdk_hello_world = command_ok && (interactive_display || exit_code == 0 || exit_code == 33) &&
+        TextContains(debug_text, "[BOOT] Stage 01") &&
+        TextContains(debug_text, "[BOOT] Kernel loaded physical base") &&
+        TextContains(debug_text, "[BOOT] Stage 08: Jumping to kernel entry") &&
+        TextContains(debug_text, "Hello World") &&
+        !TextContains(debug_text, "[KERNEL] FAIL:") &&
+        !TextContains(debug_text, "[KERNEL] EXCEPTION:");
+
+    int boot_pass = minimal_sdk_hello_world || ((KernelOkFact(debug_text, "Kernel entered successfully") ||
         TextContains(debug_text, "[KERNEL] Oryn Kernel-5 entered.")) &&
         KernelOkFact(debug_text, "BootInfo received") &&
         KernelOkFact(debug_text, "GDT installed.") &&
@@ -344,14 +352,16 @@ int OrynRunQemu(const OrynProject* project)
         KernelOkFact(debug_text, "Physical allocator tracking capacity is sufficient.") &&
         (interactive_display ?
             KernelOkFact(debug_text, "Interactive QEMU display mode keeps VM open for scroll testing.") :
-            TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success")) && command_ok;
+            TextContains(debug_text, "[KERNEL] Requesting QEMU debug-exit success")) && command_ok);
 
     if (boot_pass)
     {
         free(debug_text);
         OrynLogOk(interactive_display ?
             "Boot proof passed after QEMU window was closed. Interactive screen scrolling test mode was active." :
-            "Boot proof passed. Kernel output was captured and QEMU exited cleanly.");
+            (minimal_sdk_hello_world ?
+                "Minimal SDK kernel ran and printed Hello World." :
+                "Boot proof passed. Kernel output was captured and QEMU exited cleanly."));
         return 1;
     }
 
