@@ -978,3 +978,10 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 
 [100%] Kernel-5 is now a real SDK-authored kernel entry: project-owned KernelMain selects/touches selected SDK module link roots, verifies physical module presence, runs boot proof, exits VM mode, and halts through public SDK runtime APIs instead of being only a thin runtime trampoline.
 [100%] Move Kernel-5 visible boot report/proof output ownership into OrynProjects/Kernel-5/Source/BootProof so the built kernel source owns the printed boot narrative.
+
+0.5.185 - True SDK kernel application entry
+[100%] Replaced Kernel-5 hand-written runtime/manifest/link-root driver code with the public Oryn SDK application API.
+[100%] Added OrynKernelSdk.h with ORYN_KERNEL_APPLICATION so a project kernel declares its application entry instead of calling SDK internals directly.
+[100%] Added OrynKernelSdkStart in the SDK runtime layer to own module-root touching, selected-module presence checks, runtime enter, VM exit, and halt.
+[100%] Kernel-5 Source/KernelMain.c now only includes OrynKernelSdk.h, defines Kernel5Main, and uses SDK calls like OrynKernelSdkReportOk and OrynKernelSdkRunBootProof.
+[100%] The built kernel is now an SDK-built application using public SDK-facing APIs instead of a project file manually driving KernelRuntime, KernelModuleManifest, and KernelScreenReport internals.
