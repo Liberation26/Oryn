@@ -103,6 +103,7 @@ unsigned int OrynKernelModuleManifestInvokeStopCallbacks(void);
 unsigned int OrynKernelModuleManifestInvokePanicCallbacks(void);
 unsigned int OrynKernelModuleManifestInvokeShutdownCallbacks(void);
 void OrynKernelModuleManifestCallbackProof(void);
+void OrynKernelModuleManifestTransitionProof(void);
 const char* OrynKernelModuleManifestStateName(OrynKernelModuleState state);
 unsigned int OrynKernelCompiledModuleCount(void);
 const OrynKernelCompiledModuleRecord* OrynKernelCompiledModuleGet(unsigned int index);

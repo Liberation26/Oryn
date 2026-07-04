@@ -157,6 +157,7 @@ static int WriteKernelModuleManifestHeader(const OrynProject* project, const Ory
     fprintf(file, "unsigned int OrynKernelModuleManifestInvokePanicCallbacks(void);\n");
     fprintf(file, "unsigned int OrynKernelModuleManifestInvokeShutdownCallbacks(void);\n");
     fprintf(file, "void OrynKernelModuleManifestCallbackProof(void);\n");
+    fprintf(file, "void OrynKernelModuleManifestTransitionProof(void);\n");
     fprintf(file, "const char* OrynKernelModuleManifestStateName(OrynKernelModuleState state);\n");
     fprintf(file, "unsigned int OrynKernelCompiledModuleCount(void);\n");
     fprintf(file, "const OrynKernelCompiledModuleRecord* OrynKernelCompiledModuleGet(unsigned int index);\n");

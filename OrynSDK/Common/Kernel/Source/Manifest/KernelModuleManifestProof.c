@@ -95,6 +95,7 @@ void OrynKernelModuleManifestPrintProof(void)
         !OrynKernelModuleManifestCanStart(OrynKernelModuleApic),
         "Module manifest blocks APIC before PIC is ready.",
         "Module manifest allows APIC before PIC.");
+    OrynKernelModuleManifestTransitionProof();
     OrynKernelScreenReportOk(0, "Module manifest owns init/start state transitions and boot policy.");
     OrynKernelScreenReportOk(0, "Module manifest carries required, optional, and fatal prerequisite policy.");
 

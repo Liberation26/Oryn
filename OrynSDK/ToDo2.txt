@@ -1,5 +1,13 @@
+[DONE 100%] 0.5.168: Module init/start proof is owned by manifest state transitions.
+OrynWsl SDK ToDo2 update: 0.5.168
+
+[100%] Added KernelModuleManifestTransitionProof as a manifest-owned proof path for init/start states.
+[100%] The proof validates selected -> starting -> ready, blocked start -> failed, and optional selected -> skipped transitions without leaving proof state behind.
+[100%] KernelModuleManifestPrintProof now invokes the transition proof before reporting module init/start ownership.
+[100%] Build generation now preserves the transition proof declaration in the generated KernelModuleManifest.h header.
+
 [DONE 100%] 0.5.167: Runtime module start decisions are owned by the module start plan and selected from BootInfo/project manifest tokens.
-OrynWsl SDK ToDo2 update: 0.5.167
+OrynWsl SDK ToDo2 update: 0.5.168
 
 [100%] Added KernelModuleStartPlan as the owner of module start decisions for compiled-in modules.
 [100%] Start decisions now evaluate manifest Select tokens against supplied BootInfo data and project VM options before a module can enter Starting.
@@ -284,7 +292,7 @@ Milestone 0.6 - Clean kernel entry and module ownership:
 [100%] Move serial proof detail into Diagnostics/Logger only.
 [100%] Add a KernelInit graph with ordered stages and explicit dependencies.
 [100%] Add per-module manifest items with OK/WARN/FAIL capable states.
-[050%] Add module init/start proof through manifest state transitions.
+[100%] Add module init/start proof through manifest state transitions.
 [100%] Add module stop, panic, and shutdown callbacks.
 [100%] Add a registry of compiled-in kernel modules.
 [100%] Add dependency validation so a module cannot start before its prerequisites.
