@@ -975,3 +975,5 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [100%] Deleted-file cleanup for obsolete root recovery/bootstrap scripts is production-ready in the updater flow.
 [100%] Old OrynReleaseKeyRecovery and OrynNoValidationBootstrap scripts are removed from the workspace root on update.
 [100%] Windows Zone.Identifier sidecar cleanup is handled by the update-owned cleanup list.
+
+[100%] Kernel-5 is now a real SDK-authored kernel entry: project-owned KernelMain selects/touches selected SDK module link roots, verifies physical module presence, runs boot proof, exits VM mode, and halts through public SDK runtime APIs instead of being only a thin runtime trampoline.

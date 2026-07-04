@@ -3,6 +3,9 @@
 
 #include "OrynBootInfo.h"
 
+const OrynBootInfo* OrynKernelRuntimeEnter(const OrynBootInfo* bootInfo);
+void OrynKernelRuntimeExitForNonInteractiveVm(void);
+void OrynKernelRuntimeHaltForever(void);
 void OrynKernelRuntimeEnterAndStartBootSequence(const OrynBootInfo* bootInfo);
 
 #endif
