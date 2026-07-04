@@ -1,3 +1,11 @@
+[DONE 100%] 0.5.178: Kernel stack and critical-heap guard pages are production-ready for the current SDK scope.
+OrynWsl SDK ToDo2 update: 0.5.178
+
+[100%] Added a heap-owned guard-page registry for stack and critical heap guard records with validation counters and install-failure accounting.
+[100%] Critical heap allocations now install dedicated guard-page records and tag their guard pages as kernel-heap guard ownership.
+[100%] Kernel stack guard installation now records protected stack ranges and validates guard-page alignment, counters, and ownership state.
+[100%] Heap validation, heap self-test, and memory proof output now require stack and critical-heap guard-page proof coverage before reporting success.
+
 [DONE 100%] 0.5.177: Fixed-size slab/object caches are production-ready for the current SDK scope.
 OrynWsl SDK ToDo2 update: 0.5.177
 
@@ -354,7 +362,7 @@ Milestone 0.7 - Production memory management:
 [100%] Create a real kernel heap: kmalloc, kfree, krealloc, kcalloc.
 [100%] Add heap statistics and leak counters.
 [100%] Add slab/object caches for fixed-size kernel structures.
-[060%] Add guard pages for kernel stacks and critical heaps.
+[100%] Add guard pages for kernel stacks and critical heaps.
 [060%] Add page-fault handler policy instead of only reporting faults.
 [060%] Add virtual memory map/unmap/protect APIs.
 [050%] Add per-process address spaces.

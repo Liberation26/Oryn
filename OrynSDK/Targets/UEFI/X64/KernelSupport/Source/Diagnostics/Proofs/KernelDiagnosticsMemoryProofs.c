@@ -74,6 +74,14 @@ static void OrynKernelDiagnosticsRunHeapGuardProof(void)
     {
         kfree(critical);
     }
+    if (OrynKernelHeapValidateGuards())
+    {
+        OrynKernelScreenReportOk(0, "Kernel stack and critical heap guard pages are active.");
+    }
+    else
+    {
+        OrynKernelScreenReportFail(0, "Kernel heap guard-page proof failed.");
+    }
     OrynKernelHeapPrintProof();
 }
 

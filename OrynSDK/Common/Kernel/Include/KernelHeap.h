@@ -49,6 +49,10 @@ typedef struct OrynKernelHeapStats
     unsigned long long ObjectCacheValidationFailures;
     unsigned long long StackGuardPages;
     unsigned long long CriticalHeapGuardPages;
+    unsigned long long GuardPagesUnmapped;
+    unsigned long long GuardInstallFailures;
+    unsigned long long GuardValidationRuns;
+    unsigned long long GuardValidationFailures;
     unsigned long long InvalidFreeCount;
     unsigned long long DoubleFreeCount;
     unsigned long long CoalesceCount;
@@ -91,6 +95,7 @@ void* krealloc(void* pointer, unsigned long long size);
 void* kcalloc(unsigned long long count, unsigned long long size);
 void* OrynKernelHeapAllocCritical(unsigned long long size);
 void OrynKernelHeapInstallStackGuard(unsigned long long stackBase, unsigned long long stackBytes);
+int OrynKernelHeapValidateGuards(void);
 const OrynKernelHeapStats* OrynKernelHeapGetStats(void);
 int OrynKernelHeapGetSlabCacheStats(unsigned int index, OrynKernelSlabCacheStats* stats);
 int OrynKernelHeapCreateObjectCache(unsigned int index, const char* name, unsigned long long objectSize, unsigned long long alignment);

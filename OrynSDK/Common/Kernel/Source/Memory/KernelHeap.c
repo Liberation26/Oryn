@@ -6,6 +6,7 @@ OrynKernelHeapBlock* gOrynHeapHead;
 OrynKernelHeapStats gOrynHeapStats;
 OrynKernelSlabCache gOrynSlabCaches[ORYN_KERNEL_HEAP_SLAB_CACHE_COUNT];
 OrynKernelObjectCacheStats gOrynObjectCaches[ORYN_KERNEL_HEAP_OBJECT_CACHE_COUNT];
+OrynKernelHeapGuardRecord gOrynHeapGuardRecords[ORYN_KERNEL_HEAP_GUARD_RECORD_COUNT];
 
 unsigned long long OrynHeapAlignUp(unsigned long long value)
 {
@@ -138,6 +139,7 @@ int OrynKernelHeapInit(OrynKernelPhysicalMemory* physicalMemory)
     (void)memset(&gOrynHeapStats, 0, sizeof(gOrynHeapStats));
     (void)memset(&gOrynSlabCaches, 0, sizeof(gOrynSlabCaches));
     (void)memset(&gOrynObjectCaches, 0, sizeof(gOrynObjectCaches));
+    (void)memset(&gOrynHeapGuardRecords, 0, sizeof(gOrynHeapGuardRecords));
     gOrynHeapPhysicalMemory = physicalMemory;
     gOrynHeapVirtualMemory = 0;
     gOrynHeapHead = 0;
@@ -254,25 +256,6 @@ void* kcalloc(unsigned long long count, unsigned long long size)
         gOrynHeapStats.CallocCount += 1ULL;
     }
     return pointer;
-}
-
-void* OrynKernelHeapAllocCritical(unsigned long long size)
-{
-    return OrynHeapAllocateRaw(size, ORYN_KERNEL_HEAP_FLAG_CRITICAL);
-}
-
-void OrynKernelHeapInstallStackGuard(unsigned long long stackBase, unsigned long long stackBytes)
-{
-    if (stackBase == 0ULL || stackBytes < ORYN_KERNEL_HEAP_GUARD_PAGE_SIZE)
-    {
-        return;
-    }
-    if (gOrynHeapVirtualMemory != 0)
-    {
-        OrynVirtualMemoryUnmapGuardPage(stackBase);
-    }
-    gOrynHeapStats.GuardPages += 1ULL;
-    gOrynHeapStats.StackGuardPages += 1ULL;
 }
 
 const OrynKernelHeapStats* OrynKernelHeapGetStats(void)

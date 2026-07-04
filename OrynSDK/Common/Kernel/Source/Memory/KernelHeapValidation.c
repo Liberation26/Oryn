@@ -126,6 +126,10 @@ int OrynKernelHeapValidate(void)
     {
         ok = 0;
     }
+    if (!OrynKernelHeapValidateGuards())
+    {
+        ok = 0;
+    }
     if (!ok)
     {
         gOrynHeapStats.ValidationFailures += 1ULL;
@@ -137,13 +141,16 @@ int OrynKernelHeapValidate(void)
 int OrynKernelHeapRunSelfTest(void)
 {
     unsigned long long beforeDouble = gOrynHeapStats.DoubleFreeCount;
+    unsigned long long beforeStackGuards = gOrynHeapStats.StackGuardPages;
+    unsigned long long beforeCriticalGuards = gOrynHeapStats.CriticalHeapGuardPages;
     void* small = kmalloc(24ULL);
     void* medium = kmalloc(128ULL);
     unsigned char* zeroed = (unsigned char*)kcalloc(8ULL, 8ULL);
     char* grown = (char*)kmalloc(8ULL);
     void* critical = OrynKernelHeapAllocCritical(64ULL);
+    void* stack = kcalloc(1ULL, ORYN_KERNEL_HEAP_GUARD_PAGE_SIZE * 2ULL);
 
-    if (small == 0 || medium == 0 || zeroed == 0 || grown == 0 || critical == 0)
+    if (small == 0 || medium == 0 || zeroed == 0 || grown == 0 || critical == 0 || stack == 0)
     {
         return 0;
     }
@@ -167,10 +174,18 @@ int OrynKernelHeapRunSelfTest(void)
     kfree(medium);
     kfree(zeroed);
     kfree(grown);
+    OrynKernelHeapInstallStackGuard((unsigned long long)stack, ORYN_KERNEL_HEAP_GUARD_PAGE_SIZE * 2ULL);
     kfree(critical);
     kfree(critical);
+    kfree(stack);
 
     if (gOrynHeapStats.DoubleFreeCount <= beforeDouble)
+    {
+        return 0;
+    }
+    if (gOrynHeapStats.StackGuardPages <= beforeStackGuards ||
+        gOrynHeapStats.CriticalHeapGuardPages <= beforeCriticalGuards ||
+        !OrynKernelHeapValidateGuards())
     {
         return 0;
     }
@@ -209,8 +224,20 @@ void OrynKernelHeapPrintProof(void)
     OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ObjectCacheAllocations);
     OrynKernelDiagnosticsLogText("/");
     OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ObjectCacheFrees);
-    OrynKernelDiagnosticsLogText("\n[KERNEL] Heap guard pages: ");
+    OrynKernelDiagnosticsLogText("\n[KERNEL] Heap guard pages stack/critical/unmapped: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.StackGuardPages);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.CriticalHeapGuardPages);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.GuardPagesUnmapped);
+    OrynKernelDiagnosticsLogText(" total: ");
     OrynKernelDiagnosticsLogDec64(gOrynHeapStats.GuardPages);
+    OrynKernelDiagnosticsLogText(" install failures: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.GuardInstallFailures);
+    OrynKernelDiagnosticsLogText("\n[KERNEL] Heap guard validation runs: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.GuardValidationRuns);
+    OrynKernelDiagnosticsLogText(" failures: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.GuardValidationFailures);
     OrynKernelDiagnosticsLogText("\n[KERNEL] Heap validation runs: ");
     OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ValidationRuns);
     OrynKernelDiagnosticsLogText(" failures: ");
