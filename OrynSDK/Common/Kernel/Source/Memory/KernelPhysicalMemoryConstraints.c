@@ -1,5 +1,10 @@
 #include "KernelPhysicalMemory.h"
 
+static int IsPowerOfTwo(unsigned long long value)
+{
+    return value != 0ULL && (value & (value - 1ULL)) == 0ULL;
+}
+
 static int PageMatchesConstraints(
     unsigned long long page,
     const OrynPhysicalAllocationConstraints* constraints)
@@ -12,6 +17,10 @@ static int PageMatchesConstraints(
     }
     alignment = constraints->Alignment == 0ULL ? ORYN_PHYSICAL_PAGE_SIZE : constraints->Alignment;
     maxExclusive = constraints->MaxExclusiveAddress;
+    if (!IsPowerOfTwo(alignment) || alignment < ORYN_PHYSICAL_PAGE_SIZE)
+    {
+        return 0;
+    }
     if (constraints->DmaSafe != 0U && maxExclusive == 0ULL)
     {
         maxExclusive = ORYN_PHYSICAL_DMA_32BIT_LIMIT;

@@ -1,3 +1,11 @@
+[DONE 100%] 0.5.170: Physical page allocator is production-ready for the current SDK scope.
+OrynWsl SDK ToDo2 update: 0.5.170
+
+[100%] Physical page allocation now rejects invalid frees, double frees, free-list duplicates, reserved-page frees, and owner/free-list mismatches.
+[100%] Page reference release now returns the page to the allocator when the last reference drops, keeping copy-on-write ownership and free-page accounting consistent.
+[100%] Added allocator integrity validation for page accounting, aligned free pages, duplicate free-list entries, free-owner records, live-owner records, and reference counts.
+[100%] Physical allocator diagnostics now report integrity checks/failures and self-test the allocator integrity path.
+
 [DONE 100%] 0.5.169: Manifest transition proof uses quiet simulated start checks and no longer emits live boot FAIL for expected blocked-module proof.
 [DONE 100%] 0.5.168: Module init/start proof is owned by manifest state transitions.
 OrynWsl SDK ToDo2 update: 0.5.169
@@ -261,7 +269,7 @@ Current kernel foundation already present:
 [050%] PCI discovery foundation exists.
 [050%] Framebuffer/VGA console foundation exists.
 [050%] Keyboard IRQ1 screen scrolling proof exists.
-[050%] Physical memory allocator foundation exists.
+[100%] Physical memory allocator foundation exists with free-list integrity, ownership validation, double-free protection, reserved-page protection, reference-release return, and diagnostics.
 [060%] Higher-half virtual-memory foundation exists.
 [050%] KernelRuntimeBootSequence no longer owns proof orchestration; it enters runtime and calls KernelBootProof only.
 [050%] KernelBootProofConsole adapter owns the proof-only bridge to console metrics, scroll probes, and double-buffer probes.
@@ -303,7 +311,7 @@ Milestone 0.6 - Clean kernel entry and module ownership:
 [100%] Emit FAIL when a required module is selected but prerequisites are missing.
 
 Milestone 0.7 - Production memory management:
-[060%] Physical page allocator foundation exists.
+[100%] Physical page allocator foundation exists with production allocator safety for the current SDK scope.
 [060%] Higher-half kernel mapping foundation exists.
 [060%] Create a real kernel heap: kmalloc, kfree, krealloc, kcalloc.
 [050%] Add heap statistics and leak counters.

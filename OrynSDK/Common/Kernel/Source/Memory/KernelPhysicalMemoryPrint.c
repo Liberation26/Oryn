@@ -157,6 +157,10 @@ void OrynPhysicalMemoryRunSelfTest(OrynKernelPhysicalMemory* allocator)
         OrynPhysicalMemoryRunPressureSelfTest(allocator),
         "Memory pressure and out-of-memory policy is available.",
         "Memory pressure and out-of-memory policy proof failed.");
+    OrynKernelScreenReportOkOrFail(
+        OrynPhysicalMemoryValidateAllocator(allocator),
+        "Physical allocator ownership and free-list integrity is valid.",
+        "Physical allocator ownership/free-list integrity failed.");
     KernelIoWriteString("[KERNEL] Physical allocator self-test: complete\n");
 }
 
@@ -203,6 +207,11 @@ void OrynPhysicalMemoryPrintOwnershipDiagnostics(const OrynKernelPhysicalMemory*
     KernelIoWriteString(" allocation-failures=");
     KernelIoWriteDec64(stats.Pressure.AllocationFailures);
     KernelIoWriteString("\n");
+    KernelIoWriteString("[KERNEL] Physical allocator integrity checks: ");
+    KernelIoWriteDec64(stats.IntegrityChecks);
+    KernelIoWriteString(" checks, ");
+    KernelIoWriteDec64(stats.IntegrityFailures);
+    KernelIoWriteString(" failed\n");
     KernelIoWriteString("[KERNEL] Constrained physical allocations: ");
     KernelIoWriteDec64(stats.ConstrainedAllocations);
     KernelIoWriteString(" success, ");
@@ -218,6 +227,9 @@ void OrynPhysicalMemoryPrintOwnershipDiagnostics(const OrynKernelPhysicalMemory*
     OrynKernelScreenReportOkOrFail(stats.OwnershipMismatches == 0ULL,
         "Physical page reference counters are consistent.",
         "Physical page reference counter mismatch detected.");
+    OrynKernelScreenReportOkOrFail(stats.IntegrityFailures == 0ULL,
+        "Physical allocator integrity checks pass.",
+        "Physical allocator integrity check failure detected.");
     OrynKernelScreenReportOkOrFail(stats.DmaSafeAllocations != 0ULL,
         "DMA-safe physical allocation constraints are proven.",
         "DMA-safe physical allocation constraints were not proven.");

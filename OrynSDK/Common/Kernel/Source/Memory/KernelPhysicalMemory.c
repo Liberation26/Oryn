@@ -206,8 +206,18 @@ unsigned int OrynPhysicalMemoryReserveRange(
     return removed;
 }
 
+static OrynPhysicalPageRecord* FindPageRecord(
+    OrynKernelPhysicalMemory* allocator,
+    unsigned long long physicalAddress);
+
+static int IsPageInFreeList(
+    const OrynKernelPhysicalMemory* allocator,
+    unsigned long long physicalAddress);
+
 int OrynPhysicalMemoryFreePage(OrynKernelPhysicalMemory* allocator, unsigned long long physicalAddress)
 {
+    OrynPhysicalPageRecord* record;
+
     if (allocator == 0 || allocator->Initialized == 0U)
     {
         return 0;
@@ -215,15 +225,28 @@ int OrynPhysicalMemoryFreePage(OrynKernelPhysicalMemory* allocator, unsigned lon
 
     if (physicalAddress < ORYN_PHYSICAL_MIN_ALLOC_ADDRESS || !IsAlignedPage(physicalAddress))
     {
+        allocator->OwnershipMismatches += 1ULL;
         return 0;
     }
 
-    if (allocator->FreePageCount >= allocator->CapacityPages)
+    if (allocator->FreePageCount >= allocator->CapacityPages ||
+        IsPageInFreeList(allocator, physicalAddress))
     {
+        allocator->OwnershipMismatches += 1ULL;
         return 0;
     }
 
-    (void)OrynPhysicalMemorySetPageOwner(allocator, physicalAddress, OrynPhysicalPageOwnerFree, 0ULL);
+    record = FindPageRecord(allocator, physicalAddress);
+    if (record == 0 || record->Owner == OrynPhysicalPageOwnerFree ||
+        record->Owner == OrynPhysicalPageOwnerReserved || record->ReferenceCount == 0U)
+    {
+        allocator->OwnershipMismatches += 1ULL;
+        return 0;
+    }
+
+    record->Owner = OrynPhysicalPageOwnerFree;
+    record->Tag = 0ULL;
+    record->ReferenceCount = 0U;
     allocator->FreePages[allocator->FreePageCount] = physicalAddress;
     allocator->FreePageCount += 1U;
 
@@ -234,6 +257,29 @@ int OrynPhysicalMemoryFreePage(OrynKernelPhysicalMemory* allocator, unsigned lon
     OrynPhysicalMemoryPressureRefresh(allocator);
 
     return 1;
+}
+
+
+static int IsPageInFreeList(
+    const OrynKernelPhysicalMemory* allocator,
+    unsigned long long physicalAddress)
+{
+    unsigned long long page = AlignDown(physicalAddress);
+
+    if (allocator == 0)
+    {
+        return 0;
+    }
+
+    for (unsigned int index = 0U; index < allocator->FreePageCount; ++index)
+    {
+        if (allocator->FreePages[index] == page)
+        {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 
@@ -268,6 +314,12 @@ int OrynPhysicalMemorySetPageOwner(
     {
         return 0;
     }
+    if (owner != OrynPhysicalPageOwnerFree && IsPageInFreeList(allocator, page))
+    {
+        allocator->OwnershipMismatches += 1ULL;
+        return 0;
+    }
+
     record = FindPageRecord(allocator, page);
     if (record == 0)
     {
@@ -326,8 +378,23 @@ int OrynPhysicalMemoryReleasePageReference(
     record->ReferenceCount -= 1U;
     if (record->ReferenceCount == 0U)
     {
+        unsigned long long page = record->PhysicalAddress;
+        if (record->Owner == OrynPhysicalPageOwnerReserved ||
+            allocator->FreePageCount >= allocator->CapacityPages ||
+            IsPageInFreeList(allocator, page))
+        {
+            allocator->OwnershipMismatches += 1ULL;
+            return 0;
+        }
         record->Owner = OrynPhysicalPageOwnerFree;
         record->Tag = 0ULL;
+        allocator->FreePages[allocator->FreePageCount] = page;
+        allocator->FreePageCount += 1U;
+        if (allocator->UsedPageCount > 0U)
+        {
+            allocator->UsedPageCount -= 1U;
+        }
+        OrynPhysicalMemoryPressureRefresh(allocator);
     }
     return 1;
 }
@@ -348,6 +415,8 @@ int OrynPhysicalMemoryGetOwnershipStats(
     stats->RecordsCapacity = ORYN_PHYSICAL_MAX_OWNERSHIP_RECORDS;
     stats->OwnershipRecordOverflows = allocator->OwnershipRecordOverflows;
     stats->OwnershipMismatches = allocator->OwnershipMismatches;
+    stats->IntegrityChecks = allocator->IntegrityChecks;
+    stats->IntegrityFailures = allocator->IntegrityFailures;
     stats->ConstrainedAllocations = allocator->ConstrainedAllocations;
     stats->ConstrainedAllocationFailures = allocator->ConstrainedAllocationFailures;
     stats->DmaSafeAllocations = allocator->DmaSafeAllocations;

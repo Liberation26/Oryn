@@ -92,6 +92,8 @@ typedef struct OrynPhysicalPageOwnershipStats
     unsigned long long DmaPages;
     unsigned long long OwnershipRecordOverflows;
     unsigned long long OwnershipMismatches;
+    unsigned long long IntegrityChecks;
+    unsigned long long IntegrityFailures;
     unsigned long long ConstrainedAllocations;
     unsigned long long ConstrainedAllocationFailures;
     unsigned long long DmaSafeAllocations;
@@ -118,6 +120,8 @@ typedef struct OrynKernelPhysicalMemory
     unsigned int PageRecordCount;
     unsigned long long OwnershipRecordOverflows;
     unsigned long long OwnershipMismatches;
+    unsigned long long IntegrityChecks;
+    unsigned long long IntegrityFailures;
     unsigned long long ConstrainedAllocations;
     unsigned long long ConstrainedAllocationFailures;
     unsigned long long DmaSafeAllocations;
@@ -163,6 +167,7 @@ int OrynPhysicalMemoryReleasePageReference(
 int OrynPhysicalMemoryGetOwnershipStats(
     const OrynKernelPhysicalMemory* allocator,
     OrynPhysicalPageOwnershipStats* stats);
+int OrynPhysicalMemoryValidateAllocator(const OrynKernelPhysicalMemory* allocator);
 void OrynPhysicalMemoryPressureConfigure(
     OrynKernelPhysicalMemory* allocator,
     unsigned int lowWatermarkPages,
