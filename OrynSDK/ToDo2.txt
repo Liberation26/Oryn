@@ -1,5 +1,5 @@
-[DONE 100%] 0.5.172: Higher-half kernel mapping is production-validated for the current SDK scope.
-OrynWsl SDK ToDo2 update: 0.5.172
+[DONE 100%] 0.5.173: Higher-half kernel mapping is production-validated for the current SDK scope and reports success from validator state, not unrelated aggregate map counters.
+OrynWsl SDK ToDo2 update: 0.5.173
 
 [100%] Higher-half kernel mapping now validates canonical kernel addresses, page alignment, kernel/user split separation, PML4 high-slot ownership, entry-point coverage, and physical-window sizing.
 [100%] The VM proof walks every mapped higher-half kernel page and verifies it resolves to the expected physical kernel page before VM init is accepted.

@@ -137,7 +137,7 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
         virtualMemory->HigherHalfEntryMapped != 0U &&
         virtualMemory->HigherHalfPml4SlotReady != 0U &&
         virtualMemory->HigherHalfPhysicalWindowValid != 0U &&
-        virtualMemory->HigherHalfMappedPageProofCount == virtualMemory->KernelVirtualMappedPages,
+        virtualMemory->HigherHalfValidationFailures == 0ULL,
         "Higher-half kernel mapping is validated page-for-page.",
         "Higher-half kernel mapping validation failed.");
 
