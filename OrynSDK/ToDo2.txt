@@ -1,3 +1,11 @@
+[DONE 100%] 0.5.176: Kernel heap statistics and leak counters are production-ready for the current SDK scope.
+OrynWsl SDK ToDo2 update: 0.5.176
+
+[100%] Heap statistics now track requested bytes, peak requested bytes, peak active allocations, raw allocation/frees, active raw/slab allocations, leak bytes, peak leak bytes, and leak check runs/failures.
+[100%] Raw and slab allocation/free paths now update leak counters from one shared counter refresh path so active allocation count and leak bytes stay synchronized.
+[100%] Heap validation now checks active raw/slab counters, aggregate active allocation counters, leak counters, and requested-byte consistency before accepting the heap proof.
+[100%] Heap self-test now finishes with an explicit no-leak check instead of relying only on active allocation count.
+
 [DONE 100%] 0.5.174: Kernel heap kmalloc/kfree/krealloc/kcalloc is production-ready for the current SDK scope.
 OrynWsl SDK ToDo2 update: 0.5.174
 
@@ -336,7 +344,7 @@ Milestone 0.7 - Production memory management:
 [100%] Physical page allocator foundation exists with production allocator safety for the current SDK scope.
 [100%] Higher-half kernel mapping foundation exists with canonical, split, entry, PML4, and page-table validation.
 [100%] Create a real kernel heap: kmalloc, kfree, krealloc, kcalloc.
-[050%] Add heap statistics and leak counters.
+[100%] Add heap statistics and leak counters.
 [060%] Add slab/object caches for fixed-size kernel structures.
 [060%] Add guard pages for kernel stacks and critical heaps.
 [060%] Add page-fault handler policy instead of only reporting faults.

@@ -1,6 +1,11 @@
 #include "KernelHeapInternal.h"
 
-static int ValidateRawBlocks(unsigned long long* freeBytes, unsigned long long* allocatedBytes, unsigned long long* activeCount)
+static int ValidateRawBlocks(
+    unsigned long long* freeBytes,
+    unsigned long long* allocatedBytes,
+    unsigned long long* requestedBytes,
+    unsigned long long* activeCount,
+    unsigned long long* activeRawCount)
 {
     OrynKernelHeapBlock* cursor = gOrynHeapHead;
     unsigned int guard = 0U;
@@ -25,7 +30,9 @@ static int ValidateRawBlocks(unsigned long long* freeBytes, unsigned long long* 
         else
         {
             *allocatedBytes += cursor->Size;
+            *requestedBytes += cursor->RequestedSize;
             *activeCount += 1ULL;
+            *activeRawCount += 1ULL;
         }
         cursor = cursor->Next;
         guard += 1U;
@@ -37,7 +44,11 @@ static int ValidateRawBlocks(unsigned long long* freeBytes, unsigned long long* 
     return 1;
 }
 
-static int ValidateSlabCaches(unsigned long long* freeBytes, unsigned long long* allocatedBytes, unsigned long long* activeCount)
+static int ValidateSlabCaches(
+    unsigned long long* freeBytes,
+    unsigned long long* allocatedBytes,
+    unsigned long long* activeCount,
+    unsigned long long* activeSlabCount)
 {
     for (unsigned int index = 0U; index < ORYN_KERNEL_HEAP_SLAB_CACHE_COUNT; ++index)
     {
@@ -55,6 +66,7 @@ static int ValidateSlabCaches(unsigned long long* freeBytes, unsigned long long*
         *freeBytes += cache->Stats.FreeObjects * cache->ObjectSize;
         *allocatedBytes += cache->Stats.ActiveObjects * cache->ObjectSize;
         *activeCount += cache->Stats.ActiveObjects;
+        *activeSlabCount += cache->Stats.ActiveObjects;
     }
     return 1;
 }
@@ -63,7 +75,10 @@ int OrynKernelHeapValidate(void)
 {
     unsigned long long freeBytes = 0ULL;
     unsigned long long allocatedBytes = 0ULL;
+    unsigned long long requestedBytes = 0ULL;
     unsigned long long activeCount = 0ULL;
+    unsigned long long activeRawCount = 0ULL;
+    unsigned long long activeSlabCount = 0ULL;
     int ok = 1;
 
     gOrynHeapStats.ValidationRuns += 1ULL;
@@ -71,11 +86,11 @@ int OrynKernelHeapValidate(void)
     {
         ok = 0;
     }
-    if (!ValidateRawBlocks(&freeBytes, &allocatedBytes, &activeCount))
+    if (!ValidateRawBlocks(&freeBytes, &allocatedBytes, &requestedBytes, &activeCount, &activeRawCount))
     {
         ok = 0;
     }
-    if (!ValidateSlabCaches(&freeBytes, &allocatedBytes, &activeCount))
+    if (!ValidateSlabCaches(&freeBytes, &allocatedBytes, &activeCount, &activeSlabCount))
     {
         ok = 0;
     }
@@ -84,6 +99,26 @@ int OrynKernelHeapValidate(void)
         ok = 0;
     }
     if (activeCount != gOrynHeapStats.ActiveAllocations)
+    {
+        ok = 0;
+    }
+    if (activeRawCount != gOrynHeapStats.ActiveRawAllocations)
+    {
+        ok = 0;
+    }
+    if (activeSlabCount != gOrynHeapStats.ActiveSlabAllocations)
+    {
+        ok = 0;
+    }
+    if (requestedBytes > gOrynHeapStats.RequestedAllocatedBytes)
+    {
+        ok = 0;
+    }
+    if (gOrynHeapStats.LeakCounter != gOrynHeapStats.ActiveAllocations)
+    {
+        ok = 0;
+    }
+    if (gOrynHeapStats.LeakBytes != gOrynHeapStats.RequestedAllocatedBytes)
     {
         ok = 0;
     }
@@ -135,7 +170,7 @@ int OrynKernelHeapRunSelfTest(void)
     {
         return 0;
     }
-    return OrynKernelHeapValidate() && gOrynHeapStats.ActiveAllocations == 0ULL;
+    return OrynKernelHeapValidate() && OrynKernelHeapCheckNoLeaks();
 }
 
 void OrynKernelHeapPrintProof(void)
@@ -144,8 +179,18 @@ void OrynKernelHeapPrintProof(void)
     OrynKernelDiagnosticsLogDec64(gOrynHeapStats.HeapPages);
     OrynKernelDiagnosticsLogText("\n[KERNEL] Heap active allocations: ");
     OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ActiveAllocations);
+    OrynKernelDiagnosticsLogText("\n[KERNEL] Heap peak active allocations: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.PeakActiveAllocations);
     OrynKernelDiagnosticsLogText("\n[KERNEL] Heap leak counter: ");
     OrynKernelDiagnosticsLogDec64(gOrynHeapStats.LeakCounter);
+    OrynKernelDiagnosticsLogText(" leak bytes: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.LeakBytes);
+    OrynKernelDiagnosticsLogText(" peak leak bytes: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.PeakLeakBytes);
+    OrynKernelDiagnosticsLogText("\n[KERNEL] Heap active raw/slab: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ActiveRawAllocations);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ActiveSlabAllocations);
     OrynKernelDiagnosticsLogText("\n[KERNEL] Heap slab caches: ");
     OrynKernelDiagnosticsLogDec64(gOrynHeapStats.SlabCacheCount);
     OrynKernelDiagnosticsLogText("\n[KERNEL] Heap guard pages: ");
@@ -154,6 +199,10 @@ void OrynKernelHeapPrintProof(void)
     OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ValidationRuns);
     OrynKernelDiagnosticsLogText(" failures: ");
     OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ValidationFailures);
+    OrynKernelDiagnosticsLogText("\n[KERNEL] Heap leak checks: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.LeakCheckRuns);
+    OrynKernelDiagnosticsLogText(" failures: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.LeakCheckFailures);
     OrynKernelDiagnosticsLogText("\n[KERNEL] Heap invalid frees: ");
     OrynKernelDiagnosticsLogDec64(gOrynHeapStats.InvalidFreeCount);
     OrynKernelDiagnosticsLogText(" double frees: ");

@@ -83,6 +83,41 @@ void OrynHeapRemoveAllocatedBytes(unsigned long long bytes)
     }
 }
 
+void OrynHeapAddRequestedBytes(unsigned long long bytes)
+{
+    gOrynHeapStats.RequestedAllocatedBytes += bytes;
+    if (gOrynHeapStats.RequestedAllocatedBytes > gOrynHeapStats.PeakRequestedAllocatedBytes)
+    {
+        gOrynHeapStats.PeakRequestedAllocatedBytes = gOrynHeapStats.RequestedAllocatedBytes;
+    }
+}
+
+void OrynHeapRemoveRequestedBytes(unsigned long long bytes)
+{
+    if (gOrynHeapStats.RequestedAllocatedBytes >= bytes)
+    {
+        gOrynHeapStats.RequestedAllocatedBytes -= bytes;
+    }
+    else
+    {
+        gOrynHeapStats.RequestedAllocatedBytes = 0ULL;
+    }
+}
+
+void OrynHeapRefreshLeakCounters(void)
+{
+    gOrynHeapStats.LeakCounter = gOrynHeapStats.ActiveAllocations;
+    gOrynHeapStats.LeakBytes = gOrynHeapStats.RequestedAllocatedBytes;
+    if (gOrynHeapStats.ActiveAllocations > gOrynHeapStats.PeakActiveAllocations)
+    {
+        gOrynHeapStats.PeakActiveAllocations = gOrynHeapStats.ActiveAllocations;
+    }
+    if (gOrynHeapStats.LeakBytes > gOrynHeapStats.PeakLeakBytes)
+    {
+        gOrynHeapStats.PeakLeakBytes = gOrynHeapStats.LeakBytes;
+    }
+}
+
 unsigned long long OrynHeapAllocatePage(void)
 {
     if (gOrynHeapPhysicalMemory == 0)
@@ -182,7 +217,9 @@ void* krealloc(void* pointer, unsigned long long size)
         oldSize = block->RequestedSize;
         if (oldSize >= size)
         {
+            OrynHeapRemoveRequestedBytes(oldSize - size);
             block->RequestedSize = size;
+            OrynHeapRefreshLeakCounters();
             gOrynHeapStats.ReallocationCount += 1ULL;
             return pointer;
         }
@@ -248,4 +285,22 @@ int OrynKernelHeapGetSlabCacheStats(unsigned int index, OrynKernelSlabCacheStats
     }
     *stats = gOrynSlabCaches[index].Stats;
     return 1;
+}
+
+int OrynKernelHeapHasLeaks(void)
+{
+    return gOrynHeapStats.ActiveAllocations != 0ULL || gOrynHeapStats.LeakBytes != 0ULL;
+}
+
+int OrynKernelHeapCheckNoLeaks(void)
+{
+    int ok;
+
+    gOrynHeapStats.LeakCheckRuns += 1ULL;
+    ok = !OrynKernelHeapHasLeaks();
+    if (!ok)
+    {
+        gOrynHeapStats.LeakCheckFailures += 1ULL;
+    }
+    return ok;
 }

@@ -74,13 +74,15 @@ void* OrynHeapSlabAllocate(unsigned int cacheIndex, unsigned long long requested
     block->RequestedSize = requested;
     OrynHeapRemoveFreeBytes(block->Size);
     OrynHeapAddAllocatedBytes(block->Size);
+    OrynHeapAddRequestedBytes(requested);
     cache->Stats.FreeObjects -= 1ULL;
     cache->Stats.ActiveObjects += 1ULL;
     cache->Stats.AllocationCount += 1ULL;
     gOrynHeapStats.SlabAllocations += 1ULL;
     gOrynHeapStats.AllocationCount += 1ULL;
     gOrynHeapStats.ActiveAllocations += 1ULL;
-    gOrynHeapStats.LeakCounter = gOrynHeapStats.ActiveAllocations;
+    gOrynHeapStats.ActiveSlabAllocations += 1ULL;
+    OrynHeapRefreshLeakCounters();
     return object;
 }
 
@@ -105,6 +107,7 @@ int OrynHeapSlabFree(void* pointer)
     }
 
     OrynKernelSlabCache* cache = &gOrynSlabCaches[cacheIndex];
+    unsigned long long requested = block->RequestedSize;
     block->Flags |= ORYN_KERNEL_HEAP_FLAG_FREE;
     block->RequestedSize = 0ULL;
     OrynKernelSlabFreeObject* object = (OrynKernelSlabFreeObject*)pointer;
@@ -119,11 +122,16 @@ int OrynHeapSlabFree(void* pointer)
     gOrynHeapStats.SlabFrees += 1ULL;
     gOrynHeapStats.FreeCount += 1ULL;
     OrynHeapRemoveAllocatedBytes(block->Size);
+    OrynHeapRemoveRequestedBytes(requested);
     OrynHeapAddFreeBytes(block->Size);
     if (gOrynHeapStats.ActiveAllocations > 0ULL)
     {
         gOrynHeapStats.ActiveAllocations -= 1ULL;
     }
-    gOrynHeapStats.LeakCounter = gOrynHeapStats.ActiveAllocations;
+    if (gOrynHeapStats.ActiveSlabAllocations > 0ULL)
+    {
+        gOrynHeapStats.ActiveSlabAllocations -= 1ULL;
+    }
+    OrynHeapRefreshLeakCounters();
     return 1;
 }

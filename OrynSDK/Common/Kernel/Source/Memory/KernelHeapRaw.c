@@ -185,9 +185,12 @@ void* OrynHeapAllocateRaw(unsigned long long size, unsigned int flags)
     block->Flags &= ~ORYN_KERNEL_HEAP_FLAG_FREE;
     block->RequestedSize = size;
     OrynHeapAddAllocatedBytes(block->Size);
+    OrynHeapAddRequestedBytes(size);
     gOrynHeapStats.AllocationCount += 1ULL;
+    gOrynHeapStats.RawAllocationCount += 1ULL;
     gOrynHeapStats.ActiveAllocations += 1ULL;
-    gOrynHeapStats.LeakCounter = gOrynHeapStats.ActiveAllocations;
+    gOrynHeapStats.ActiveRawAllocations += 1ULL;
+    OrynHeapRefreshLeakCounters();
     return OrynHeapBlockToPointer(block);
 }
 
@@ -205,15 +208,22 @@ void OrynHeapFreeRaw(void* pointer)
         return;
     }
 
+    unsigned long long requested = block->RequestedSize;
     OrynHeapRemoveAllocatedBytes(block->Size);
+    OrynHeapRemoveRequestedBytes(requested);
     block->RequestedSize = 0ULL;
     block->Flags |= ORYN_KERNEL_HEAP_FLAG_FREE;
     OrynHeapAddFreeBytes(block->Size);
     gOrynHeapStats.FreeCount += 1ULL;
+    gOrynHeapStats.RawFreeCount += 1ULL;
     if (gOrynHeapStats.ActiveAllocations > 0ULL)
     {
         gOrynHeapStats.ActiveAllocations -= 1ULL;
     }
-    gOrynHeapStats.LeakCounter = gOrynHeapStats.ActiveAllocations;
+    if (gOrynHeapStats.ActiveRawAllocations > 0ULL)
+    {
+        gOrynHeapStats.ActiveRawAllocations -= 1ULL;
+    }
+    OrynHeapRefreshLeakCounters();
     CoalesceWithNext(block);
 }
