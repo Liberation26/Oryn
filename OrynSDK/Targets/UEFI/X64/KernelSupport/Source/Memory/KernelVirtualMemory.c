@@ -32,11 +32,6 @@ static unsigned long long AlignUp(unsigned long long value)
     return (value + ORYN_VIRTUAL_PAGE_SIZE - 1ULL) & ~(ORYN_VIRTUAL_PAGE_SIZE - 1ULL);
 }
 
-static void ClearVirtualMemory(OrynKernelVirtualMemory* virtualMemory)
-{
-    ClearBytes(virtualMemory, sizeof(*virtualMemory));
-}
-
 unsigned long long OrynVirtualMemoryReadCr3(void)
 {
     unsigned long long value;
@@ -54,53 +49,6 @@ static unsigned long long OrynVirtualMemoryReadRsp(void)
 static void OrynVirtualMemoryWriteCr3(unsigned long long value)
 {
     __asm__ volatile ("mov %0, %%cr3" :: "r"(value) : "memory");
-}
-
-static OrynPageTableEntry* GetExistingNextTable(OrynPageTableEntry* table, unsigned int index)
-{
-    OrynPageTableEntry entry = table[index];
-    if ((entry & ORYN_PAGE_PRESENT) == 0ULL)
-    {
-        return 0;
-    }
-    return (OrynPageTableEntry*)(entry & ORYN_PAGE_ADDRESS_MASK);
-}
-
-int OrynVirtualMemoryUnmapGuardPage(unsigned long long virtualAddress)
-{
-    unsigned long long cr3 = OrynVirtualMemoryReadCr3();
-    OrynPageTableEntry* pml4 = (OrynPageTableEntry*)(cr3 & ORYN_PAGE_ADDRESS_MASK);
-    unsigned int pml4Index = (unsigned int)((virtualAddress >> 39) & 0x1FFULL);
-    unsigned int pdptIndex = (unsigned int)((virtualAddress >> 30) & 0x1FFULL);
-    unsigned int pdIndex = (unsigned int)((virtualAddress >> 21) & 0x1FFULL);
-    unsigned int ptIndex = (unsigned int)((virtualAddress >> 12) & 0x1FFULL);
-
-    if (pml4 == 0)
-    {
-        return 0;
-    }
-
-    OrynPageTableEntry* pdpt = GetExistingNextTable(pml4, pml4Index);
-    if (pdpt == 0)
-    {
-        return 0;
-    }
-
-    OrynPageTableEntry* pd = GetExistingNextTable(pdpt, pdptIndex);
-    if (pd == 0)
-    {
-        return 0;
-    }
-
-    OrynPageTableEntry* pt = GetExistingNextTable(pd, pdIndex);
-    if (pt == 0)
-    {
-        return 0;
-    }
-
-    pt[ptIndex] = 0ULL;
-    __asm__ volatile ("invlpg (%0)" :: "r"(virtualAddress) : "memory");
-    return 1;
 }
 
 static OrynPageTableEntry* AllocateTable(
@@ -498,7 +446,7 @@ int OrynVirtualMemoryInit(
         return 0;
     }
 
-    ClearVirtualMemory(virtualMemory);
+    ClearBytes(virtualMemory, sizeof(*virtualMemory));
     virtualMemory->CurrentCr3 = OrynVirtualMemoryReadCr3();
     virtualMemory->UserBase = ORYN_VIRTUAL_USER_BASE;
     virtualMemory->UserLimit = ORYN_VIRTUAL_USER_LIMIT;
@@ -539,6 +487,11 @@ int OrynVirtualMemoryInit(
     KernelIoWriteString("[KERNEL] Virtual memory: CR3 switched to kernel-owned PML4\n");
     virtualMemory->Active = 1U;
     virtualMemory->Initialized = 1U;
-    (void)OrynVirtualMemoryInitKernelAddressSpace(virtualMemory);
+    if (!OrynVirtualMemoryInitKernelAddressSpace(virtualMemory) ||
+        !OrynVirtualMemoryValidateHigherHalfKernelMap(virtualMemory))
+    {
+        virtualMemory->MapFailure = 1U;
+        return 0;
+    }
     return 1;
 }

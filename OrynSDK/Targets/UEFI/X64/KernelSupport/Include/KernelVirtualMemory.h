@@ -137,6 +137,15 @@ typedef struct OrynKernelVirtualMemory
     unsigned long long DeviceMmapRegionsCreated;
     unsigned long long WriteExecutePolicyChecks;
     unsigned long long WriteExecuteDeniedCount;
+    unsigned int HigherHalfReady;
+    unsigned int HigherHalfCanonical;
+    unsigned int HigherHalfAligned;
+    unsigned int HigherHalfNoUserOverlap;
+    unsigned int HigherHalfEntryMapped;
+    unsigned int HigherHalfPml4SlotReady;
+    unsigned int HigherHalfPhysicalWindowValid;
+    unsigned long long HigherHalfMappedPageProofCount;
+    unsigned long long HigherHalfValidationFailures;
     OrynKernelAddressSpace KernelAddressSpace;
 } OrynKernelVirtualMemory;
 
@@ -214,6 +223,7 @@ int OrynVirtualMemoryRunAddressSpaceSelfTest(
     OrynKernelVirtualMemory* virtualMemory,
     OrynKernelPhysicalMemory* physicalMemory);
 int OrynVirtualMemoryUnmapGuardPage(unsigned long long virtualAddress);
+int OrynVirtualMemoryValidateHigherHalfKernelMap(OrynKernelVirtualMemory* virtualMemory);
 int OrynVirtualMemoryInit(
     const OrynBootInfo* bootInfo,
     const OrynKernelMemoryMap* memoryMap,

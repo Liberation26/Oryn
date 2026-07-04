@@ -124,6 +124,23 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
     OrynKernelDiagnosticsLogDec64(virtualMemory->KernelVirtualMappedPages);
     OrynKernelDiagnosticsLogText("\n");
 
+    OrynKernelDiagnosticsLogText("[KERNEL] Higher-half validation pages: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->HigherHalfMappedPageProofCount);
+    OrynKernelDiagnosticsLogText(" failures=");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->HigherHalfValidationFailures);
+    OrynKernelDiagnosticsLogText("\n");
+
+    OrynKernelScreenReportOkOrFail(virtualMemory->HigherHalfReady != 0U &&
+        virtualMemory->HigherHalfCanonical != 0U &&
+        virtualMemory->HigherHalfAligned != 0U &&
+        virtualMemory->HigherHalfNoUserOverlap != 0U &&
+        virtualMemory->HigherHalfEntryMapped != 0U &&
+        virtualMemory->HigherHalfPml4SlotReady != 0U &&
+        virtualMemory->HigherHalfPhysicalWindowValid != 0U &&
+        virtualMemory->HigherHalfMappedPageProofCount == virtualMemory->KernelVirtualMappedPages,
+        "Higher-half kernel mapping is validated page-for-page.",
+        "Higher-half kernel mapping validation failed.");
+
     WriteRange("[KERNEL] User address split: ",
         virtualMemory->UserBase,
         virtualMemory->UserLimit);

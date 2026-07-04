@@ -1,3 +1,10 @@
+[DONE 100%] 0.5.172: Higher-half kernel mapping is production-validated for the current SDK scope.
+OrynWsl SDK ToDo2 update: 0.5.172
+
+[100%] Higher-half kernel mapping now validates canonical kernel addresses, page alignment, kernel/user split separation, PML4 high-slot ownership, entry-point coverage, and physical-window sizing.
+[100%] The VM proof walks every mapped higher-half kernel page and verifies it resolves to the expected physical kernel page before VM init is accepted.
+[100%] Guard-page unmapping was split into KernelVirtualMemoryGuard.c so KernelVirtualMemory.c is back under the 500-line source rule while preserving the public guard-page API.
+
 [DONE 100%] 0.5.171: Physical allocator integrity validation no longer hangs the boot proof.
 OrynWsl SDK ToDo2 update: 0.5.171
 
@@ -277,7 +284,7 @@ Current kernel foundation already present:
 [050%] Framebuffer/VGA console foundation exists.
 [050%] Keyboard IRQ1 screen scrolling proof exists.
 [100%] Physical memory allocator foundation exists with free-list integrity, ownership validation, double-free protection, reserved-page protection, reference-release return, and diagnostics.
-[060%] Higher-half virtual-memory foundation exists.
+[100%] Higher-half virtual-memory foundation exists with page-for-page higher-half map validation.
 [050%] KernelRuntimeBootSequence no longer owns proof orchestration; it enters runtime and calls KernelBootProof only.
 [050%] KernelBootProofConsole adapter owns the proof-only bridge to console metrics, scroll probes, and double-buffer probes.
 [050%] Console proof flow now uses KernelBootProofConsole adapter; Console remains runtime/user I/O and proof code no longer includes KernelConsole directly.
@@ -319,7 +326,7 @@ Milestone 0.6 - Clean kernel entry and module ownership:
 
 Milestone 0.7 - Production memory management:
 [100%] Physical page allocator foundation exists with production allocator safety for the current SDK scope.
-[060%] Higher-half kernel mapping foundation exists.
+[100%] Higher-half kernel mapping foundation exists with canonical, split, entry, PML4, and page-table validation.
 [060%] Create a real kernel heap: kmalloc, kfree, krealloc, kcalloc.
 [050%] Add heap statistics and leak counters.
 [060%] Add slab/object caches for fixed-size kernel structures.
