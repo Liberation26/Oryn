@@ -2,7 +2,7 @@
 #include "SysCallPolicy.h"
 #include "LinuxSysCall.h"
 #include "MSSysCall.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "OrynString.h"
 #include "KernelScreenReport.h"
 
@@ -46,9 +46,9 @@ static void RecordPacket(const OrynSysCallPacket* packet)
 
 static void WritePacketField(const char* label, uint64_t value)
 {
-    KernelIoWriteString(label);
-    KernelIoWriteHex64(value);
-    KernelIoWriteString(" ");
+    OrynKernelDiagnosticsLogText(label);
+    OrynKernelDiagnosticsLogHex64(value);
+    OrynKernelDiagnosticsLogText(" ");
 }
 
 static int64_t Complete(OrynSysCallPacket* packet, int64_t status)
@@ -107,29 +107,29 @@ void OrynSysCallNoteUnknownPlatform(uint64_t platform, uint64_t platform_number)
         gSysCallState.UnknownMsPackets += 1ULL;
     }
 
-    KernelIoWriteString("[KERNEL] DEBUG: Unknown platform syscall platform=");
-    KernelIoWriteHex64(platform);
-    KernelIoWriteString(" number=");
-    KernelIoWriteHex64(platform_number);
-    KernelIoWriteString(" translated to SysCallEvent debug packet.\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] DEBUG: Unknown platform syscall platform=");
+    OrynKernelDiagnosticsLogHex64(platform);
+    OrynKernelDiagnosticsLogText(" number=");
+    OrynKernelDiagnosticsLogHex64(platform_number);
+    OrynKernelDiagnosticsLogText(" translated to SysCallEvent debug packet.\n");
 }
 
 void OrynSysCallPrintUnknown(const OrynSysCallPacket* packet)
 {
     if (packet == 0)
     {
-        KernelIoWriteString("[KERNEL] DEBUG: Unknown SysCall packet pointer was null.\n");
+        OrynKernelDiagnosticsLogText("[KERNEL] DEBUG: Unknown SysCall packet pointer was null.\n");
         return;
     }
 
     gSysCallState.UnknownPackets += 1ULL;
-    KernelIoWriteString("[KERNEL] DEBUG: Unknown SysCall packet ");
+    OrynKernelDiagnosticsLogText("[KERNEL] DEBUG: Unknown SysCall packet ");
     WritePacketField("platform=", packet->Platform);
     WritePacketField("number=", packet->PlatformNumber);
     WritePacketField("kind=", packet->Kind);
     WritePacketField("ns=", packet->Namespace);
     WritePacketField("op=", packet->Operation);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("\n");
 }
 
 int64_t SysCallGet(OrynSysCallPacket* packet)
@@ -184,7 +184,7 @@ int64_t SysCallSet(OrynSysCallPacket* packet)
         packet->Operation == ORYN_SYSCALL_OP_DEBUG_SET_LEVEL)
     {
         packet->Results[0] = packet->Arguments[0];
-        KernelIoWriteString("[KERNEL] SysCallSet: debug level packet accepted.\n");
+        OrynKernelDiagnosticsLogText("[KERNEL] SysCallSet: debug level packet accepted.\n");
         return Complete(packet, ORYN_SYSCALL_STATUS_OK);
     }
 
@@ -214,7 +214,7 @@ int64_t SysCallEvent(OrynSysCallPacket* packet)
         text = packet->DebugText != 0 ? packet->DebugText : (const char*)packet->Arguments[1];
         if (text != 0)
         {
-            KernelIoWriteString(text);
+            OrynKernelDiagnosticsLogText(text);
         }
         return Complete(packet, ORYN_SYSCALL_STATUS_OK);
     }
@@ -222,9 +222,9 @@ int64_t SysCallEvent(OrynSysCallPacket* packet)
     if (packet->Namespace == ORYN_SYSCALL_NS_PROCESS &&
         packet->Operation == ORYN_SYSCALL_OP_PROCESS_EXIT)
     {
-        KernelIoWriteString("[KERNEL] SysCallEvent: process exit event code ");
-        KernelIoWriteDec64(packet->Arguments[0]);
-        KernelIoWriteString(" received.\n");
+        OrynKernelDiagnosticsLogText("[KERNEL] SysCallEvent: process exit event code ");
+        OrynKernelDiagnosticsLogDec64(packet->Arguments[0]);
+        OrynKernelDiagnosticsLogText(" received.\n");
         return Complete(packet, ORYN_SYSCALL_STATUS_OK);
     }
 
@@ -317,18 +317,18 @@ void OrynSysCallPrintProof(void)
     OrynKernelScreenReportOkOrFail(gSysCallState.PacketSize == sizeof(OrynSysCallPacket),
         "SysCall message packet ABI ready.",
         "SysCall message packet ABI size mismatch.");
-    KernelIoWriteString("[KERNEL] LinuxSysCall.h listed syscall count: ");
-    KernelIoWriteDec64(LinuxSysCallListedCount());
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] LinuxSysCall.h translated syscall count: ");
-    KernelIoWriteDec64(LinuxSysCallTranslatedCount());
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] MSSysCall.h listed syscall count: ");
-    KernelIoWriteDec64(MSSysCallListedCount());
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] MSSysCall.h translated syscall count: ");
-    KernelIoWriteDec64(MSSysCallTranslatedCount());
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] LinuxSysCall.h listed syscall count: ");
+    OrynKernelDiagnosticsLogDec64(LinuxSysCallListedCount());
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] LinuxSysCall.h translated syscall count: ");
+    OrynKernelDiagnosticsLogDec64(LinuxSysCallTranslatedCount());
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] MSSysCall.h listed syscall count: ");
+    OrynKernelDiagnosticsLogDec64(MSSysCallListedCount());
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] MSSysCall.h translated syscall count: ");
+    OrynKernelDiagnosticsLogDec64(MSSysCallTranslatedCount());
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrFail(LinuxSysCallListedCount() == ORYN_LINUX_SYSCALL_LISTED_COUNT && MSSysCallListedCount() == ORYN_MS_SYSCALL_LISTED_COUNT,
         "SysCall header counts listed.",
         "SysCall header counts missing.");
@@ -352,10 +352,10 @@ void OrynSysCallPrintRuntimeProof(void)
         "SysCalls use Get/Set/Event message packets.",
         "SysCalls did not prove Get/Set/Event packets.");
     OrynSysCallPrintPolicyProof(&gSysCallState);
-    KernelIoWriteString("[KERNEL] SysCall total packets: ");
-    KernelIoWriteDec64(gSysCallState.TotalPackets);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] SysCall unknown packets: ");
-    KernelIoWriteDec64(gSysCallState.UnknownPackets);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] SysCall total packets: ");
+    OrynKernelDiagnosticsLogDec64(gSysCallState.TotalPackets);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] SysCall unknown packets: ");
+    OrynKernelDiagnosticsLogDec64(gSysCallState.UnknownPackets);
+    OrynKernelDiagnosticsLogText("\n");
 }

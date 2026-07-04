@@ -14,7 +14,6 @@
 #include "KernelIdt.h"
 #include "KernelInterrupts.h"
 #include "KernelIoApic.h"
-#include "KernelIo.h"
 #include "KernelKeyboard.h"
 #include "KernelLifecycle.h"
 #include "KernelMemoryMap.h"

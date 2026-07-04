@@ -1,5 +1,5 @@
 #include "KernelLifecycle.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelScreenReport.h"
 
 #define ORYN_LIFECYCLE_MAX_TRANSITIONS 32
@@ -151,21 +151,21 @@ static void RecordTransition(OrynKernelLifecycleState from, OrynKernelLifecycleS
 
 static void PrintTransitionLine(OrynKernelLifecycleState from, OrynKernelLifecycleState to)
 {
-    KernelIoWriteString("[KERNEL] Lifecycle: ");
-    KernelIoWriteString(OrynKernelLifecycleStateName(from));
-    KernelIoWriteString(" -> ");
-    KernelIoWriteString(OrynKernelLifecycleStateName(to));
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Lifecycle: ");
+    OrynKernelDiagnosticsLogText(OrynKernelLifecycleStateName(from));
+    OrynKernelDiagnosticsLogText(" -> ");
+    OrynKernelDiagnosticsLogText(OrynKernelLifecycleStateName(to));
+    OrynKernelDiagnosticsLogText("\n");
 }
 
 static void PrintInvalidTransitionLine(OrynKernelLifecycleState from, OrynKernelLifecycleState to)
 {
     OrynKernelScreenReportBeginFail();
-    KernelIoWriteString("Lifecycle rejected transition ");
-    KernelIoWriteString(OrynKernelLifecycleStateName(from));
-    KernelIoWriteString(" -> ");
-    KernelIoWriteString(OrynKernelLifecycleStateName(to));
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("Lifecycle rejected transition ");
+    OrynKernelDiagnosticsLogText(OrynKernelLifecycleStateName(from));
+    OrynKernelDiagnosticsLogText(" -> ");
+    OrynKernelDiagnosticsLogText(OrynKernelLifecycleStateName(to));
+    OrynKernelDiagnosticsLogText("\n");
 }
 
 void OrynKernelLifecycleInit(void)
@@ -226,9 +226,9 @@ void OrynKernelLifecycleMarkPanic(const char* reason)
 {
     (void)OrynKernelLifecycleTransition(OrynKernelLifecyclePanic);
     OrynKernelScreenReportBeginFail();
-    KernelIoWriteString("Kernel lifecycle panic: ");
-    KernelIoWriteString(reason == 0 ? "unspecified" : reason);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("Kernel lifecycle panic: ");
+    OrynKernelDiagnosticsLogText(reason == 0 ? "unspecified" : reason);
+    OrynKernelDiagnosticsLogText("\n");
 }
 
 void OrynKernelLifecycleGetStatus(OrynKernelLifecycleStatus* status)
@@ -259,7 +259,7 @@ void OrynKernelLifecycleGetStatus(OrynKernelLifecycleStatus* status)
 
 void OrynKernelLifecyclePrintProof(void)
 {
-    KernelIoWriteString("[KERNEL] Kernel lifecycle transition proof history:\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Kernel lifecycle transition proof history:\n");
     unsigned long long count = gLifecycle.TransitionCount;
     if (count > ORYN_LIFECYCLE_MAX_TRANSITIONS)
     {
@@ -271,15 +271,15 @@ void OrynKernelLifecyclePrintProof(void)
         PrintTransitionLine(gTransitionFrom[index], gTransitionTo[index]);
     }
 
-    KernelIoWriteString("[KERNEL] Kernel lifecycle final state: ");
-    KernelIoWriteString(OrynKernelLifecycleStateName(gLifecycle.State));
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Kernel lifecycle transition count: ");
-    KernelIoWriteDec64(gLifecycle.TransitionCount);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Kernel lifecycle invalid transitions: ");
-    KernelIoWriteDec64(gLifecycle.InvalidTransitionCount);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Kernel lifecycle final state: ");
+    OrynKernelDiagnosticsLogText(OrynKernelLifecycleStateName(gLifecycle.State));
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Kernel lifecycle transition count: ");
+    OrynKernelDiagnosticsLogDec64(gLifecycle.TransitionCount);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Kernel lifecycle invalid transitions: ");
+    OrynKernelDiagnosticsLogDec64(gLifecycle.InvalidTransitionCount);
+    OrynKernelDiagnosticsLogText("\n");
 
     if (gLifecycle.HasEntered && gLifecycle.HasBootInfo &&
         gLifecycle.HasDescriptors && gLifecycle.HasInterrupts &&

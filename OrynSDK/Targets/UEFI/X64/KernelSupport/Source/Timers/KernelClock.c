@@ -2,7 +2,7 @@
 #include "KernelApic.h"
 #include "KernelCpu.h"
 #include "KernelHpet.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelModuleManifest.h"
 #include "KernelRtc.h"
 #include "KernelScreenReport.h"
@@ -356,15 +356,15 @@ void OrynKernelClockPrintProof(void)
     OrynKernelScreenReportOkOrFail(gClockState.SourceSelected,
         "Monotonic kernel clock source selected.",
         "No monotonic kernel clock source selected.");
-    KernelIoWriteString("[KERNEL] Clocksource selected: ");
-    KernelIoWriteString(SelectedSourceName());
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Clocksource selected: ");
+    OrynKernelDiagnosticsLogText(SelectedSourceName());
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrWarn(gClockState.EventSelected,
         "Clockevent/tick provider registered.",
         "Clockevent/tick provider not registered yet.");
-    KernelIoWriteString("[KERNEL] Clockevent selected: ");
-    KernelIoWriteString(SelectedEventName());
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Clockevent selected: ");
+    OrynKernelDiagnosticsLogText(SelectedEventName());
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrWarn(gClockState.Calibration.HpetReferenceAvailable,
         "HPET reference available for clock calibration.",
         "HPET reference unavailable for clock calibration.");

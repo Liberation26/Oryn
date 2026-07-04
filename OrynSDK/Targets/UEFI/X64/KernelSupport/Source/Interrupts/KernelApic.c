@@ -1,6 +1,6 @@
 #include "KernelApic.h"
 #include "KernelCpu.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelMsr.h"
 #include "KernelModuleManifest.h"
 #include "KernelScreenReport.h"
@@ -369,16 +369,16 @@ void OrynKernelApicPrintProof(void)
     OrynKernelScreenReportOkOrFail(gApicState.SoftwareEnabled,
         "Local APIC software enable bit set.",
         "Local APIC software enable bit not set.");
-    KernelIoWriteString("[KERNEL] Local APIC physical base: ");
-    KernelIoWriteHex64(gApicState.LocalApicPhysicalBase);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Local APIC ID/version/maxLVT: ");
-    KernelIoWriteHex64(gApicState.LocalApicId);
-    KernelIoWriteString(" / ");
-    KernelIoWriteHex64(gApicState.Version);
-    KernelIoWriteString(" / ");
-    KernelIoWriteHex64(gApicState.MaxLvt);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Local APIC physical base: ");
+    OrynKernelDiagnosticsLogHex64(gApicState.LocalApicPhysicalBase);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Local APIC ID/version/maxLVT: ");
+    OrynKernelDiagnosticsLogHex64(gApicState.LocalApicId);
+    OrynKernelDiagnosticsLogText(" / ");
+    OrynKernelDiagnosticsLogHex64(gApicState.Version);
+    OrynKernelDiagnosticsLogText(" / ");
+    OrynKernelDiagnosticsLogHex64(gApicState.MaxLvt);
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrWarn(gApicState.TimerCountMoved,
         "APIC timer counter moved in masked probe.",
         "APIC timer counter did not move in masked probe.");

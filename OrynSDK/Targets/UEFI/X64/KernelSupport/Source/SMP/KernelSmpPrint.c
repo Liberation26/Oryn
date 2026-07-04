@@ -1,4 +1,4 @@
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelSmp.h"
 #include "KernelScreenReport.h"
 
@@ -13,12 +13,12 @@ void OrynKernelSmpPrintDiscoveryProof(const OrynKernelSmpState* state)
     OrynKernelScreenReportOkOrWarn(state->MadtFound,
         "SMP ACPI MADT table discovered.",
         "SMP ACPI MADT table was not discovered.");
-    KernelIoWriteString("[KERNEL] SMP CPU entries discovered: ");
-    KernelIoWriteDec64(state->LocalApicEntryCount);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] SMP enabled CPU count: ");
-    KernelIoWriteDec64(state->EnabledCpuCount);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] SMP CPU entries discovered: ");
+    OrynKernelDiagnosticsLogDec64(state->LocalApicEntryCount);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] SMP enabled CPU count: ");
+    OrynKernelDiagnosticsLogDec64(state->EnabledCpuCount);
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrWarn(state->EnabledCpuCount > 1U,
         "SMP multi-core CPU topology discovered.",
         "SMP found only one enabled CPU.");
@@ -31,9 +31,9 @@ void OrynKernelSmpPrintProof(void)
     OrynKernelScreenReportOkOrWarn(state->AcpiReadBeforeVirtualMemory,
         "SMP ACPI topology cached before virtual memory switch.",
         "SMP ACPI topology was not cached before virtual memory switch.");
-    KernelIoWriteString("[KERNEL] SMP bootstrap APIC ID: ");
-    KernelIoWriteHex64(state->BootstrapApicId);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] SMP bootstrap APIC ID: ");
+    OrynKernelDiagnosticsLogHex64(state->BootstrapApicId);
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrFail(state->TrampolinePrepared,
         "SMP AP startup trampoline prepared below 1MB.",
         "SMP AP startup trampoline was not prepared.");
@@ -43,11 +43,11 @@ void OrynKernelSmpPrintProof(void)
     OrynKernelScreenReportOkOrFail(state->IpiPathReady,
         "SMP Local APIC IPI path ready.",
         "SMP Local APIC IPI path unavailable.");
-    KernelIoWriteString("[KERNEL] SMP AP startup attempts/successes: ");
-    KernelIoWriteDec64(state->StartupAttemptCount);
-    KernelIoWriteString(" / ");
-    KernelIoWriteDec64(state->StartupSuccessCount);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] SMP AP startup attempts/successes: ");
+    OrynKernelDiagnosticsLogDec64(state->StartupAttemptCount);
+    OrynKernelDiagnosticsLogText(" / ");
+    OrynKernelDiagnosticsLogDec64(state->StartupSuccessCount);
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrWarn(state->InitIpiCount,
         "SMP INIT IPI sent to application processors.",
         "SMP INIT IPI was not sent.");

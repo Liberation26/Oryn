@@ -1,5 +1,5 @@
 #include "KernelAhci.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelScreenReport.h"
 
 static OrynAhciState gAhciState;
@@ -257,11 +257,11 @@ void OrynAhciPrintProof(void)
     OrynKernelScreenReportOkOrFail(gAhciState.ProofSyntheticControllerPassed,
         "AHCI/SATA port classification proof passed.",
         "AHCI/SATA port classification proof failed.");
-    KernelIoWriteString("[KERNEL] AHCI controllers/ports/SATA devices: ");
-    KernelIoWriteDec64(gAhciState.ControllersFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gAhciState.PortsImplemented);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gAhciState.SataPorts);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] AHCI controllers/ports/SATA devices: ");
+    OrynKernelDiagnosticsLogDec64(gAhciState.ControllersFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gAhciState.PortsImplemented);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gAhciState.SataPorts);
+    OrynKernelDiagnosticsLogText("\n");
 }

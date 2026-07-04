@@ -1,6 +1,6 @@
 #include "KernelIoApic.h"
 #include "KernelBootInfo.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelScreenReport.h"
 
 #define ORYN_ACPI_SIG_RSDT 0x54445352U
@@ -372,15 +372,15 @@ void OrynKernelIoApicPrintProof(void)
         "IOAPIC MADT table discovered.", "IOAPIC MADT table not discovered.");
     OrynKernelScreenReportOkOrWarn(gIoApicState.ControllerCount != 0U,
         "IOAPIC controllers discovered.", "No IOAPIC controllers discovered.");
-    KernelIoWriteString("[KERNEL] IOAPIC controllers/overrides/routes/programmed: ");
-    KernelIoWriteDec64(gIoApicState.ControllerCount);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gIoApicState.OverrideCount);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gIoApicState.RoutesRecorded);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gIoApicState.RoutesProgrammed);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] IOAPIC controllers/overrides/routes/programmed: ");
+    OrynKernelDiagnosticsLogDec64(gIoApicState.ControllerCount);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gIoApicState.OverrideCount);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gIoApicState.RoutesRecorded);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gIoApicState.RoutesProgrammed);
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrWarn(gIoApicState.RoutesRecorded != 0U,
         "IOAPIC legacy IRQ routing table prepared.", "IOAPIC legacy IRQ routing not prepared.");
 }

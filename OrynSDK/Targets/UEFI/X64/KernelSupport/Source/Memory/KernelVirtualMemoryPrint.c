@@ -1,35 +1,35 @@
 #include "KernelVirtualMemory.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelScreenReport.h"
 
 static void WriteRange(const char* label, unsigned long long start, unsigned long long end)
 {
-    KernelIoWriteString(label);
-    KernelIoWriteHex64(start);
-    KernelIoWriteString(" - ");
-    KernelIoWriteHex64(end);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText(label);
+    OrynKernelDiagnosticsLogHex64(start);
+    OrynKernelDiagnosticsLogText(" - ");
+    OrynKernelDiagnosticsLogHex64(end);
+    OrynKernelDiagnosticsLogText("\n");
 }
 
 void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
 {
     if (virtualMemory == 0)
     {
-        KernelIoWriteString("[KERNEL] Virtual memory: unavailable\n");
+        OrynKernelDiagnosticsLogText("[KERNEL] Virtual memory: unavailable\n");
         return;
     }
 
-    KernelIoWriteString("[KERNEL] Current CR3: ");
-    KernelIoWriteHex64(virtualMemory->CurrentCr3);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Current CR3: ");
+    OrynKernelDiagnosticsLogHex64(virtualMemory->CurrentCr3);
+    OrynKernelDiagnosticsLogText("\n");
 
-    KernelIoWriteString("[KERNEL] Current stack pointer: ");
-    KernelIoWriteHex64(virtualMemory->CurrentStackPointer);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Current stack pointer: ");
+    OrynKernelDiagnosticsLogHex64(virtualMemory->CurrentStackPointer);
+    OrynKernelDiagnosticsLogText("\n");
 
-    KernelIoWriteString("[KERNEL] New PML4: ");
-    KernelIoWriteHex64(virtualMemory->NewPml4);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] New PML4: ");
+    OrynKernelDiagnosticsLogHex64(virtualMemory->NewPml4);
+    OrynKernelDiagnosticsLogText("\n");
 
     WriteRange("[KERNEL] Identity mapped kernel range: ",
         virtualMemory->KernelMapStart,
@@ -39,13 +39,13 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
         virtualMemory->KernelVirtualMapStart,
         virtualMemory->KernelVirtualMapEnd);
 
-    KernelIoWriteString("[KERNEL] Kernel physical entry: ");
-    KernelIoWriteHex64(virtualMemory->KernelEntryPhysical);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Kernel physical entry: ");
+    OrynKernelDiagnosticsLogHex64(virtualMemory->KernelEntryPhysical);
+    OrynKernelDiagnosticsLogText("\n");
 
-    KernelIoWriteString("[KERNEL] Kernel virtual entry: ");
-    KernelIoWriteHex64(virtualMemory->KernelEntryVirtual);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Kernel virtual entry: ");
+    OrynKernelDiagnosticsLogHex64(virtualMemory->KernelEntryVirtual);
+    OrynKernelDiagnosticsLogText("\n");
 
     WriteRange("[KERNEL] Mapped BootInfo range: ",
         virtualMemory->BootInfoMapStart,
@@ -59,70 +59,70 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
         virtualMemory->StackMapStart,
         virtualMemory->StackMapEnd);
 
-    KernelIoWriteString("[KERNEL] Framebuffer mapping: ");
+    OrynKernelDiagnosticsLogText("[KERNEL] Framebuffer mapping: ");
     if (virtualMemory->FramebufferSelected)
     {
-        KernelIoWriteString("selected ");
-        KernelIoWriteHex64(virtualMemory->FramebufferMapStart);
-        KernelIoWriteString(" - ");
-        KernelIoWriteHex64(virtualMemory->FramebufferMapEnd);
-        KernelIoWriteString("\n");
+        OrynKernelDiagnosticsLogText("selected ");
+        OrynKernelDiagnosticsLogHex64(virtualMemory->FramebufferMapStart);
+        OrynKernelDiagnosticsLogText(" - ");
+        OrynKernelDiagnosticsLogHex64(virtualMemory->FramebufferMapEnd);
+        OrynKernelDiagnosticsLogText("\n");
     }
     else
     {
-        KernelIoWriteString("not selected\n");
+        OrynKernelDiagnosticsLogText("not selected\n");
     }
 
-    KernelIoWriteString("[KERNEL] Default screen mapping: ");
+    OrynKernelDiagnosticsLogText("[KERNEL] Default screen mapping: ");
     if (virtualMemory->DefaultScreenMapped)
     {
-        KernelIoWriteHex64(virtualMemory->DefaultScreenMapStart);
-        KernelIoWriteString(" - ");
-        KernelIoWriteHex64(virtualMemory->DefaultScreenMapEnd);
-        KernelIoWriteString("\n");
+        OrynKernelDiagnosticsLogHex64(virtualMemory->DefaultScreenMapStart);
+        OrynKernelDiagnosticsLogText(" - ");
+        OrynKernelDiagnosticsLogHex64(virtualMemory->DefaultScreenMapEnd);
+        OrynKernelDiagnosticsLogText("\n");
     }
     else
     {
-        KernelIoWriteString("not available\n");
+        OrynKernelDiagnosticsLogText("not available\n");
     }
 
-    KernelIoWriteString("[KERNEL] VGA text mapping: ");
+    OrynKernelDiagnosticsLogText("[KERNEL] VGA text mapping: ");
     if (virtualMemory->VgaTextMapped)
     {
-        KernelIoWriteHex64(virtualMemory->VgaTextMapStart);
-        KernelIoWriteString(" - ");
-        KernelIoWriteHex64(virtualMemory->VgaTextMapEnd);
-        KernelIoWriteString("\n");
+        OrynKernelDiagnosticsLogHex64(virtualMemory->VgaTextMapStart);
+        OrynKernelDiagnosticsLogText(" - ");
+        OrynKernelDiagnosticsLogHex64(virtualMemory->VgaTextMapEnd);
+        OrynKernelDiagnosticsLogText("\n");
     }
     else
     {
-        KernelIoWriteString("not mapped\n");
+        OrynKernelDiagnosticsLogText("not mapped\n");
     }
 
-    KernelIoWriteString("[KERNEL] TTF font mapping: ");
+    OrynKernelDiagnosticsLogText("[KERNEL] TTF font mapping: ");
     if (virtualMemory->FontMapped)
     {
-        KernelIoWriteHex64(virtualMemory->FontMapStart);
-        KernelIoWriteString(" - ");
-        KernelIoWriteHex64(virtualMemory->FontMapEnd);
-        KernelIoWriteString("\n");
+        OrynKernelDiagnosticsLogHex64(virtualMemory->FontMapStart);
+        OrynKernelDiagnosticsLogText(" - ");
+        OrynKernelDiagnosticsLogHex64(virtualMemory->FontMapEnd);
+        OrynKernelDiagnosticsLogText("\n");
     }
     else
     {
-        KernelIoWriteString("not supplied\n");
+        OrynKernelDiagnosticsLogText("not supplied\n");
     }
 
-    KernelIoWriteString("[KERNEL] Page table pages allocated: ");
-    KernelIoWriteDec64(virtualMemory->TablesAllocated);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Page table pages allocated: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->TablesAllocated);
+    OrynKernelDiagnosticsLogText("\n");
 
-    KernelIoWriteString("[KERNEL] Identity mapped pages: ");
-    KernelIoWriteDec64(virtualMemory->IdentityMappedPages);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Identity mapped pages: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->IdentityMappedPages);
+    OrynKernelDiagnosticsLogText("\n");
 
-    KernelIoWriteString("[KERNEL] Kernel virtual mapped pages: ");
-    KernelIoWriteDec64(virtualMemory->KernelVirtualMappedPages);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Kernel virtual mapped pages: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->KernelVirtualMappedPages);
+    OrynKernelDiagnosticsLogText("\n");
 
     WriteRange("[KERNEL] User address split: ",
         virtualMemory->UserBase,
@@ -132,60 +132,83 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
         virtualMemory->KernelBase,
         virtualMemory->KernelLimit);
 
-    KernelIoWriteString("[KERNEL] VM API mapped pages: ");
-    KernelIoWriteDec64(virtualMemory->ApiMappedPages);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] VM API mapped pages: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->ApiMappedPages);
+    OrynKernelDiagnosticsLogText("\n");
 
-    KernelIoWriteString("[KERNEL] VM API protected pages: ");
-    KernelIoWriteDec64(virtualMemory->ApiProtectedPages);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] VM API protected pages: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->ApiProtectedPages);
+    OrynKernelDiagnosticsLogText("\n");
 
-    KernelIoWriteString("[KERNEL] VM API unmapped pages: ");
-    KernelIoWriteDec64(virtualMemory->ApiUnmappedPages);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] VM API unmapped pages: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->ApiUnmappedPages);
+    OrynKernelDiagnosticsLogText("\n");
 
-    KernelIoWriteString("[KERNEL] Process address spaces created: ");
-    KernelIoWriteDec64(virtualMemory->ProcessAddressSpacesCreated);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Process address spaces created: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->ProcessAddressSpacesCreated);
+    OrynKernelDiagnosticsLogText("\n");
 
-    KernelIoWriteString("[KERNEL] Anonymous user regions created: ");
-    KernelIoWriteDec64(virtualMemory->AnonymousRegionsCreated);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Anonymous user regions created: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->AnonymousRegionsCreated);
+    OrynKernelDiagnosticsLogText("\n");
 
-    KernelIoWriteString("[KERNEL] Demand-allocated user pages: ");
-    KernelIoWriteDec64(virtualMemory->DemandAllocatedUserPages);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] mmap-style regions created: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->MmapRegionsCreated);
+    OrynKernelDiagnosticsLogText(" file=");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->FileMmapRegionsCreated);
+    OrynKernelDiagnosticsLogText(" device=");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->DeviceMmapRegionsCreated);
+    OrynKernelDiagnosticsLogText("\n");
 
-    KernelIoWriteString("[KERNEL] User copy bytes from user: ");
-    KernelIoWriteDec64(virtualMemory->UserCopyBytesIn);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] W^X policy checks: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->WriteExecutePolicyChecks);
+    OrynKernelDiagnosticsLogText(" denied=");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->WriteExecuteDeniedCount);
+    OrynKernelDiagnosticsLogText("\n");
 
-    KernelIoWriteString("[KERNEL] User copy bytes to user: ");
-    KernelIoWriteDec64(virtualMemory->UserCopyBytesOut);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Demand-allocated user pages: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->DemandAllocatedUserPages);
+    OrynKernelDiagnosticsLogText("\n");
 
-    KernelIoWriteString("[KERNEL] Copy-on-write clones: ");
-    KernelIoWriteDec64(virtualMemory->CopyOnWriteCloneCount);
-    KernelIoWriteString(" shared pages=");
-    KernelIoWriteDec64(virtualMemory->CopyOnWriteSharedPages);
-    KernelIoWriteString(" resolved pages=");
-    KernelIoWriteDec64(virtualMemory->CopyOnWriteResolvedPages);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] User copy bytes from user: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->UserCopyBytesIn);
+    OrynKernelDiagnosticsLogText("\n");
+
+    OrynKernelDiagnosticsLogText("[KERNEL] User copy bytes to user: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->UserCopyBytesOut);
+    OrynKernelDiagnosticsLogText("\n");
+
+    OrynKernelDiagnosticsLogText("[KERNEL] Copy-on-write clones: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->CopyOnWriteCloneCount);
+    OrynKernelDiagnosticsLogText(" shared pages=");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->CopyOnWriteSharedPages);
+    OrynKernelDiagnosticsLogText(" resolved pages=");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->CopyOnWriteResolvedPages);
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrFail(virtualMemory->CopyOnWriteCloneCount != 0ULL &&
         virtualMemory->CopyOnWriteSharedPages != 0ULL &&
         virtualMemory->CopyOnWriteResolvedPages != 0ULL,
         "Copy-on-write foundation can clone and privatize user pages.",
         "Copy-on-write foundation proof failed.");
+    OrynKernelScreenReportOkOrFail(virtualMemory->MmapRegionsCreated >= 3ULL &&
+        virtualMemory->FileMmapRegionsCreated != 0ULL &&
+        virtualMemory->DeviceMmapRegionsCreated != 0ULL,
+        "mmap-style region tracking covers anonymous, file, and device memory.",
+        "mmap-style region tracking proof failed.");
+    OrynKernelScreenReportOkOrFail(virtualMemory->WriteExecutePolicyChecks != 0ULL &&
+        virtualMemory->WriteExecuteDeniedCount != 0ULL,
+        "W^X page policy rejects writable executable mappings.",
+        "W^X page policy proof failed.");
 
-    KernelIoWriteString("[KERNEL] Page-fault policy: ");
-    KernelIoWriteString(virtualMemory->PageFaultPolicyReady ? "ready\n" : "not proven\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Page-fault policy: ");
+    OrynKernelDiagnosticsLogText(virtualMemory->PageFaultPolicyReady ? "ready\n" : "not proven\n");
 
     if (virtualMemory->Active)
     {
-        KernelIoWriteString("[KERNEL] Virtual memory: active\n");
+        OrynKernelDiagnosticsLogText("[KERNEL] Virtual memory: active\n");
     }
     else
     {
-        KernelIoWriteString("[KERNEL] Virtual memory: inactive\n");
+        OrynKernelDiagnosticsLogText("[KERNEL] Virtual memory: inactive\n");
     }
 }

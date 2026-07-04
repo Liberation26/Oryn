@@ -5,5 +5,6 @@
 void OrynKernelSelfTestRunCategoryChecks(const OrynBootInfo* kernelBootInfo)
 {
     OrynKernelDiagnosticsLogText("[KERNEL] SelfTest owns boot proof category checks.\n");
+    OrynKernelDiagnosticsLoggerPrintOwnershipProof();
     OrynKernelBootProofRunCategoryChecks(kernelBootInfo);
 }

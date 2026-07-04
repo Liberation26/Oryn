@@ -1,28 +1,28 @@
 #include "KernelModuleManifest.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelScreenReport.h"
 
 static void PrintModuleLine(const OrynKernelModuleManifestItem* item)
 {
-    KernelIoWriteString("[KERNEL] Module manifest item: ");
-    KernelIoWriteString(item->Name);
-    KernelIoWriteString(" [");
-    KernelIoWriteString(OrynKernelModuleManifestStateName(item->State));
-    KernelIoWriteString("] ");
-    KernelIoWriteString(item->CompiledIn ? "compiled-in" : "not-compiled");
-    KernelIoWriteString(item->Required ? " required" : " optional");
-    KernelIoWriteString(item->FatalOnMissingPrerequisite ? " fatal-prereq" : " nonfatal-prereq");
-    KernelIoWriteString(" select=");
-    KernelIoWriteString(item->Selects);
-    KernelIoWriteString(" stop=");
-    KernelIoWriteString(item->StopCallbackName ? item->StopCallbackName : "none");
-    KernelIoWriteString(" panic=");
-    KernelIoWriteString(item->PanicCallbackName ? item->PanicCallbackName : "none");
-    KernelIoWriteString(" shutdown=");
-    KernelIoWriteString(item->ShutdownCallbackName ? item->ShutdownCallbackName : "none");
-    KernelIoWriteString(" -> ");
-    KernelIoWriteString(item->Items);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Module manifest item: ");
+    OrynKernelDiagnosticsLogText(item->Name);
+    OrynKernelDiagnosticsLogText(" [");
+    OrynKernelDiagnosticsLogText(OrynKernelModuleManifestStateName(item->State));
+    OrynKernelDiagnosticsLogText("] ");
+    OrynKernelDiagnosticsLogText(item->CompiledIn ? "compiled-in" : "not-compiled");
+    OrynKernelDiagnosticsLogText(item->Required ? " required" : " optional");
+    OrynKernelDiagnosticsLogText(item->FatalOnMissingPrerequisite ? " fatal-prereq" : " nonfatal-prereq");
+    OrynKernelDiagnosticsLogText(" select=");
+    OrynKernelDiagnosticsLogText(item->Selects);
+    OrynKernelDiagnosticsLogText(" stop=");
+    OrynKernelDiagnosticsLogText(item->StopCallbackName ? item->StopCallbackName : "none");
+    OrynKernelDiagnosticsLogText(" panic=");
+    OrynKernelDiagnosticsLogText(item->PanicCallbackName ? item->PanicCallbackName : "none");
+    OrynKernelDiagnosticsLogText(" shutdown=");
+    OrynKernelDiagnosticsLogText(item->ShutdownCallbackName ? item->ShutdownCallbackName : "none");
+    OrynKernelDiagnosticsLogText(" -> ");
+    OrynKernelDiagnosticsLogText(item->Items);
+    OrynKernelDiagnosticsLogText("\n");
 }
 
 static unsigned int CountRegisteredModules(void)
@@ -74,9 +74,9 @@ void OrynKernelCompiledModuleRegistryPrintProof(void)
         if (record && record->CompiledIn)
         {
             ++compiled;
-            KernelIoWriteString("[KERNEL] Compiled-in module: ");
-            KernelIoWriteString(record->Name);
-            KernelIoWriteString("\n");
+            OrynKernelDiagnosticsLogText("[KERNEL] Compiled-in module: ");
+            OrynKernelDiagnosticsLogText(record->Name);
+            OrynKernelDiagnosticsLogText("\n");
         }
     }
 

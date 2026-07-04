@@ -1,5 +1,5 @@
 #include "KernelUsbMassStorage.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelScreenReport.h"
 
 static OrynUsbMassStorageState gUsbStorageState;
@@ -211,11 +211,11 @@ void OrynUsbMassStoragePrintProof(void)
     OrynKernelScreenReportOkOrFail(gUsbStorageState.ProofSyntheticDevicePassed,
         "USB mass storage block-device proof passed.",
         "USB mass storage block-device proof failed.");
-    KernelIoWriteString("[KERNEL] USB storage hosts/interfaces/block devices: ");
-    KernelIoWriteDec64(gUsbStorageState.HostControllersFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gUsbStorageState.MassStorageInterfacesFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gUsbStorageState.BlockDevicesRegistered);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] USB storage hosts/interfaces/block devices: ");
+    OrynKernelDiagnosticsLogDec64(gUsbStorageState.HostControllersFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gUsbStorageState.MassStorageInterfacesFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gUsbStorageState.BlockDevicesRegistered);
+    OrynKernelDiagnosticsLogText("\n");
 }

@@ -1,6 +1,6 @@
 #include "KernelIdt.h"
 #include "KernelGdt.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelModuleManifest.h"
 #include "KernelInterrupts.h"
 #include "KernelScreenReport.h"
@@ -195,7 +195,7 @@ int OrynKernelIdtInit(void)
         return 0;
     }
 
-    KernelIoWriteString("[KERNEL] IDT: installing\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] IDT: installing\n");
     ClearBytes(gIdt, sizeof(gIdt));
     ClearBytes(&gIdtState, sizeof(gIdtState));
 
@@ -243,18 +243,18 @@ void OrynKernelIdtPrintProof(void)
         OrynKernelScreenReportFail(0, "IDT install verification failed.");
     }
 
-    KernelIoWriteString("[KERNEL] IDT entries: ");
-    KernelIoWriteDec64(gIdtState.EntryCount);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] IDT base: ");
-    KernelIoWriteHex64(gIdtState.Base);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] IDT limit: ");
-    KernelIoWriteHex64(gIdtState.Limit);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] IDT code selector: ");
-    KernelIoWriteHex64(gIdtState.CodeSelector);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] IDT entries: ");
+    OrynKernelDiagnosticsLogDec64(gIdtState.EntryCount);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] IDT base: ");
+    OrynKernelDiagnosticsLogHex64(gIdtState.Base);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] IDT limit: ");
+    OrynKernelDiagnosticsLogHex64(gIdtState.Limit);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] IDT code selector: ");
+    OrynKernelDiagnosticsLogHex64(gIdtState.CodeSelector);
+    OrynKernelDiagnosticsLogText("\n");
 }
 
 void OrynIdtDispatch(OrynIdtInterruptFrame* frame)

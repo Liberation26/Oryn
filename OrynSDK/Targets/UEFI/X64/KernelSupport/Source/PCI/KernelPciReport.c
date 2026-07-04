@@ -7,6 +7,7 @@
 #include "KernelVirtioGpu.h"
 #include "KernelInterrupts.h"
 #include "KernelScreenReport.h"
+#include "KernelDiagnosticsLogger.h"
 static void PciInterruptStub(OrynIdtInterruptFrame* frame, void* context)
 {
     (void)frame;
@@ -184,7 +185,7 @@ void ScanConfigSpace(void)
 
 void OrynKernelPciInit(const OrynBootInfo* bootInfo)
 {
-    KernelIoWriteString("[KERNEL] PCI: discovery starting.\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] PCI: discovery starting.\n");
     ClearState();
     DiscoverMcfg(bootInfo);
     ScanConfigSpace();
@@ -209,47 +210,47 @@ const OrynKernelPciState* OrynKernelPciGetState(void)
 
 void PrintDeviceLine(const OrynKernelPciDevice* pciDevice)
 {
-    KernelIoWriteString("[KERNEL] PCI Device: Bus ");
-    KernelIoWriteDec64(pciDevice->Bus);
-    KernelIoWriteString(", Device ");
-    KernelIoWriteDec64(pciDevice->Device);
-    KernelIoWriteString(", Function ");
-    KernelIoWriteDec64(pciDevice->Function);
-    KernelIoWriteString(", Vendor ");
-    KernelIoWriteString(OrynKernelPciVendorName(pciDevice->VendorId));
-    KernelIoWriteString(" (Vendor ID ");
-    KernelIoWriteHex64(pciDevice->VendorId);
-    KernelIoWriteString("), Device ID ");
-    KernelIoWriteHex64(pciDevice->DeviceId);
-    KernelIoWriteString(", Revision ");
-    KernelIoWriteHex64(pciDevice->RevisionId);
-    KernelIoWriteString(", Class ");
-    KernelIoWriteString(OrynKernelPciClassName(pciDevice->ClassCode));
-    KernelIoWriteString(" (Class Code ");
-    KernelIoWriteHex64(pciDevice->ClassCode);
-    KernelIoWriteString("), Subclass ");
-    KernelIoWriteString(OrynKernelPciSubclassName(pciDevice->ClassCode, pciDevice->Subclass));
-    KernelIoWriteString(" (Subclass Code ");
-    KernelIoWriteHex64(pciDevice->Subclass);
-    KernelIoWriteString("), Program Interface ");
-    KernelIoWriteHex64(pciDevice->ProgIf);
-    KernelIoWriteString(", Header Type ");
-    KernelIoWriteString(OrynKernelPciHeaderTypeName(pciDevice->HeaderType));
-    KernelIoWriteString(" (Header Code ");
-    KernelIoWriteHex64(pciDevice->HeaderType);
-    KernelIoWriteString("), BAR0 ");
-    KernelIoWriteHex64(pciDevice->Bar0);
-    KernelIoWriteString(", BAR5 ");
-    KernelIoWriteHex64(pciDevice->Bar5);
-    KernelIoWriteString(", Interrupt Line ");
-    KernelIoWriteDec64(pciDevice->InterruptLine);
-    KernelIoWriteString(", Interrupt Pin ");
-    KernelIoWriteString(OrynKernelPciInterruptPinName(pciDevice->InterruptPin));
-    KernelIoWriteString(" (Pin Code ");
-    KernelIoWriteHex64(pciDevice->InterruptPin);
-    KernelIoWriteString("), Secondary Bus ");
-    KernelIoWriteDec64(pciDevice->SecondaryBus);
-    KernelIoWriteString(".\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] PCI Device: Bus ");
+    OrynKernelDiagnosticsLogDec64(pciDevice->Bus);
+    OrynKernelDiagnosticsLogText(", Device ");
+    OrynKernelDiagnosticsLogDec64(pciDevice->Device);
+    OrynKernelDiagnosticsLogText(", Function ");
+    OrynKernelDiagnosticsLogDec64(pciDevice->Function);
+    OrynKernelDiagnosticsLogText(", Vendor ");
+    OrynKernelDiagnosticsLogText(OrynKernelPciVendorName(pciDevice->VendorId));
+    OrynKernelDiagnosticsLogText(" (Vendor ID ");
+    OrynKernelDiagnosticsLogHex64(pciDevice->VendorId);
+    OrynKernelDiagnosticsLogText("), Device ID ");
+    OrynKernelDiagnosticsLogHex64(pciDevice->DeviceId);
+    OrynKernelDiagnosticsLogText(", Revision ");
+    OrynKernelDiagnosticsLogHex64(pciDevice->RevisionId);
+    OrynKernelDiagnosticsLogText(", Class ");
+    OrynKernelDiagnosticsLogText(OrynKernelPciClassName(pciDevice->ClassCode));
+    OrynKernelDiagnosticsLogText(" (Class Code ");
+    OrynKernelDiagnosticsLogHex64(pciDevice->ClassCode);
+    OrynKernelDiagnosticsLogText("), Subclass ");
+    OrynKernelDiagnosticsLogText(OrynKernelPciSubclassName(pciDevice->ClassCode, pciDevice->Subclass));
+    OrynKernelDiagnosticsLogText(" (Subclass Code ");
+    OrynKernelDiagnosticsLogHex64(pciDevice->Subclass);
+    OrynKernelDiagnosticsLogText("), Program Interface ");
+    OrynKernelDiagnosticsLogHex64(pciDevice->ProgIf);
+    OrynKernelDiagnosticsLogText(", Header Type ");
+    OrynKernelDiagnosticsLogText(OrynKernelPciHeaderTypeName(pciDevice->HeaderType));
+    OrynKernelDiagnosticsLogText(" (Header Code ");
+    OrynKernelDiagnosticsLogHex64(pciDevice->HeaderType);
+    OrynKernelDiagnosticsLogText("), BAR0 ");
+    OrynKernelDiagnosticsLogHex64(pciDevice->Bar0);
+    OrynKernelDiagnosticsLogText(", BAR5 ");
+    OrynKernelDiagnosticsLogHex64(pciDevice->Bar5);
+    OrynKernelDiagnosticsLogText(", Interrupt Line ");
+    OrynKernelDiagnosticsLogDec64(pciDevice->InterruptLine);
+    OrynKernelDiagnosticsLogText(", Interrupt Pin ");
+    OrynKernelDiagnosticsLogText(OrynKernelPciInterruptPinName(pciDevice->InterruptPin));
+    OrynKernelDiagnosticsLogText(" (Pin Code ");
+    OrynKernelDiagnosticsLogHex64(pciDevice->InterruptPin);
+    OrynKernelDiagnosticsLogText("), Secondary Bus ");
+    OrynKernelDiagnosticsLogDec64(pciDevice->SecondaryBus);
+    OrynKernelDiagnosticsLogText(".\n");
 }
 
 void OrynKernelPciPrintProof(void)
@@ -269,34 +270,34 @@ void OrynKernelPciPrintProof(void)
     OrynKernelScreenReportOkOrFail(gPciState.ConfigMechanism1Available,
         "PCI config mechanism #1 responded.",
         "PCI config mechanism #1 did not find a device.");
-    KernelIoWriteString("[KERNEL] PCI buses scanned: ");
-    KernelIoWriteDec64(gPciState.BusesScanned);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] PCI function slots scanned: ");
-    KernelIoWriteDec64(gPciState.FunctionSlotsScanned);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] PCI buses scanned: ");
+    OrynKernelDiagnosticsLogDec64(gPciState.BusesScanned);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] PCI function slots scanned: ");
+    OrynKernelDiagnosticsLogDec64(gPciState.FunctionSlotsScanned);
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrFail(gPciState.BusesScanned == 256U,
         "PCI bus/device/function scan completed.",
         "PCI bus/device/function scan incomplete.");
     OrynKernelScreenReportOkOrFail(gPciState.DevicesFound != 0U,
         "PCI devices discovered.",
         "PCI devices were not discovered.");
-    KernelIoWriteString("[KERNEL] PCI devices discovered: ");
-    KernelIoWriteDec64(gPciState.DevicesFound);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] PCI bridges/storage/network/virtio-net/display/virtio-gpu: ");
-    KernelIoWriteDec64(gPciState.BridgesFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gPciState.StorageControllersFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gPciState.NetworkControllersFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gPciState.VirtioNetworkControllersFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gPciState.DisplayControllersFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gPciState.VirtioGpuControllersFound);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] PCI devices discovered: ");
+    OrynKernelDiagnosticsLogDec64(gPciState.DevicesFound);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] PCI bridges/storage/network/virtio-net/display/virtio-gpu: ");
+    OrynKernelDiagnosticsLogDec64(gPciState.BridgesFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gPciState.StorageControllersFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gPciState.NetworkControllersFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gPciState.VirtioNetworkControllersFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gPciState.DisplayControllersFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gPciState.VirtioGpuControllersFound);
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrFail(gPciState.ClassDecodeReady,
         "PCI class-code decoding ready.",
         "PCI class-code decoding unavailable.");
@@ -315,31 +316,31 @@ void OrynKernelPciPrintProof(void)
     OrynVirtioNetPrintProof();
     OrynVirtioGpuPrintProof();
     OrynUsbMassStoragePrintProof();
-    KernelIoWriteString("[KERNEL] PCI storage IDE/AHCI/NVMe/VirtIO/USB-host counts: ");
-    KernelIoWriteDec64(gPciState.IdeControllersFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gPciState.AhciControllersFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gPciState.NvmeControllersFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gPciState.VirtioBlockControllersFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gPciState.UsbControllersFound);
-    KernelIoWriteString(gPciState.StorageListTruncated ? " truncated\n" : "\n");
-    KernelIoWriteString("[KERNEL] PCI capability/MSI/MSI-X/vector/device-handler counts: ");
-    KernelIoWriteDec64(gPciState.CapabilityDevicesFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gPciState.MsiDevicesFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gPciState.MsixDevicesFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gPciState.MsiVectorsAssigned);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gPciState.DeviceInterruptHandlersRegistered);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] PCI recorded device entries: ");
-    KernelIoWriteDec64(gPciState.DevicesRecorded);
-    KernelIoWriteString(gPciState.DeviceListTruncated ? " truncated\n" : "\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] PCI storage IDE/AHCI/NVMe/VirtIO/USB-host counts: ");
+    OrynKernelDiagnosticsLogDec64(gPciState.IdeControllersFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gPciState.AhciControllersFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gPciState.NvmeControllersFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gPciState.VirtioBlockControllersFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gPciState.UsbControllersFound);
+    OrynKernelDiagnosticsLogText(gPciState.StorageListTruncated ? " truncated\n" : "\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] PCI capability/MSI/MSI-X/vector/device-handler counts: ");
+    OrynKernelDiagnosticsLogDec64(gPciState.CapabilityDevicesFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gPciState.MsiDevicesFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gPciState.MsixDevicesFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gPciState.MsiVectorsAssigned);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gPciState.DeviceInterruptHandlersRegistered);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] PCI recorded device entries: ");
+    OrynKernelDiagnosticsLogDec64(gPciState.DevicesRecorded);
+    OrynKernelDiagnosticsLogText(gPciState.DeviceListTruncated ? " truncated\n" : "\n");
     unsigned int limit = gPciState.DevicesRecorded < 12U ? gPciState.DevicesRecorded : 12U;
     for (unsigned int index = 0U; index < limit; ++index)
     {

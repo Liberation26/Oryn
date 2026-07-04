@@ -1,5 +1,5 @@
 #include "KernelNvme.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelScreenReport.h"
 
 static OrynNvmeState gNvmeState;
@@ -215,11 +215,11 @@ void OrynNvmePrintProof(void)
     OrynKernelScreenReportOkOrFail(gNvmeState.ProofSyntheticNamespacePassed,
         "NVMe namespace block-device proof passed.",
         "NVMe namespace block-device proof failed.");
-    KernelIoWriteString("[KERNEL] NVMe controllers/namespaces/block devices: ");
-    KernelIoWriteDec64(gNvmeState.ControllersFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gNvmeState.NamespacesDiscovered);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gNvmeState.BlockDevicesRegistered);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] NVMe controllers/namespaces/block devices: ");
+    OrynKernelDiagnosticsLogDec64(gNvmeState.ControllersFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gNvmeState.NamespacesDiscovered);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gNvmeState.BlockDevicesRegistered);
+    OrynKernelDiagnosticsLogText("\n");
 }

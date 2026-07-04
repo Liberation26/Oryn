@@ -1,6 +1,6 @@
 #include "KernelHpet.h"
 #include "KernelBootInfo.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelScreenReport.h"
 
 #define ORYN_ACPI_SIG_RSDT 0x54445352U
@@ -284,14 +284,14 @@ void OrynKernelHpetPrintProof(void)
     OrynKernelScreenReportOkOrWarn(gHpetState.Enabled,
         "HPET main counter enabled.",
         "HPET main counter not enabled.");
-    KernelIoWriteString("[KERNEL] HPET MMIO base: ");
-    KernelIoWriteHex64(gHpetState.BaseAddress);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] HPET timers/period(fs): ");
-    KernelIoWriteHex64(gHpetState.TimerCount);
-    KernelIoWriteString(" / ");
-    KernelIoWriteDec64(gHpetState.CounterPeriodFemtoSeconds);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] HPET MMIO base: ");
+    OrynKernelDiagnosticsLogHex64(gHpetState.BaseAddress);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] HPET timers/period(fs): ");
+    OrynKernelDiagnosticsLogHex64(gHpetState.TimerCount);
+    OrynKernelDiagnosticsLogText(" / ");
+    OrynKernelDiagnosticsLogDec64(gHpetState.CounterPeriodFemtoSeconds);
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrWarn(gHpetState.CounterAdvanced,
         "HPET counter advanced in probe.",
         "HPET counter did not advance in probe.");

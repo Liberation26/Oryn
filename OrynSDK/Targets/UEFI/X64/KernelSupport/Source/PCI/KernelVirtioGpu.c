@@ -1,5 +1,5 @@
 #include "KernelVirtioGpu.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelScreenReport.h"
 
 static OrynVirtioGpuState gVirtioGpuState;
@@ -173,9 +173,9 @@ void OrynVirtioGpuPrintProof(void)
     OrynKernelScreenReportOkOrFail(gVirtioGpuState.ProofSyntheticDevicePassed,
         "VirtIO-GPU synthetic device proof passed.",
         "VirtIO-GPU synthetic device proof failed.");
-    KernelIoWriteString("[KERNEL] VirtIO-GPU controllers recorded: ");
-    KernelIoWriteDec64(gVirtioGpuState.ControllersFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gVirtioGpuState.ControllersRecorded);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] VirtIO-GPU controllers recorded: ");
+    OrynKernelDiagnosticsLogDec64(gVirtioGpuState.ControllersFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gVirtioGpuState.ControllersRecorded);
+    OrynKernelDiagnosticsLogText("\n");
 }

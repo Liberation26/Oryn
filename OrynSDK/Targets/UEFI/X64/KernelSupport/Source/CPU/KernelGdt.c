@@ -1,5 +1,5 @@
 #include "KernelGdt.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelModuleManifest.h"
 #include "KernelScreenReport.h"
 
@@ -181,7 +181,7 @@ int OrynKernelGdtInit(void)
         return 0;
     }
 
-    KernelIoWriteString("[KERNEL] GDT: installing\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] GDT: installing\n");
     ClearBytes(gGdt, sizeof(gGdt));
     ClearBytes(&gTss, sizeof(gTss));
     ClearBytes(&gGdtState, sizeof(gGdtState));
@@ -252,30 +252,30 @@ void OrynKernelGdtPrintProof(void)
         OrynKernelScreenReportFail(0, "GDT install verification failed.");
     }
 
-    KernelIoWriteString("[KERNEL] GDT entries: ");
-    KernelIoWriteDec64(gGdtState.EntryCount);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] GDT base: ");
-    KernelIoWriteHex64(gGdtState.Base);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] GDT limit: ");
-    KernelIoWriteHex64(gGdtState.Limit);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] GDT code selector: ");
-    KernelIoWriteHex64(gGdtState.CodeSelector);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] GDT data selector: ");
-    KernelIoWriteHex64(gGdtState.DataSelector);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] TSS selector: ");
-    KernelIoWriteHex64(gGdtState.TaskRegister);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] GDT entries: ");
+    OrynKernelDiagnosticsLogDec64(gGdtState.EntryCount);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] GDT base: ");
+    OrynKernelDiagnosticsLogHex64(gGdtState.Base);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] GDT limit: ");
+    OrynKernelDiagnosticsLogHex64(gGdtState.Limit);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] GDT code selector: ");
+    OrynKernelDiagnosticsLogHex64(gGdtState.CodeSelector);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] GDT data selector: ");
+    OrynKernelDiagnosticsLogHex64(gGdtState.DataSelector);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] TSS selector: ");
+    OrynKernelDiagnosticsLogHex64(gGdtState.TaskRegister);
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrFail(gGdtState.TssLoaded,
         "TSS loaded.",
         "TSS not loaded.");
-    KernelIoWriteString("[KERNEL] Exception IST stack top: ");
-    KernelIoWriteHex64(gGdtState.ExceptionIstTop);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Exception IST stack top: ");
+    OrynKernelDiagnosticsLogHex64(gGdtState.ExceptionIstTop);
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrFail(gGdtState.UserStackSwitchReady,
         "TSS kernel stack is ready for user interrupts and syscalls.",
         "TSS kernel stack for user entry is not ready.");

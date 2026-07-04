@@ -1,5 +1,5 @@
 #include "KernelVirtioBlock.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelScreenReport.h"
 
 static OrynVirtioBlockState gVirtioBlockState;
@@ -210,11 +210,11 @@ void OrynVirtioBlockPrintProof(void)
     OrynKernelScreenReportOkOrFail(gVirtioBlockState.ProofSyntheticDevicePassed,
         "VirtIO block-device proof passed.",
         "VirtIO block-device proof failed.");
-    KernelIoWriteString("[KERNEL] VirtIO block target/controllers/block devices: ");
-    KernelIoWriteDec64(gVirtioBlockState.TargetProfileSelected);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gVirtioBlockState.ControllersFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gVirtioBlockState.BlockDevicesRegistered);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] VirtIO block target/controllers/block devices: ");
+    OrynKernelDiagnosticsLogDec64(gVirtioBlockState.TargetProfileSelected);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gVirtioBlockState.ControllersFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gVirtioBlockState.BlockDevicesRegistered);
+    OrynKernelDiagnosticsLogText("\n");
 }

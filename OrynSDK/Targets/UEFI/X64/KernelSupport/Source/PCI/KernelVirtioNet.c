@@ -1,5 +1,5 @@
 #include "KernelVirtioNet.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelScreenReport.h"
 
 static OrynVirtioNetState gVirtioNetState;
@@ -162,9 +162,9 @@ void OrynVirtioNetPrintProof(void)
     OrynKernelScreenReportOkOrFail(gVirtioNetState.ProofSyntheticDevicePassed,
         "VirtIO-Net synthetic device proof passed.",
         "VirtIO-Net synthetic device proof failed.");
-    KernelIoWriteString("[KERNEL] VirtIO-Net controllers recorded: ");
-    KernelIoWriteDec64(gVirtioNetState.ControllersFound);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gVirtioNetState.ControllersRecorded);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] VirtIO-Net controllers recorded: ");
+    OrynKernelDiagnosticsLogDec64(gVirtioNetState.ControllersFound);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gVirtioNetState.ControllersRecorded);
+    OrynKernelDiagnosticsLogText("\n");
 }

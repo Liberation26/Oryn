@@ -1,5 +1,5 @@
 #include "KernelPic.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelModuleManifest.h"
 #include "KernelPortIo.h"
 #include "KernelScreenReport.h"
@@ -140,9 +140,9 @@ void OrynKernelPicPrintProof(void)
     OrynKernelScreenReportOkOrWarn(gPicState.Disabled,
         "PIC masked/disabled for APIC handoff.",
         "PIC is not fully masked.");
-    KernelIoWriteString("[KERNEL] PIC original masks master/slave: ");
-    KernelIoWriteHex64(gPicState.OriginalMasterMask);
-    KernelIoWriteString(" / ");
-    KernelIoWriteHex64(gPicState.OriginalSlaveMask);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] PIC original masks master/slave: ");
+    OrynKernelDiagnosticsLogHex64(gPicState.OriginalMasterMask);
+    OrynKernelDiagnosticsLogText(" / ");
+    OrynKernelDiagnosticsLogHex64(gPicState.OriginalSlaveMask);
+    OrynKernelDiagnosticsLogText("\n");
 }

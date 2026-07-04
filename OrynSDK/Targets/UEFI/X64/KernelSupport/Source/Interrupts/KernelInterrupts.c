@@ -2,7 +2,7 @@
 #include "KernelApic.h"
 #include "KernelDeferred.h"
 #include "KernelInterruptLock.h"
-#include "KernelIo.h"
+#include "KernelDiagnosticsLogger.h"
 #include "KernelModuleManifest.h"
 #include "KernelPanic.h"
 #include "KernelPageFaultPolicy.h"
@@ -426,9 +426,9 @@ void OrynKernelInterruptsPrintProof(void)
     OrynKernelScreenReportOkOrFail(gInterruptState.HandlerSlots == ORYN_INTERRUPT_VECTOR_COUNT,
         "Interrupt handler table ready for 256 vectors.",
         "Interrupt handler table size invalid.");
-    KernelIoWriteString("[KERNEL] Interrupt registered handlers: ");
-    KernelIoWriteDec64(gInterruptState.RegisteredHandlers);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Interrupt registered handlers: ");
+    OrynKernelDiagnosticsLogDec64(gInterruptState.RegisteredHandlers);
+    OrynKernelDiagnosticsLogText("\n");
     OrynKernelScreenReportOkOrWarn(!(OrynKernelInterruptsAreEnabled()),
         "CPU interrupts are currently disabled for controlled boot.",
         "CPU interrupts are currently enabled.");
@@ -448,11 +448,11 @@ void OrynKernelInterruptsPrintCpuAccountingProof(void)
     OrynKernelScreenReportOkOrFail(gInterruptState.CpuAccountsReady,
         "Per-CPU interrupt accounting records active interrupt ownership.",
         "Per-CPU interrupt accounting has not observed an interrupt yet.");
-    KernelIoWriteString("[KERNEL] Interrupt CPU account current/slots: ");
-    KernelIoWriteDec64(gInterruptState.CurrentCpuIndex);
-    KernelIoWriteString("/");
-    KernelIoWriteDec64(gInterruptState.CpuAccountSlots);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Interrupt CPU account current/slots: ");
+    OrynKernelDiagnosticsLogDec64(gInterruptState.CurrentCpuIndex);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gInterruptState.CpuAccountSlots);
+    OrynKernelDiagnosticsLogText("\n");
 }
 
 void OrynKernelInterruptsPrintPicRuntimeProof(void)
@@ -487,13 +487,13 @@ void OrynKernelInterruptsPrintRuntimeProof(void)
     OrynKernelScreenReportOkOrFail(gInterruptState.PicTimerProofPassed && gInterruptState.ApicTimerProofPassed,
         "Interrupts work from PIC upward through APIC/APIC2.",
         "Interrupt chain from PIC upward is incomplete.");
-    KernelIoWriteString("[KERNEL] Interrupt total dispatches: ");
-    KernelIoWriteDec64(gInterruptState.TotalDispatches);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Interrupt PIC IRQ0 vector count: ");
-    KernelIoWriteDec64(gVectorCounters[ORYN_INTERRUPT_IRQ_BASE]);
-    KernelIoWriteString("\n");
-    KernelIoWriteString("[KERNEL] Interrupt APIC timer vector count: ");
-    KernelIoWriteDec64(gVectorCounters[ORYN_INTERRUPT_APIC_TIMER_VECTOR]);
-    KernelIoWriteString("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Interrupt total dispatches: ");
+    OrynKernelDiagnosticsLogDec64(gInterruptState.TotalDispatches);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Interrupt PIC IRQ0 vector count: ");
+    OrynKernelDiagnosticsLogDec64(gVectorCounters[ORYN_INTERRUPT_IRQ_BASE]);
+    OrynKernelDiagnosticsLogText("\n");
+    OrynKernelDiagnosticsLogText("[KERNEL] Interrupt APIC timer vector count: ");
+    OrynKernelDiagnosticsLogDec64(gVectorCounters[ORYN_INTERRUPT_APIC_TIMER_VECTOR]);
+    OrynKernelDiagnosticsLogText("\n");
 }
