@@ -161,6 +161,20 @@ void OrynVirtualMemoryPrintProof(const OrynKernelVirtualMemory* virtualMemory)
     OrynKernelDiagnosticsLogDec64(virtualMemory->ApiUnmappedPages);
     OrynKernelDiagnosticsLogText("\n");
 
+    OrynKernelDiagnosticsLogText("[KERNEL] VM API validation runs: ");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->ApiValidationRuns);
+    OrynKernelDiagnosticsLogText(" failures=");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->ApiValidationFailures);
+    OrynKernelDiagnosticsLogText(" invalid-range=");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->ApiInvalidRangeRejects);
+    OrynKernelDiagnosticsLogText(" overwrite=");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->ApiOverwriteRejects);
+    OrynKernelDiagnosticsLogText(" missing=");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->ApiMissingMappingRejects);
+    OrynKernelDiagnosticsLogText(" rollback=");
+    OrynKernelDiagnosticsLogDec64(virtualMemory->ApiPartialRollbackPages);
+    OrynKernelDiagnosticsLogText("\n");
+
     OrynKernelDiagnosticsLogText("[KERNEL] Process address spaces created: ");
     OrynKernelDiagnosticsLogDec64(virtualMemory->ProcessAddressSpacesCreated);
     OrynKernelDiagnosticsLogText("\n");

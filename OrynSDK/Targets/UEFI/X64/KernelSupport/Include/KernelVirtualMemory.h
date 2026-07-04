@@ -75,6 +75,12 @@ typedef struct OrynKernelAddressSpace
     unsigned long long DeviceRegionCount;
     unsigned long long WriteExecuteDeniedCount;
     unsigned long long WriteExecutePolicyChecks;
+    unsigned long long ApiValidationRuns;
+    unsigned long long ApiValidationFailures;
+    unsigned long long ApiInvalidRangeRejects;
+    unsigned long long ApiOverwriteRejects;
+    unsigned long long ApiMissingMappingRejects;
+    unsigned long long ApiPartialRollbackPages;
     OrynVirtualAnonymousRegion AnonymousRegions[ORYN_VIRTUAL_MAX_ANONYMOUS_REGIONS];
 } OrynKernelAddressSpace;
 
@@ -137,6 +143,12 @@ typedef struct OrynKernelVirtualMemory
     unsigned long long DeviceMmapRegionsCreated;
     unsigned long long WriteExecutePolicyChecks;
     unsigned long long WriteExecuteDeniedCount;
+    unsigned long long ApiValidationRuns;
+    unsigned long long ApiValidationFailures;
+    unsigned long long ApiInvalidRangeRejects;
+    unsigned long long ApiOverwriteRejects;
+    unsigned long long ApiMissingMappingRejects;
+    unsigned long long ApiPartialRollbackPages;
     unsigned int HigherHalfReady;
     unsigned int HigherHalfCanonical;
     unsigned int HigherHalfAligned;

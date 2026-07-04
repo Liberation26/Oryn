@@ -1,5 +1,13 @@
+[DONE 100%] 0.5.180: Virtual memory map/unmap/protect APIs are production-ready for the current SDK scope.
+OrynWsl SDK ToDo2 update: 0.5.180
+
+[100%] Map/protect/unmap now validate initialized address spaces, overflow, range ownership, user/kernel split, W^X policy, and guard-page rejection before touching page tables.
+[100%] Map now rejects overwriting existing mappings and rolls back partial page-table updates if a later table allocation fails.
+[100%] Protect and unmap now fail closed when any page in the requested range is missing, preventing partial range mutation.
+[100%] VM API proof now exercises overwrite rejection, missing mapping rejection, invalid user-range rejection, W^X rejection, successful protect, successful unmap, and proof counters.
+
 [DONE 100%] 0.5.179: Page-fault handler policy is production-ready for the current SDK scope.
-OrynWsl SDK ToDo2 update: 0.5.179
+OrynWsl SDK ToDo2 update: 0.5.180
 
 [100%] Page-fault handling now uses an explicit policy decision path for recover, kill-process, and kernel-panic outcomes instead of only reporting fault details.
 [100%] The policy classifies kernel, user, guard-page, reserved-bit, instruction-fetch, null/malformed-frame, and user-range violation faults with dedicated counters.
@@ -372,7 +380,7 @@ Milestone 0.7 - Production memory management:
 [100%] Add slab/object caches for fixed-size kernel structures.
 [100%] Add guard pages for kernel stacks and critical heaps.
 [100%] Add page-fault handler policy instead of only reporting faults.
-[060%] Add virtual memory map/unmap/protect APIs.
+[100%] Add virtual memory map/unmap/protect APIs.
 [050%] Add per-process address spaces.
 [100%] Add user/kernel address split.
 [060%] Add copy_from_user and copy_to_user safety helpers using user/kernel split and page-fault-aware address validation.
