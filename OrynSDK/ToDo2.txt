@@ -1,3 +1,11 @@
+[DONE 100%] 0.5.177: Fixed-size slab/object caches are production-ready for the current SDK scope.
+OrynWsl SDK ToDo2 update: 0.5.177
+
+[100%] Added explicit fixed-size object-cache APIs on top of the kernel slab allocator: create cache, allocate object, free object, and read per-cache stats.
+[100%] Object cache allocations now carry object-cache ownership in the heap block header so invalid or wrong-cache frees are rejected.
+[100%] Heap statistics now track object-cache allocations, frees, active objects, peak active objects, and object-cache validation runs/failures.
+[100%] Heap validation and self-test now exercise Process and Thread object caches and require them to end with zero active objects and no leaks.
+
 [DONE 100%] 0.5.176: Kernel heap statistics and leak counters are production-ready for the current SDK scope.
 OrynWsl SDK ToDo2 update: 0.5.176
 
@@ -345,7 +353,7 @@ Milestone 0.7 - Production memory management:
 [100%] Higher-half kernel mapping foundation exists with canonical, split, entry, PML4, and page-table validation.
 [100%] Create a real kernel heap: kmalloc, kfree, krealloc, kcalloc.
 [100%] Add heap statistics and leak counters.
-[060%] Add slab/object caches for fixed-size kernel structures.
+[100%] Add slab/object caches for fixed-size kernel structures.
 [060%] Add guard pages for kernel stacks and critical heaps.
 [060%] Add page-fault handler policy instead of only reporting faults.
 [060%] Add virtual memory map/unmap/protect APIs.

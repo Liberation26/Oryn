@@ -111,6 +111,7 @@ static OrynKernelHeapBlock* AddHeapSpan(unsigned long long requestedBytes, unsig
     block->RequestedSize = 0ULL;
     block->Flags = ORYN_KERNEL_HEAP_FLAG_FREE | flags;
     block->SlabCacheIndex = 0U;
+    block->ObjectCacheIndex = ORYN_KERNEL_HEAP_NO_OBJECT_CACHE;
     LinkBlock(block);
     gOrynHeapStats.HeapPages += pages;
     gOrynHeapStats.TotalBytes += block->Size;
@@ -133,6 +134,7 @@ static void SplitBlockIfUseful(OrynKernelHeapBlock* block, unsigned long long re
     split->RequestedSize = 0ULL;
     split->Flags = ORYN_KERNEL_HEAP_FLAG_FREE | (block->Flags & ORYN_KERNEL_HEAP_FLAG_CRITICAL);
     split->SlabCacheIndex = 0U;
+    split->ObjectCacheIndex = ORYN_KERNEL_HEAP_NO_OBJECT_CACHE;
     split->Previous = block;
     split->Next = block->Next;
     if (split->Next != 0)
@@ -184,6 +186,7 @@ void* OrynHeapAllocateRaw(unsigned long long size, unsigned int flags)
     SplitBlockIfUseful(block, aligned);
     block->Flags &= ~ORYN_KERNEL_HEAP_FLAG_FREE;
     block->RequestedSize = size;
+    block->ObjectCacheIndex = ORYN_KERNEL_HEAP_NO_OBJECT_CACHE;
     OrynHeapAddAllocatedBytes(block->Size);
     OrynHeapAddRequestedBytes(size);
     gOrynHeapStats.AllocationCount += 1ULL;
@@ -212,6 +215,7 @@ void OrynHeapFreeRaw(void* pointer)
     OrynHeapRemoveAllocatedBytes(block->Size);
     OrynHeapRemoveRequestedBytes(requested);
     block->RequestedSize = 0ULL;
+    block->ObjectCacheIndex = ORYN_KERNEL_HEAP_NO_OBJECT_CACHE;
     block->Flags |= ORYN_KERNEL_HEAP_FLAG_FREE;
     OrynHeapAddFreeBytes(block->Size);
     gOrynHeapStats.FreeCount += 1ULL;

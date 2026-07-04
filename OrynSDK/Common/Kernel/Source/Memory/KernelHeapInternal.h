@@ -13,7 +13,9 @@
 #define ORYN_KERNEL_HEAP_FLAG_FREE 0x00000001U
 #define ORYN_KERNEL_HEAP_FLAG_SLAB 0x00000002U
 #define ORYN_KERNEL_HEAP_FLAG_CRITICAL 0x00000004U
+#define ORYN_KERNEL_HEAP_FLAG_OBJECT_CACHE 0x00000008U
 #define ORYN_KERNEL_HEAP_ALIGN 16ULL
+#define ORYN_KERNEL_HEAP_NO_OBJECT_CACHE 0xFFFFFFFFU
 
 typedef struct OrynKernelHeapBlock
 {
@@ -22,6 +24,7 @@ typedef struct OrynKernelHeapBlock
     unsigned long long RequestedSize;
     unsigned int Flags;
     unsigned int SlabCacheIndex;
+    unsigned int ObjectCacheIndex;
     struct OrynKernelHeapBlock* Previous;
     struct OrynKernelHeapBlock* Next;
 } OrynKernelHeapBlock;
@@ -43,6 +46,7 @@ extern OrynKernelVirtualMemory* gOrynHeapVirtualMemory;
 extern OrynKernelHeapBlock* gOrynHeapHead;
 extern OrynKernelHeapStats gOrynHeapStats;
 extern OrynKernelSlabCache gOrynSlabCaches[ORYN_KERNEL_HEAP_SLAB_CACHE_COUNT];
+extern OrynKernelObjectCacheStats gOrynObjectCaches[ORYN_KERNEL_HEAP_OBJECT_CACHE_COUNT];
 
 unsigned long long OrynHeapAlignUp(unsigned long long value);
 void OrynHeapClearMemory(void* pointer, unsigned long long size);
@@ -62,5 +66,7 @@ void OrynHeapFreeRaw(void* pointer);
 unsigned int OrynHeapFindSlabCache(unsigned long long size);
 void* OrynHeapSlabAllocate(unsigned int cacheIndex, unsigned long long requested);
 int OrynHeapSlabFree(void* pointer);
+int OrynHeapValidateObjectCaches(void);
+int OrynHeapRunObjectCacheSelfTest(void);
 
 #endif

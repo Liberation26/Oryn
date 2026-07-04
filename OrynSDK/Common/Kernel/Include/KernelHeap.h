@@ -5,6 +5,8 @@
 #include "KernelVirtualMemory.h"
 
 #define ORYN_KERNEL_HEAP_SLAB_CACHE_COUNT 4U
+#define ORYN_KERNEL_HEAP_OBJECT_CACHE_COUNT 8U
+#define ORYN_KERNEL_HEAP_OBJECT_CACHE_NAME_BYTES 32U
 #define ORYN_KERNEL_HEAP_GUARD_PAGE_SIZE 4096ULL
 
 typedef struct OrynKernelHeapStats
@@ -38,6 +40,13 @@ typedef struct OrynKernelHeapStats
     unsigned long long SlabAllocations;
     unsigned long long SlabFrees;
     unsigned long long SlabCacheCount;
+    unsigned long long ObjectCacheCount;
+    unsigned long long ObjectCacheAllocations;
+    unsigned long long ObjectCacheFrees;
+    unsigned long long ActiveObjectCacheObjects;
+    unsigned long long PeakActiveObjectCacheObjects;
+    unsigned long long ObjectCacheValidationRuns;
+    unsigned long long ObjectCacheValidationFailures;
     unsigned long long StackGuardPages;
     unsigned long long CriticalHeapGuardPages;
     unsigned long long InvalidFreeCount;
@@ -58,6 +67,22 @@ typedef struct OrynKernelSlabCacheStats
     unsigned long long FreeCount;
 } OrynKernelSlabCacheStats;
 
+typedef struct OrynKernelObjectCacheStats
+{
+    char Name[ORYN_KERNEL_HEAP_OBJECT_CACHE_NAME_BYTES];
+    unsigned int Configured;
+    unsigned long long ObjectSize;
+    unsigned long long Alignment;
+    unsigned long long BackingSlabSize;
+    unsigned long long AllocationCount;
+    unsigned long long FreeCount;
+    unsigned long long ActiveObjects;
+    unsigned long long PeakActiveObjects;
+    unsigned long long FailedAllocations;
+    unsigned long long ValidationRuns;
+    unsigned long long ValidationFailures;
+} OrynKernelObjectCacheStats;
+
 int OrynKernelHeapInit(OrynKernelPhysicalMemory* physicalMemory);
 void OrynKernelHeapAttachVirtualMemory(OrynKernelVirtualMemory* virtualMemory);
 void* kmalloc(unsigned long long size);
@@ -68,6 +93,10 @@ void* OrynKernelHeapAllocCritical(unsigned long long size);
 void OrynKernelHeapInstallStackGuard(unsigned long long stackBase, unsigned long long stackBytes);
 const OrynKernelHeapStats* OrynKernelHeapGetStats(void);
 int OrynKernelHeapGetSlabCacheStats(unsigned int index, OrynKernelSlabCacheStats* stats);
+int OrynKernelHeapCreateObjectCache(unsigned int index, const char* name, unsigned long long objectSize, unsigned long long alignment);
+void* OrynKernelHeapObjectAlloc(unsigned int index);
+void OrynKernelHeapObjectFree(unsigned int index, void* pointer);
+int OrynKernelHeapGetObjectCacheStats(unsigned int index, OrynKernelObjectCacheStats* stats);
 int OrynKernelHeapHasLeaks(void);
 int OrynKernelHeapCheckNoLeaks(void);
 int OrynKernelHeapValidate(void);

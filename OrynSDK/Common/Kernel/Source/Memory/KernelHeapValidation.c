@@ -122,6 +122,10 @@ int OrynKernelHeapValidate(void)
     {
         ok = 0;
     }
+    if (!OrynHeapValidateObjectCaches())
+    {
+        ok = 0;
+    }
     if (!ok)
     {
         gOrynHeapStats.ValidationFailures += 1ULL;
@@ -170,6 +174,10 @@ int OrynKernelHeapRunSelfTest(void)
     {
         return 0;
     }
+    if (!OrynHeapRunObjectCacheSelfTest())
+    {
+        return 0;
+    }
     return OrynKernelHeapValidate() && OrynKernelHeapCheckNoLeaks();
 }
 
@@ -193,6 +201,14 @@ void OrynKernelHeapPrintProof(void)
     OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ActiveSlabAllocations);
     OrynKernelDiagnosticsLogText("\n[KERNEL] Heap slab caches: ");
     OrynKernelDiagnosticsLogDec64(gOrynHeapStats.SlabCacheCount);
+    OrynKernelDiagnosticsLogText("\n[KERNEL] Heap object caches active/peak: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ActiveObjectCacheObjects);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.PeakActiveObjectCacheObjects);
+    OrynKernelDiagnosticsLogText(" alloc/free: ");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ObjectCacheAllocations);
+    OrynKernelDiagnosticsLogText("/");
+    OrynKernelDiagnosticsLogDec64(gOrynHeapStats.ObjectCacheFrees);
     OrynKernelDiagnosticsLogText("\n[KERNEL] Heap guard pages: ");
     OrynKernelDiagnosticsLogDec64(gOrynHeapStats.GuardPages);
     OrynKernelDiagnosticsLogText("\n[KERNEL] Heap validation runs: ");

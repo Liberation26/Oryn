@@ -5,6 +5,7 @@ OrynKernelVirtualMemory* gOrynHeapVirtualMemory;
 OrynKernelHeapBlock* gOrynHeapHead;
 OrynKernelHeapStats gOrynHeapStats;
 OrynKernelSlabCache gOrynSlabCaches[ORYN_KERNEL_HEAP_SLAB_CACHE_COUNT];
+OrynKernelObjectCacheStats gOrynObjectCaches[ORYN_KERNEL_HEAP_OBJECT_CACHE_COUNT];
 
 unsigned long long OrynHeapAlignUp(unsigned long long value)
 {
@@ -136,12 +137,14 @@ int OrynKernelHeapInit(OrynKernelPhysicalMemory* physicalMemory)
 
     (void)memset(&gOrynHeapStats, 0, sizeof(gOrynHeapStats));
     (void)memset(&gOrynSlabCaches, 0, sizeof(gOrynSlabCaches));
+    (void)memset(&gOrynObjectCaches, 0, sizeof(gOrynObjectCaches));
     gOrynHeapPhysicalMemory = physicalMemory;
     gOrynHeapVirtualMemory = 0;
     gOrynHeapHead = 0;
     gOrynHeapStats.Initialized = 1U;
     gOrynHeapStats.PageSize = ORYN_PHYSICAL_PAGE_SIZE;
     gOrynHeapStats.SlabCacheCount = ORYN_KERNEL_HEAP_SLAB_CACHE_COUNT;
+    gOrynHeapStats.ObjectCacheCount = ORYN_KERNEL_HEAP_OBJECT_CACHE_COUNT;
 
     const unsigned long long sizes[ORYN_KERNEL_HEAP_SLAB_CACHE_COUNT] = { 32ULL, 64ULL, 128ULL, 256ULL };
     for (unsigned int index = 0U; index < ORYN_KERNEL_HEAP_SLAB_CACHE_COUNT; ++index)

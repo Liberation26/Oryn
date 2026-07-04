@@ -45,6 +45,7 @@ static int GrowSlabCache(unsigned int cacheIndex)
         block->RequestedSize = 0ULL;
         block->Flags = ORYN_KERNEL_HEAP_FLAG_FREE | ORYN_KERNEL_HEAP_FLAG_SLAB;
         block->SlabCacheIndex = cacheIndex;
+        block->ObjectCacheIndex = ORYN_KERNEL_HEAP_NO_OBJECT_CACHE;
         OrynKernelSlabFreeObject* object = (OrynKernelSlabFreeObject*)OrynHeapBlockToPointer(block);
         object->Next = cache->FreeList;
         cache->FreeList = object;
@@ -72,6 +73,7 @@ void* OrynHeapSlabAllocate(unsigned int cacheIndex, unsigned long long requested
     OrynKernelHeapBlock* block = OrynHeapPointerToBlock(object);
     block->Flags &= ~ORYN_KERNEL_HEAP_FLAG_FREE;
     block->RequestedSize = requested;
+    block->ObjectCacheIndex = ORYN_KERNEL_HEAP_NO_OBJECT_CACHE;
     OrynHeapRemoveFreeBytes(block->Size);
     OrynHeapAddAllocatedBytes(block->Size);
     OrynHeapAddRequestedBytes(requested);
@@ -110,6 +112,8 @@ int OrynHeapSlabFree(void* pointer)
     unsigned long long requested = block->RequestedSize;
     block->Flags |= ORYN_KERNEL_HEAP_FLAG_FREE;
     block->RequestedSize = 0ULL;
+    block->ObjectCacheIndex = ORYN_KERNEL_HEAP_NO_OBJECT_CACHE;
+    block->Flags &= ~ORYN_KERNEL_HEAP_FLAG_OBJECT_CACHE;
     OrynKernelSlabFreeObject* object = (OrynKernelSlabFreeObject*)pointer;
     object->Next = cache->FreeList;
     cache->FreeList = object;
