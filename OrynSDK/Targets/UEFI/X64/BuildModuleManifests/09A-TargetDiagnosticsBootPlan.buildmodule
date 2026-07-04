@@ -1,0 +1,6 @@
+Order=29A
+Name=TargetDiagnosticsBootPlan
+Root=TargetKernelSource
+RelativePath=Diagnostics/BootPlan
+Recursive=yes
+Requires=TargetDiagnostics

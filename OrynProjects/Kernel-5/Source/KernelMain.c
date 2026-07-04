@@ -53,6 +53,7 @@ static void Kernel5RunSdkAuthoredKernel(const OrynBootInfo* bootInfo)
 
     Kernel5TouchSelectedSdkModuleRoots();
     Kernel5VerifySelectedSdkModulesPresent();
+    OrynKernelScreenReportOk("Kernel-5", "Project-owned boot proof implementation is compiled from OrynProjects/Kernel-5/Source/BootProof.");
     OrynKernelBootProofRunSequence(kernelBootInfo);
     OrynKernelRuntimeExitForNonInteractiveVm();
     OrynKernelRuntimeHaltForever();

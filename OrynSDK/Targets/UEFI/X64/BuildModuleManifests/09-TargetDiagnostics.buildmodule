@@ -2,5 +2,5 @@ Order=29
 Name=TargetDiagnostics
 Root=TargetKernelSource
 RelativePath=Diagnostics
-Recursive=yes
+Recursive=no
 Requires=SDKScreenReport,TargetTimers,TargetPci

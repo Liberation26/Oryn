@@ -977,3 +977,4 @@ Definition of "full Kernel works like Linux" for Oryn 2.x:
 [100%] Windows Zone.Identifier sidecar cleanup is handled by the update-owned cleanup list.
 
 [100%] Kernel-5 is now a real SDK-authored kernel entry: project-owned KernelMain selects/touches selected SDK module link roots, verifies physical module presence, runs boot proof, exits VM mode, and halts through public SDK runtime APIs instead of being only a thin runtime trampoline.
+[100%] Move Kernel-5 visible boot report/proof output ownership into OrynProjects/Kernel-5/Source/BootProof so the built kernel source owns the printed boot narrative.
