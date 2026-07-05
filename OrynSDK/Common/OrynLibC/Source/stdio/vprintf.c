@@ -1,38 +1,41 @@
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdio.h>
+#include "stdarg.h"
+#include "stddef.h"
+#include "stdio.h"
 
-static void OrynLibCSerialWriteByte(char value)
+#define ORYN_PRINTF_BUFFER_SIZE 1024U
+
+static inline void OrynPrintfOut8(unsigned short port, unsigned char value)
 {
-#if defined(__x86_64__) || defined(__i386__)
-    __asm__ __volatile__("outb %0, %1" : : "a"((unsigned char)value), "Nd"((unsigned short)0x3F8));
-#else
-    (void)value;
-#endif
+    __asm__ volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
 }
 
-static void OrynLibCSerialWriteString(const char* text)
+static void OrynPrintfWriteChar(char value)
+{
+    if (value == '\n')
+    {
+        OrynPrintfOut8(0x3F8U, (unsigned char)'\r');
+    }
+
+    OrynPrintfOut8(0x3F8U, (unsigned char)value);
+}
+
+static void OrynPrintfWriteText(const char* text)
 {
     if (text == 0)
     {
         return;
     }
 
-    while (*text != '\0')
+    while (*text != 0)
     {
-        if (*text == '\n')
-        {
-            OrynLibCSerialWriteByte('\r');
-        }
-
-        OrynLibCSerialWriteByte(*text);
+        OrynPrintfWriteChar(*text);
         ++text;
     }
 }
 
 int vprintf(const char* restrict format, va_list args)
 {
-    char buffer[1024];
+    char buffer[ORYN_PRINTF_BUFFER_SIZE];
     int result;
 
     result = vsnprintf(buffer, sizeof(buffer), format, args);
@@ -41,6 +44,6 @@ int vprintf(const char* restrict format, va_list args)
         return result;
     }
 
-    OrynLibCSerialWriteString(buffer);
+    OrynPrintfWriteText(buffer);
     return result;
 }
