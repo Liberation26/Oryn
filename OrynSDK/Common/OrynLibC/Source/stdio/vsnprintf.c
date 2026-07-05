@@ -3,37 +3,42 @@
 #include <stdint.h>
 #include <stdio.h>
 
-static void OrynStdoutBufferPut(char* target, size_t size, size_t* used, char value)
+static void OrynLibCBufferPut(char* target, size_t size, size_t* used, char ch)
 {
+    if (used == 0)
+    {
+        return;
+    }
+
     if (target != 0 && size > 0U && *used + 1U < size)
     {
-        target[*used] = value;
+        target[*used] = ch;
     }
 
     *used = *used + 1U;
 }
 
-static void OrynStdoutBufferPutString(char* target, size_t size, size_t* used, const char* text)
+static void OrynLibCBufferPutString(char* target, size_t size, size_t* used, const char* text)
 {
-    const char* current = text;
-
-    if (current == 0)
+    if (text == 0)
     {
-        current = "(null)";
+        text = "(null)";
     }
 
-    while (*current != '\0')
+    while (*text != '\0')
     {
-        OrynStdoutBufferPut(target, size, used, *current);
-        ++current;
+        OrynLibCBufferPut(target, size, used, *text);
+        ++text;
     }
 }
 
-static void OrynStdoutBufferPutUnsigned(char* target, size_t size, size_t* used, unsigned long long value, unsigned int base, int uppercase)
+static void OrynLibCBufferPutUnsigned(char* target, size_t size, size_t* used, unsigned long long value, unsigned int base, int uppercase)
 {
+    char digits_lower[] = "0123456789abcdef";
+    char digits_upper[] = "0123456789ABCDEF";
     char buffer[32];
     unsigned int index = 0U;
-    const char* digits = uppercase ? "0123456789ABCDEF" : "0123456789abcdef";
+    const char* digits = uppercase ? digits_upper : digits_lower;
 
     if (base < 2U)
     {
@@ -42,7 +47,7 @@ static void OrynStdoutBufferPutUnsigned(char* target, size_t size, size_t* used,
 
     if (value == 0ULL)
     {
-        OrynStdoutBufferPut(target, size, used, '0');
+        OrynLibCBufferPut(target, size, used, '0');
         return;
     }
 
@@ -56,31 +61,30 @@ static void OrynStdoutBufferPutUnsigned(char* target, size_t size, size_t* used,
     while (index > 0U)
     {
         --index;
-        OrynStdoutBufferPut(target, size, used, buffer[index]);
+        OrynLibCBufferPut(target, size, used, buffer[index]);
     }
 }
 
-static void OrynStdoutBufferPutSigned(char* target, size_t size, size_t* used, long long value)
+static void OrynLibCBufferPutSigned(char* target, size_t size, size_t* used, long long value)
 {
-    unsigned long long unsignedValue;
+    unsigned long long unsigned_value;
 
-    if (value < 0LL)
+    if (value < 0)
     {
-        OrynStdoutBufferPut(target, size, used, '-');
-        unsignedValue = (unsigned long long)(0ULL - (unsigned long long)value);
+        OrynLibCBufferPut(target, size, used, '-');
+        unsigned_value = (unsigned long long)(0ULL - (unsigned long long)value);
     }
     else
     {
-        unsignedValue = (unsigned long long)value;
+        unsigned_value = (unsigned long long)value;
     }
 
-    OrynStdoutBufferPutUnsigned(target, size, used, unsignedValue, 10U, 0);
+    OrynLibCBufferPutUnsigned(target, size, used, unsigned_value, 10U, 0);
 }
 
 int vsnprintf(char* restrict target, size_t size, const char* restrict format, va_list args)
 {
     size_t used = 0U;
-    const char* current = format;
 
     if (format == 0)
     {
@@ -92,103 +96,112 @@ int vsnprintf(char* restrict target, size_t size, const char* restrict format, v
         return -1;
     }
 
-    while (*current != '\0')
+    while (*format != '\0')
     {
-        if (*current != '%')
+        int long_count = 0;
+
+        if (*format != '%')
         {
-            OrynStdoutBufferPut(target, size, &used, *current);
-            ++current;
+            OrynLibCBufferPut(target, size, &used, *format);
+            ++format;
             continue;
         }
 
-        ++current;
+        ++format;
 
-        if (*current == '%')
+        if (*format == '%')
         {
-            OrynStdoutBufferPut(target, size, &used, '%');
-        }
-        else if (*current == 's')
-        {
-            OrynStdoutBufferPutString(target, size, &used, va_arg(args, const char*));
-        }
-        else if (*current == 'c')
-        {
-            OrynStdoutBufferPut(target, size, &used, (char)va_arg(args, int));
-        }
-        else if (*current == 'd' || *current == 'i')
-        {
-            OrynStdoutBufferPutSigned(target, size, &used, (long long)va_arg(args, int));
-        }
-        else if (*current == 'u')
-        {
-            OrynStdoutBufferPutUnsigned(target, size, &used, (unsigned long long)va_arg(args, unsigned int), 10U, 0);
-        }
-        else if (*current == 'x')
-        {
-            OrynStdoutBufferPutUnsigned(target, size, &used, (unsigned long long)va_arg(args, unsigned int), 16U, 0);
-        }
-        else if (*current == 'X')
-        {
-            OrynStdoutBufferPutUnsigned(target, size, &used, (unsigned long long)va_arg(args, unsigned int), 16U, 1);
-        }
-        else if (*current == 'p')
-        {
-            OrynStdoutBufferPutString(target, size, &used, "0x");
-            OrynStdoutBufferPutUnsigned(target, size, &used, (unsigned long long)(uintptr_t)va_arg(args, void*), 16U, 0);
-        }
-        else if (*current == 'l')
-        {
-            ++current;
-
-            if (*current == 'l')
-            {
-                ++current;
-            }
-
-            if (*current == 'd' || *current == 'i')
-            {
-                OrynStdoutBufferPutSigned(target, size, &used, va_arg(args, long long));
-            }
-            else if (*current == 'u')
-            {
-                OrynStdoutBufferPutUnsigned(target, size, &used, va_arg(args, unsigned long long), 10U, 0);
-            }
-            else if (*current == 'x')
-            {
-                OrynStdoutBufferPutUnsigned(target, size, &used, va_arg(args, unsigned long long), 16U, 0);
-            }
-            else if (*current == 'X')
-            {
-                OrynStdoutBufferPutUnsigned(target, size, &used, va_arg(args, unsigned long long), 16U, 1);
-            }
-            else
-            {
-                OrynStdoutBufferPut(target, size, &used, '%');
-                OrynStdoutBufferPut(target, size, &used, 'l');
-                OrynStdoutBufferPut(target, size, &used, *current);
-            }
-        }
-        else
-        {
-            OrynStdoutBufferPut(target, size, &used, '%');
-            OrynStdoutBufferPut(target, size, &used, *current);
+            OrynLibCBufferPut(target, size, &used, '%');
+            ++format;
+            continue;
         }
 
-        if (*current != '\0')
+        while (*format == 'l')
         {
-            ++current;
+            ++long_count;
+            ++format;
+        }
+
+        switch (*format)
+        {
+            case 'c':
+                OrynLibCBufferPut(target, size, &used, (char)va_arg(args, int));
+                break;
+            case 's':
+                OrynLibCBufferPutString(target, size, &used, va_arg(args, const char*));
+                break;
+            case 'd':
+            case 'i':
+                if (long_count >= 2)
+                {
+                    OrynLibCBufferPutSigned(target, size, &used, va_arg(args, long long));
+                }
+                else if (long_count == 1)
+                {
+                    OrynLibCBufferPutSigned(target, size, &used, va_arg(args, long));
+                }
+                else
+                {
+                    OrynLibCBufferPutSigned(target, size, &used, va_arg(args, int));
+                }
+                break;
+            case 'u':
+                if (long_count >= 2)
+                {
+                    OrynLibCBufferPutUnsigned(target, size, &used, va_arg(args, unsigned long long), 10U, 0);
+                }
+                else if (long_count == 1)
+                {
+                    OrynLibCBufferPutUnsigned(target, size, &used, va_arg(args, unsigned long), 10U, 0);
+                }
+                else
+                {
+                    OrynLibCBufferPutUnsigned(target, size, &used, va_arg(args, unsigned int), 10U, 0);
+                }
+                break;
+            case 'x':
+            case 'X':
+                if (long_count >= 2)
+                {
+                    OrynLibCBufferPutUnsigned(target, size, &used, va_arg(args, unsigned long long), 16U, *format == 'X');
+                }
+                else if (long_count == 1)
+                {
+                    OrynLibCBufferPutUnsigned(target, size, &used, va_arg(args, unsigned long), 16U, *format == 'X');
+                }
+                else
+                {
+                    OrynLibCBufferPutUnsigned(target, size, &used, va_arg(args, unsigned int), 16U, *format == 'X');
+                }
+                break;
+            case 'p':
+                OrynLibCBufferPutString(target, size, &used, "0x");
+                OrynLibCBufferPutUnsigned(target, size, &used, (uintptr_t)va_arg(args, void*), 16U, 0);
+                break;
+            default:
+                OrynLibCBufferPut(target, size, &used, '%');
+                if (*format != '\0')
+                {
+                    OrynLibCBufferPut(target, size, &used, *format);
+                }
+                break;
+        }
+
+        if (*format != '\0')
+        {
+            ++format;
         }
     }
 
     if (target != 0 && size > 0U)
     {
-        if (used < size)
+        if (used >= size)
         {
-            target[used] = '\0';
+            target[size - 1U] = '\0';
         }
         else
         {
-            target[size - 1U] = '\0';
+            target[used] = '\0';
         }
     }
 

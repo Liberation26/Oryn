@@ -1,0 +1,8 @@
+Name: vsnprintf
+Module: OrynLibC
+Category: stdio
+Header: ../../Include/stdio.h
+Source: vsnprintf.c
+Public: yes
+Return: int
+Status: OK

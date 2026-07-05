@@ -1,0 +1,11 @@
+OrynWsl 0.5.165 - LibC function unit manifest correction
+
+The printf work added public LibC function units. The build already validates LibC function-level units, so the new units need manifest ownership just like existing LibC units.
+
+This update keeps stdio as one function per C source file:
+- printf.c owns printf
+- vprintf.c owns vprintf
+- snprintf.c owns snprintf
+- vsnprintf.c owns vsnprintf
+
+It also places simple beside-source and LibC manifest records for each unit so the SDK can discover ownership without disabling validation.

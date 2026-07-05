@@ -1,0 +1,8 @@
+Name: printf
+Module: OrynLibC
+Category: stdio
+Header: OrynSDK/Common/OrynLibC/Include/stdio.h
+Source: OrynSDK/Common/OrynLibC/Source/stdio/printf.c
+Public: yes
+Return: int
+Status: OK
