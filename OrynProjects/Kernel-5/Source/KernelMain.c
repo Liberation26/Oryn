@@ -1,7 +1,8 @@
 #include "OrynBootInfo.h"
+#include <stdbool.h>
 #include <stdio.h>
 
-int KernelMain(const OrynBootInfo* bootInfo)
+bool KernelMain(const OrynBootInfo* bootInfo)
 {
     int written;
 
@@ -10,8 +11,8 @@ int KernelMain(const OrynBootInfo* bootInfo)
     written = printf("Hello World\n");
     if (written < 0)
     {
-        return 1;
+        return false;
     }
 
-    return 0;
+    return true;
 }

@@ -1,8 +1,9 @@
 #include "KernelIo.h"
 #include "OrynBootInfo.h"
+#include <stdbool.h>
 #include <stdio.h>
 
-extern int KernelMain(const OrynBootInfo* bootInfo);
+extern bool KernelMain(const OrynBootInfo* bootInfo);
 
 static void OrynKernelEntryHaltLoop(void)
 {
@@ -15,20 +16,20 @@ static void OrynKernelEntryHaltLoop(void)
 
 void KernelStart(const OrynBootInfo* bootInfo)
 {
-    int result;
+    bool succeeded;
 
     KernelIoInit();
 
-    result = KernelMain(bootInfo);
+    succeeded = KernelMain(bootInfo);
 
 #if !ORYN_VM_INTERACTIVE_DISPLAY
-    if (result == 0)
+    if (succeeded)
     {
         KernelIoExitQemuSuccess();
     }
     else
     {
-        printf("[KERNEL] FAIL: KernelMain returned failure code %d.\n", result);
+        printf("[KERNEL] FAIL: KernelMain returned false.\n");
         KernelIoExitQemuFailure();
     }
 #endif

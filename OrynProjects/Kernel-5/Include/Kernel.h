@@ -2,8 +2,9 @@
 #define ORYN_KERNEL_4_H
 
 #include "OrynBootInfo.h"
+#include <stdbool.h>
 
-int KernelMain(const OrynBootInfo* bootInfo);
+bool KernelMain(const OrynBootInfo* bootInfo);
 void KernelStart(const OrynBootInfo* bootInfo);
 
 #endif
