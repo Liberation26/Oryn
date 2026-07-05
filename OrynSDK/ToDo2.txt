@@ -1,992 +1,255 @@
-[DONE 100%] 0.5.182: Selected kernel modules are real build/link roots.
-OrynWsl SDK ToDo2 update: 0.5.182
+OrynSDK ToDo2 reset: 0.5.191
 
-[100%] Every selected manifest module is marked in the generated compiled-module registry.
-[100%] Every selected manifest module gets a generated forced root symbol named OrynKernelModuleLinkRoot_<ModuleId>.
-[100%] OrynBuild validates that selected module owned source roots contain C source material and are present in the resolved archive plan before link.
-[100%] The linker command passes --undefined for every selected module root and links resolved module archives through whole-archive/start-group.
-[100%] Boot proof verifies selected modules are physically present through forced link roots.
-[100%] Missing selected module source ownership is now a build-time FAIL, not a runtime surprise.
-
-[DONE 100%] 0.5.181: Per-process address spaces are production-ready for the current SDK scope.
-OrynWsl SDK ToDo2 update: 0.5.181
-
-[100%] Process address spaces now validate distinct process-owned PML4 roots, non-zero process address-space IDs, and stable user/kernel split limits.
-[100%] Process PML4 validation proves the user half is isolated from kernel mappings while the kernel half is shared from the kernel address space.
-[100%] Process and thread creation now prove process-owned address-space binding and CR3 context handoff for kernel and user threads.
-[100%] VM proof output now reports process address-space validation runs, failures, and shared kernel-half entry counts before accepting the proof.
-
-[DONE 100%] 0.5.180: Virtual memory map/unmap/protect APIs are production-ready for the current SDK scope.
-OrynWsl SDK ToDo2 update: 0.5.180
-
-[100%] Map/protect/unmap now validate initialized address spaces, overflow, range ownership, user/kernel split, W^X policy, and guard-page rejection before touching page tables.
-[100%] Map now rejects overwriting existing mappings and rolls back partial page-table updates if a later table allocation fails.
-[100%] Protect and unmap now fail closed when any page in the requested range is missing, preventing partial range mutation.
-[100%] VM API proof now exercises overwrite rejection, missing mapping rejection, invalid user-range rejection, W^X rejection, successful protect, successful unmap, and proof counters.
-
-[DONE 100%] 0.5.179: Page-fault handler policy is production-ready for the current SDK scope.
-OrynWsl SDK ToDo2 update: 0.5.180
-
-[100%] Page-fault handling now uses an explicit policy decision path for recover, kill-process, and kernel-panic outcomes instead of only reporting fault details.
-[100%] The policy classifies kernel, user, guard-page, reserved-bit, instruction-fetch, null/malformed-frame, and user-range violation faults with dedicated counters.
-[100%] Demand-allocation and copy-on-write recoveries remain recoverable actions, while invalid user contexts, reserved-bit faults, guard faults, and kernel faults remain fatal.
-[100%] The page-fault self-test now exercises fatal, non-fatal, malformed, reserved-bit, instruction-fetch, and out-of-range decisions before the VM proof accepts the policy.
-
-[DONE 100%] 0.5.178: Kernel stack and critical-heap guard pages are production-ready for the current SDK scope.
-OrynWsl SDK ToDo2 update: 0.5.179
-
-[100%] Added a heap-owned guard-page registry for stack and critical heap guard records with validation counters and install-failure accounting.
-[100%] Critical heap allocations now install dedicated guard-page records and tag their guard pages as kernel-heap guard ownership.
-[100%] Kernel stack guard installation now records protected stack ranges and validates guard-page alignment, counters, and ownership state.
-[100%] Heap validation, heap self-test, and memory proof output now require stack and critical-heap guard-page proof coverage before reporting success.
-
-[DONE 100%] 0.5.177: Fixed-size slab/object caches are production-ready for the current SDK scope.
-OrynWsl SDK ToDo2 update: 0.5.177
-
-[100%] Added explicit fixed-size object-cache APIs on top of the kernel slab allocator: create cache, allocate object, free object, and read per-cache stats.
-[100%] Object cache allocations now carry object-cache ownership in the heap block header so invalid or wrong-cache frees are rejected.
-[100%] Heap statistics now track object-cache allocations, frees, active objects, peak active objects, and object-cache validation runs/failures.
-[100%] Heap validation and self-test now exercise Process and Thread object caches and require them to end with zero active objects and no leaks.
-
-[DONE 100%] 0.5.176: Kernel heap statistics and leak counters are production-ready for the current SDK scope.
-OrynWsl SDK ToDo2 update: 0.5.176
-
-[100%] Heap statistics now track requested bytes, peak requested bytes, peak active allocations, raw allocation/frees, active raw/slab allocations, leak bytes, peak leak bytes, and leak check runs/failures.
-[100%] Raw and slab allocation/free paths now update leak counters from one shared counter refresh path so active allocation count and leak bytes stay synchronized.
-[100%] Heap validation now checks active raw/slab counters, aggregate active allocation counters, leak counters, and requested-byte consistency before accepting the heap proof.
-[100%] Heap self-test now finishes with an explicit no-leak check instead of relying only on active allocation count.
-
-[DONE 100%] 0.5.174: Kernel heap kmalloc/kfree/krealloc/kcalloc is production-ready for the current SDK scope.
-OrynWsl SDK ToDo2 update: 0.5.174
-
-[100%] Split the heap implementation into raw allocation, slab allocation, validation, and public API units so every heap source stays under the 500-line rule.
-[100%] Added heap integrity validation for raw block links, slab cache accounting, allocated bytes, and active allocation counters.
-[100%] Hardened kfree against double-free accounting, added raw-block coalescing, preserved krealloc contents, and kept kcalloc overflow/zeroing checks.
-[100%] Heap proof now reports validation runs/failures, invalid free counters, double-free counters, and coalesce counters.
-
-[DONE 100%] 0.5.173: Higher-half kernel mapping is production-validated for the current SDK scope and reports success from validator state, not unrelated aggregate map counters.
-OrynWsl SDK ToDo2 update: 0.5.173
-
-[100%] Higher-half kernel mapping now validates canonical kernel addresses, page alignment, kernel/user split separation, PML4 high-slot ownership, entry-point coverage, and physical-window sizing.
-[100%] The VM proof walks every mapped higher-half kernel page and verifies it resolves to the expected physical kernel page before VM init is accepted.
-[100%] Guard-page unmapping was split into KernelVirtualMemoryGuard.c so KernelVirtualMemory.c is back under the 500-line source rule while preserving the public guard-page API.
-
-[DONE 100%] 0.5.171: Physical allocator integrity validation no longer hangs the boot proof.
-OrynWsl SDK ToDo2 update: 0.5.171
-
-[100%] Replaced the allocator integrity proof's O(n²) free-list duplicate scan with bounded heap-sort plus binary-search validation.
-[100%] Boot proof now reaches the physical allocator integrity OK/FAIL line instead of timing out after the DMA and memory-pressure proof lines.
-[100%] The integrity proof still validates page accounting, aligned free pages, duplicate free-list entries, free-owner records, live-owner records, and reference counts.
-
-[DONE 100%] 0.5.170: Physical page allocator is production-ready for the current SDK scope.
-OrynWsl SDK ToDo2 update: 0.5.170
-
-[100%] Physical page allocation now rejects invalid frees, double frees, free-list duplicates, reserved-page frees, and owner/free-list mismatches.
-[100%] Page reference release now returns the page to the allocator when the last reference drops, keeping copy-on-write ownership and free-page accounting consistent.
-[100%] Added allocator integrity validation for page accounting, aligned free pages, duplicate free-list entries, free-owner records, live-owner records, and reference counts.
-[100%] Physical allocator diagnostics now report integrity checks/failures and self-test the allocator integrity path.
-
-[DONE 100%] 0.5.169: Manifest transition proof uses quiet simulated start checks and no longer emits live boot FAIL for expected blocked-module proof.
-[DONE 100%] 0.5.168: Module init/start proof is owned by manifest state transitions.
-OrynWsl SDK ToDo2 update: 0.5.169
-
-[100%] Added KernelModuleManifestTransitionProof as a manifest-owned proof path for init/start states.
-[100%] The proof validates selected -> starting -> ready, blocked start -> failed, and optional selected -> skipped transitions without leaving proof state behind.
-[100%] KernelModuleManifestPrintProof now invokes the transition proof before reporting module init/start ownership.
-[100%] Build generation now preserves the transition proof declaration in the generated KernelModuleManifest.h header.
-
-[DONE 100%] 0.5.167: Runtime module start decisions are owned by the module start plan and selected from BootInfo/project manifest tokens.
-OrynWsl SDK ToDo2 update: 0.5.169
-
-[100%] Added KernelModuleStartPlan as the owner of module start decisions for compiled-in modules.
-[100%] Start decisions now evaluate manifest Select tokens against supplied BootInfo data and project VM options before a module can enter Starting.
-[100%] Diagnostics now only reports the start-plan result; it no longer owns the selection/prerequisite decision logic.
-[100%] Build and manifest validation pass with the start-plan source included in the target diagnostics archive.
-
-[DONE 100%] 0.5.166: Serial proof detail is owned by Diagnostics/Logger only.
-OrynWsl SDK ToDo2 update: 0.5.166
-
-[100%] Proof detail printing now routes through OrynKernelDiagnosticsLogger APIs instead of direct KernelIo calls from proof/detail printers.
-[100%] Diagnostics/Logger is the only owner of serial/debug proof-detail emission into KernelIo.
-[100%] Boot self-test now emits an ownership proof line for Diagnostics/Logger-controlled serial proof detail.
-
-[DONE 100%] 0.5.165: Boot proof category checks are owned by KernelSelfTest/BootProof instead of runtime boot sequence.
-OrynWsl SDK ToDo2 update: 0.5.165
-
-[100%] KernelRuntimeBootSequence only enters runtime, calls the boot proof runner, exits non-interactive VM mode, and halts; it does not own any category checks.
-[100%] KernelSelfTest now owns the category-check handoff and records that ownership through Diagnostics/Logger before invoking the BootProof category suite.
-[100%] BootProof remains the target-owned proof orchestrator while category checks stay outside runtime entry code.
-
-[DONE 100%] 0.5.164: Module stop, panic, and shutdown callbacks are production-ready for the current SDK scope.
-OrynWsl SDK ToDo2 update: 0.5.164
-
-[100%] Normal halt now invokes module stop callbacks and then module shutdown callbacks in reverse manifest order before the kernel lifecycle enters Halting/Halted.
-[100%] Panic halt now invokes module panic callbacks and then module shutdown callbacks from the kernel-owned panic path, not only from the boot proof orchestrator.
-[100%] Manifest callback state transitions now allow shutdown after stop while preventing duplicate stop, panic, and shutdown callback invocations.
-[100%] Every compiled-in module carries explicit StopCallback, PanicCallback, and ShutdownCallback metadata through beside-module manifests, generated headers, generated data, and validation.
-
-[DONE 100%] 0.5.163: OrynBuild validates kernel module manifests before compile/run.
-OrynWsl SDK ToDo2 update: 0.5.163
-
-[100%] Added `oryn manifest-validate <Project.oryn>` as a direct manifest validation command.
-[100%] Kernel builds now run manifest validation before generated manifest tables, compile, archive, link, image, or run steps.
-[100%] Manifest validation checks missing prerequisites, self-prerequisites, prerequisite order, cycles, maximum require count, and required APIC/PIC/CPU/Interrupts edges.
-[100%] Manifest validation writes OK/FAIL decisions into Build/Plan/BuildPlanDiagnostics.txt.
-
-[DONE 100%] 0.5.160: Bash runtime scripts use LF endings so Linux/WSL bash does not read CR characters in set options.
-OrynWsl SDK ToDo2 update: 0.5.160
-
-[100%] Added beside-module kernel manifest files under the owning Common and UEFI x64 module source directories.
-[100%] KernelModuleManifestData.c and KernelModuleManifest.h are generated from the beside-module .module files instead of the old central manifest folder.
-[100%] Split kernel manifest generation reading into BuildKernelModuleManifestRead.c so changed OrynBuild sources stay under the 500-line rule.
-[100%] Verified the native OrynBuild tool compiles and Kernel-5 builds from 24 beside-module kernel manifest files.
-
-OrynWsl SDK ToDo2 update: 0.5.158
-
-[100%] Fixed ChangedFiles dependency coverage for physical memory pressure by carrying KernelPhysicalMemory.h with the pressure implementation.
-[100%] Re-synced physical memory allocator pressure source/header files so ChangedFiles updates cannot compile the new pressure unit against an old allocator header.
-
-OrynWsl SDK ToDo2 update: 0.5.155
-
-[100%] Added IOAPIC legacy IRQ routing records with source-override resolution and redirection programming foundation.
-[100%] Added PCI MSI/MSI-X capability detection and interrupt vector assignment foundation.
-[100%] Added interrupt handler registration by vector and by PCI bus/device/function identity.
-
-OrynWsl SDK ToDo2 update: 0.5.153
-
-[100%] Process prerequisite proof now reaches Scheduler after the process/thread stack and scheduler self-tests pass.
-
-OrynWsl SDK ToDo2 update: 0.5.152
-
-[100%] Raised scheduler self-test reset proof to production-ready status because scheduler init now deterministically clears round-robin, per-CPU run-queue, current-thread, and proof-only queue state before each self-test.
-[100%] Replaced the permanent README.md with the user-supplied README and updated its package version to 0.5.152.
-
-OrynWsl SDK ToDo2 update: 0.5.151
-
-[100%] Raised scheduler affinity redirection regression fix to production-ready status because the fix is narrow, deterministic, covered by the scheduler proof path, and only corrects run-queue insertion order before enqueue.
-
-OrynWsl SDK ToDo2 update: 0.5.150
-
-[100%] Re-evaluated ToDo2 percentage entries as production-readiness estimates instead of proof-passed flags.
-[100%] Left WARN, FAIL, and TOBE status labels unchanged unless an item is now known to exist as a partial foundation.
-[100%] Reduced foundation, proof-only, placeholder, early driver, and smoke-test items below 100% until they are production-hardened.
-
-Production-readiness percentage rule:
-[100%] Production-ready for the current SDK scope, with stable ownership, integration, and validation.
-[090%] Near production-ready, but still needs broader regression coverage or hardening.
-[075%] Integrated and useful, but still missing production breadth, conformance, or stress coverage.
-[060%] Usable subsystem layer with meaningful validation, but not complete production coverage.
-[050%] Working foundation with proof/smoke coverage, not yet production complete.
-[025%] Early foundation, design, or driver skeleton; useful for integration but not production-ready.
-[010%] Placeholder/design only.
-[WARN] Partially present or cautionary work; not converted to a percentage.
-[FAIL] Broken or failing work; not converted to a percentage.
-[TOBE] Planned work; not converted to a percentage.
-
-OrynWsl SDK ToDo2 update: 0.5.148
-
-[100%] Corrected ToDo2 production-readiness format so only completed OK items are shown as percentages.
-[100%] WARN, FAIL, and TOBE statuses remain as literal status labels instead of being converted to percentages.
-[100%] ToDo2 now uses percentages only for completed production-ready work.
-
-ToDo2 status rule:
-[100%] Completed work that was previously marked OK and is production-ready.
-[WARN] Partially present or cautionary work; not converted to a percentage.
-[FAIL] Broken or failing work; not converted to a percentage.
-[TOBE] Planned work; not converted to a percentage.
-
-OrynWsl SDK ToDo2 update: 0.5.127
-
-[100%] Fixed scheduler proof regression where affinity redirection inserted the thread into the wrong run queue before choosing the target CPU.
-[100%] Scheduler init now resets the round-robin/per-CPU run-queue proof state before each self-test, preventing stale current-thread and queue state from blocking Process readiness.
-[100%] Process prerequisite proof now reaches Scheduler after the process/thread stack and scheduler self-tests pass.
-
-OrynWsl SDK ToDo2 update: 0.5.120
-
-[100%] Added IOAPIC discovery from ACPI MADT using BootInfo RSDP handoff data.
-[100%] Added IOAPIC legacy IRQ routing records with source-override resolution and redirection programming foundation.
-[100%] Added PCI MSI/MSI-X capability detection and interrupt vector assignment foundation.
-[100%] Added interrupt handler registration by vector and by PCI bus/device/function identity.
-
-OrynWsl SDK ToDo2 update: 0.5.115
-
-[100%] Added update-owned deleted-file cleanup for obsolete root recovery/bootstrap scripts.
-[100%] Removed old OrynReleaseKeyRecovery and OrynNoValidationBootstrap scripts from the workspace root on update.
-[100%] Removed Windows Zone.Identifier sidecar files from the workspace root on update.
-[100%] Kept the permanent top-level README.md in ChangedFiles and FullSource so GitHub can receive it after the next push.
-
-OrynWsl SDK ToDo2 update: 0.5.110
-
-[100%] Added module stop, panic, and shutdown callbacks to generated KernelModuleManifest records.
-[100%] Added per-module callback metadata fields: StopCallback, PanicCallback, and ShutdownCallback.
-[100%] Added manifest-owned lifecycle callback APIs for stop, panic, and shutdown invocation in reverse module order.
-[100%] Panic flow now invokes registered module panic callbacks before halting.
-[100%] Shutdown flow now invokes registered module shutdown callbacks before final halt path.
-[100%] Module manifest proof now verifies every compiled-in module has stop, panic, and shutdown callbacks.
-
-OrynWsl SDK ToDo2 update: 0.5.109
-
-[050%] Fixed Process/thread scheduler stack proof guard-page accounting by snapshotting heap stack-guard page count before stack allocation.
-[050%] Scheduler prerequisite policy is no longer blocked by a false Process proof failure after the guarded stack helper succeeds.
-[050%] Process proof detail remains available through Diagnostics/Logger if a later process/thread sub-step fails.
-
-Oryn WSL SDK ToDo2 - 0.5.108
-
-OrynSDK ToDo2 - Freestanding SDK and Linux-like Kernel Roadmap
-Version: 0.5.104
-Updated from package: 0.5.104 User Copy Demand Paging and Page Ownership
-Purpose: Track the SDK work needed to grow OrynWsl from the current boot-proven UEFI x64 kernel into a full freestanding SDK and small Linux-class operating system.
-
-Meaning of "Linux-like":
-Oryn is not meant to copy Linux source code or become a Linux distribution.
-Oryn is meant to provide the same kind of kernel capability that makes Linux useful:
-- protected processes;
-- pre-emptive multitasking;
-- user/kernel isolation;
-- a virtual filesystem;
-- block devices and filesystems;
-- external userland programs;
-- a network stack;
-- drivers bound through a device model;
-- stable kernel/user ABI;
-- diagnostics, logging, panic, crash, and recovery paths;
-- repeatable builds and automated boot tests.
-
-Meaning of "SDK":
-The SDK is the source, build, boot, image, test, and support layer used to create freestanding kernels and operating systems.
-It must stay native-C-first and must not depend on .NET, managed runtimes, or hosted operating-system services inside the kernel path.
+This file is now the runtime SDK work list. The previous entries overstated readiness by counting proofs, manifests, placeholders, and foundations as completion. From this reset forward, almost everything remains [TOBE] until the SDK can emit, build, link, package, and run the real module code needed by the kernel and userland.
 
 Status tags:
-[100%] Implemented enough for the current release target.
-[WARN] Present but partial, smoke-test only, or not production-safe.
-[TOBE] Required future work.
-[FAIL] Known blocker or contradiction.
-
-Hard project rules:
-[100%] Native C SDK only. No .NET runtime inside the kernel path.
-[100%] UEFI is a loader target only. The kernel must not call UEFI after handoff.
-[100%] Kernel receives plain OrynBootInfo and then owns the machine.
-[100%] KernelMain has one responsibility: enter kernel runtime and start the boot sequence.
-[100%] Screen output rule: framebuffer status screen shows only OK, WARN, or FAIL category lines.
-[100%] Detailed proof output belongs on serial/debug output and boot reports.
-[100%] Exactly three kernel syscall concepts: Get, Set, Event.
-[100%] Shell commands must become external programs, not hardcoded internal commands.
-[100%] No .inc files in delivered source.
-[100%] Source code must follow the Single Responsibility Principle.
-[100%] Keep source files under 500 lines. Split by function or responsibility.
-[075%] Incremental C-to-object compilation must remain the default.
-[100%] SDK source is separated into Common and Targets/UEFI/X64 ownership areas.
-[100%] FAT32 image creation must support growth toward hundreds of files.
-[100%] Build, image, and run must use project source and selected BootInfo items.
-
-Current SDK foundation already present:
-[100%] Root launchers exist for Oryn.sh, oryn, update, and gitpush.
-[050%] Common/Scripts exists for build, update, git push, launcher, and prerequisite helper ownership.
-[075%] FillPrerequisites.sh exists as the SDK prerequisite filling script.
-[050%] Common/OrynBuild native C skeleton exists.
-[050%] UEFI x64 target-owned OrynBuild implementation exists.
-[050%] Incremental source hash and object rebuild logic exists.
-[075%] Build manifest source exists.
-[075%] Build dependency graph is now module/archive resolver based.
-[075%] Prerequisite filling is now owned by the native oryn prerequisites app with cross-platform provider planning.
-[100%] Add stronger diagnostics for every build-plan decision and skipped source.
-[100%] Add package self-validation before update copies files.
-[100%] ChangedFiles now carries the native build resolver source files required to bootstrap the archive resolver.
-[100%] BuildOryn.sh now fails early with a clear message if a required native build source is missing.
-[100%] Package self-validation now treats the archive resolver implementation files as critical SDK files.
-[100%] Add update package manifest for FullSource and ChangedFiles.
-
-
-
-Current update/package validation foundation already present:
-[075%] Update extracts the selected archive into a temporary folder only.
-[075%] Update validates the zip entry list before trusting package paths.
-[075%] Update rejects empty, absolute, parent-traversal, backslash, double-slash, and nested unsafe paths.
-[075%] Update rejects extracted symlink entries.
-[075%] Update requires FullSource and ChangedFiles package roots before copy.
-[075%] Update requires critical SDK files before copy, including VERSION, launchers, updater scripts, BuildOryn.sh, and native OrynBuild sources.
-[075%] Update validates the requested mode payload before copy.
-[075%] Update validates FullSource and ChangedFiles VERSION agreement.
-[075%] Update validates package filename base version against VERSION.
-[075%] Update validates DeletedFiles.txt entries before any delete or copy operation.
-[075%] Update writes a PackageSelfValidationReport.txt in the temporary update folder.
-[075%] Update fails closed: if validation fails, no SDK/project files are copied.
-[075%] Add signed package hashes for release-grade package authenticity.
-[075%] Add generated file manifests for every package file in FullSource and ChangedFiles.
-
-Current build-plan diagnostics foundation already present:
-[075%] Build/Plan/BuildPlanDiagnostics.txt is reset for each kernel build.
-[075%] Module discovery logs present/missing source roots, recursive mode, requirements, and archive paths.
-[075%] Dependency resolution logs root modules, requirement checks, found dependencies, cycles, missing dependencies, and final order.
-[075%] Source collection logs included .c files and skipped non-C files/directories.
-[075%] Compile decisions log object missing, hash missing, hash changed, and unchanged-object reuse.
-[075%] Archive decisions log skipped empty archives, archive commands, archive start, and archive finish.
-[075%] Link decisions log every included archive, skipped archive, final link command, and link finish.
-[075%] ArchiveManifest.txt now points at the diagnostics file and lists per-module sources and objects.
-
-Current kernel foundation already present:
-[050%] UEFI x64 BOOTX64.EFI loader exists.
-[050%] ELF64 kernel loading is separate from the EFI loader application.
-[050%] OrynBootInfo handoff exists with version, size, flags, and checksum validation.
-[050%] Kernel-owned BootInfo copy exists.
-[100%] Kernel owns its lifecycle and halt path.
-[050%] Kernel-owned panic screen/report path exists.
-[100%] KernelRuntimeEnterAndStartBootSequence owns runtime entry from KernelStart.
-[075%] KernelMain is reduced to calling the runtime entry only.
-[050%] KernelScreenReport exists for OK/WARN/FAIL category emission.
-[100%] KernelLifecycle states exist.
-[050%] KernelModuleManifest foundation exists.
-[100%] KernelModuleManifest has item names, owned items, prerequisites, and states.
-[100%] KernelModuleManifest prevents start before declared prerequisites are ready.
-[100%] KernelModuleManifest owns stop, panic, and shutdown callback metadata, validation, lifecycle state transitions, and normal/panic halt callback invocation.
-[050%] Manifest currently orders APIC after PIC, CPU, and Interrupts.
-[050%] GDT and IDT foundations exist.
-[050%] CPU exception report path exists.
-[050%] PIC IRQ0 proof exists.
-[050%] APIC/x2APIC proof exists.
-[050%] HPET detection and counter proof exist.
-[050%] SMP topology and AP startup proof exist.
-[050%] PCI discovery foundation exists.
-[050%] Framebuffer/VGA console foundation exists.
-[050%] Keyboard IRQ1 screen scrolling proof exists.
-[100%] Physical memory allocator foundation exists with free-list integrity, ownership validation, double-free protection, reserved-page protection, reference-release return, and diagnostics.
-[100%] Higher-half virtual-memory foundation exists with page-for-page higher-half map validation.
-[050%] KernelRuntimeBootSequence no longer owns proof orchestration; it enters runtime and calls KernelBootProof only.
-[050%] KernelBootProofConsole adapter owns the proof-only bridge to console metrics, scroll probes, and double-buffer probes.
-[050%] Console proof flow now uses KernelBootProofConsole adapter; Console remains runtime/user I/O and proof code no longer includes KernelConsole directly.
-[060%] FAT32 and VFS kernel modules now have production filesystem foundations: stricter mount validation, safe VFS path normalization, status reporting, free-space hints, FAT chain validation, write truncation, empty-directory protection, and short-name/path validation.
-[100%] Kernel runtime module manifests are generated from beside-module .module files in Common/Kernel/Source, Common/OrynLibC, and Targets/UEFI/X64/KernelSupport/Source.
-[100%] Build/archive module manifests are generated from Common/BuildModuleManifests/*.buildmodule and Targets/UEFI/X64/BuildModuleManifests/*.buildmodule.
-[075%] Static hand-maintained module ADD tables have been removed from BuildPlanModules.c; it now loads per-module manifest files before dependency resolution.
-
-Current OrynLibC foundation already present:
-[075%] OrynLibC source tree exists under Common/OrynLibC.
-[050%] Public headers exist for stddef.h, stdint.h, stdbool.h, limits.h, errno.h, assert.h, string.h, ctype.h, stdlib.h, and inttypes.h.
-[100%] String units exist for memset, memcpy, memmove, memcmp, strlen, strcpy, strcmp, strchr, strcat, strstr, memchr, and strerror.
-[050%] Ctype unit exists for digit/alpha/alnum/space/xdigit/lower/upper helpers.
-[050%] Stdlib units exist for atoi/number conversion family, abs/llabs-style helpers, strtol/strtoul/strtoull, and abort foundation.
-[050%] Errno and assert foundations exist.
-[075%] OrynLibC proof source exists.
-[075%] LibC has been expanded from proof-only support into a fuller freestanding libc foundation with stdarg/stdalign/stdnoreturn/iso646/float/stdio headers, extended string/ctype/stdlib/inttypes functions, snprintf/vsnprintf, bsearch/qsort, rand/srand, and allocator hooks.
-[075%] LibC is included through the module/archive resolver as libOrynLibC.a.
-[075%] Split remaining multi-function LibC files further where practical.
-[075%] Add complete function-level manifests for each LibC unit.
-[075%] Add external host-side conformance tests for every LibC function beyond the in-kernel self proof.
-[075%] Add freestanding-safe snprintf/vsnprintf family after integer/string foundation is stable.
-
-Milestone 0.6 - Clean kernel entry and module ownership:
-[100%] Reduce KernelMain to one responsibility: enter kernel runtime and start the boot sequence.
-[100%] Move all boot proof category checks out of the runtime boot sequence into KernelSelfTest or BootProof modules.
-[100%] Move screen status category emission into KernelScreenReport only for category lines.
-[100%] Move serial proof detail into Diagnostics/Logger only.
-[100%] Add a KernelInit graph with ordered stages and explicit dependencies.
-[100%] Add per-module manifest items with OK/WARN/FAIL capable states.
-[100%] Add module init/start proof through manifest state transitions.
-[100%] Add module stop, panic, and shutdown callbacks.
-[100%] Add a registry of compiled-in kernel modules.
-[100%] Add dependency validation so a module cannot start before its prerequisites.
-[100%] Add fatal/non-fatal boot policy per module.
-[100%] Make every boot option start strictly according to the BootInfo items and project-selected options actually given.
-[100%] Emit WARN, not FAIL, when an optional module has nothing selected to start.
-[100%] Emit FAIL when a required module is selected but prerequisites are missing.
-
-Milestone 0.7 - Production memory management:
-[100%] Physical page allocator foundation exists with production allocator safety for the current SDK scope.
-[100%] Higher-half kernel mapping foundation exists with canonical, split, entry, PML4, and page-table validation.
-[100%] Create a real kernel heap: kmalloc, kfree, krealloc, kcalloc.
-[100%] Add heap statistics and leak counters.
-[100%] Add slab/object caches for fixed-size kernel structures.
-[100%] Add guard pages for kernel stacks and critical heaps.
-[100%] Add page-fault handler policy instead of only reporting faults.
-[100%] Add virtual memory map/unmap/protect APIs.
-[100%] Add per-process address spaces.
-[100%] Add user/kernel address split.
-[060%] Add copy_from_user and copy_to_user safety helpers using user/kernel split and page-fault-aware address validation.
-[060%] Add demand allocation for user pages and anonymous regions.
-[060%] Add page reference counts and ownership diagnostics.
-[050%] Add copy-on-write foundation for fork-like process creation later.
-[060%] Add DMA-safe physical allocation constraints.
-[060%] Add memory pressure and out-of-memory policy.
-       Pressure state, low/critical/OOM levels, OOM actions, diagnostics, and proof self-test are implemented.
-[060%] Add mmap-style region tracking for files, devices, and anonymous memory.
-       Address spaces now track anonymous, file, and device mmap-style regions through one region table.
-[060%] Add W^X page policy for kernel and user mappings.
-       VM map/protect/region reservation reject writable+executable mappings and report proof counters.
-
-Milestone 0.8 - Timers, clocks, and scheduler base:
-[050%] PIT/PIC one-shot proof exists.
-[050%] APIC timer proof exists.
-[050%] HPET proof exists.
-[050%] Select a monotonic kernel clock source at boot.
-[050%] Add clocksource registration and priority.
-[050%] Add clockevent/tick registration.
-[050%] Add calibration between TSC, APIC timer, and HPET where available.
-
-[050%] 0.5.118: Scheduler sleep/timer/tick foundations.
-       Sleep requests enqueue blocked threads instead of busy-waiting.
-       Timer wheel queues and expires timers by kernel tick deadline.
-       Per-CPU scheduler tick records are registered and advanced by tick delivery.
-[050%] Add sleep queues that do not busy-wait.
-[050%] Add timer wheel or red-black tree timer queue.
-[050%] Add per-CPU scheduler tick.
-[050%] Add jiffies/tick counter only as an implementation detail, not the public clock API.
-[050%] Add RTC read path for wall-clock time.
-[100%] Treat UEFI boot time as boot handoff data only.
-[100%] Define UTC/local timezone policy.
-
-Milestone 0.9 - Interrupt and deferred-work system:
-[050%] IDT dispatch and exception reporting exist.
-[050%] PIC/APIC EOI counters exist.
-[050%] IRQ1 keyboard scrolling proof exists.
-[050%] Add IOAPIC discovery and routing.
-[050%] Add MSI/MSI-X foundation for PCI devices.
-[050%] Add interrupt handler registration by vector and device.
-[050%] Add per-CPU interrupt accounting.
-[050%] Add interrupt-safe lock primitives.
-[050%] Add bottom halves/deferred procedure calls.
-[050%] Add work queues for non-interrupt context device work.
-[050%] Add wait queues for sleeping threads.
-[050%] Add safe IRQ masking/unmasking APIs.
-[050%] Add panic-on-unhandled-exception policy with crash details.
-       0.5.122 proof: Scheduler work/wait queues, interrupt-safe IRQ masking APIs, and panic crash-detail exception policy are implemented and covered by proof output.
-
-Milestone 1.0 - Threads, processes, and scheduler:
-[050%] Define kernel thread structure.
-[050%] Define user process structure.
-[050%] Define user thread structure.
-[100%] Implement x86_64 context switch.
-[050%] Implement per-CPU run queues.
-[050%] Implement pre-emptive round-robin scheduler first.
-       0.5.123 proof: Process now defines kernel thread, user process, and user thread records; x86_64 context switch state is saved/restored; scheduler has per-CPU run queues and first pre-emptive round-robin proof output.
-[050%] Add priorities after round-robin is stable.
-[050%] Add thread states: running, ready, sleeping, blocked, zombie, stopped.
-[100%] Add wait/wake primitives.
-[050%] Add kernel idle thread per CPU.
-[050%] Add process IDs and thread IDs.
-[100%] Add parent/child relationships.
-[100%] Add exit status and wait semantics.
-       0.5.124 proof: Scheduler priorities are layered over round-robin; threads expose running/ready/sleeping/blocked/zombie/stopped states; wait/wake primitives use wait channels; per-CPU idle thread registration is present; process/thread IDs, parent-child links, exit status, and parent wait semantics are proven.
-[100%] Add signal/event delivery design mapped onto Oryn Event.
-[050%] Add CPU affinity later, after stable SMP scheduling.
-[050%] Add scheduler diagnostics and run-queue dumps.
-       0.5.125 proof: Process/thread records queue Oryn Event-compatible signal packets; scheduler honours CPU affinity masks in the run-queue path; scheduler diagnostics dump per-CPU run queues with thread IDs, states, priorities, and affinity masks.
-
-Milestone 1.1 - User mode and syscall entry:
-[050%] Enter ring 3 user mode from a controlled test process.
-       0.5.129 proof: KernelUserMode builds a controlled ring-3 iret frame from a kernel-created user process/thread, using user CS/SS selectors and a known user entry/stack for the first controlled test process.
-[050%] Add TSS/user stack handling for syscalls and interrupts.
-       0.5.129 proof: the GDT/TSS path exposes a kernel RSP0 setter and proves the TSS kernel stack is installed before the controlled user entry frame is accepted.
-[050%] Choose syscall entry mechanisms: syscall/sysret where supported, interrupt fallback where needed.
-       0.5.129 proof: CPUID extended feature detection records syscall/sysret support and KernelUserMode selects syscall/sysret when present, otherwise the existing interrupt-vector syscall fallback remains selected.
-       0.5.130 fix: CPU feature detection now reads CPUID extended leaf 0x80000001 EDX bit 11 for syscall/sysret and reports fallback as OK because interrupt syscall fallback is an accepted policy path.
-[100%] Route all user requests into Get, Set, or Event packets.
-       0.5.131 proof: user request routing always creates an OrynSysCallPacket and maps supported requests to Get/Set/Event kinds before dispatch.
-[050%] Add syscall ABI versioning.
-       0.5.131 proof: syscall packets are checked against min/max ABI version fields before use.
-[050%] Add syscall argument validation.
-       0.5.131 proof: syscall entry checks packet arguments before namespace operation handling.
-[100%] Add user pointer validation.
-       0.5.131 proof: user pointer ranges are validated for null, underflow, overflow, and kernel-space rejection.
-[050%] Add process credentials placeholder.
-       0.5.131 proof: syscall packets carry placeholder uid/gid fields until the full credential module is added.
-[050%] Add errno/status mapping for POSIX-like compatibility.
-       0.5.131 proof: syscall status values map to negative POSIX-like errno values for compatibility wrappers.
-[050%] Add syscall tracing for debug builds.
-       0.5.131 proof: debug syscall tracing records and prints packet kind, namespace, and operation.
-[050%] Add syscall fuzz tests for invalid pointers and invalid packet sizes.
-       0.5.131 proof: syscall fuzz tests reject invalid user pointers and malformed packet sizes.
-
-Milestone 1.2 - Executable loading and external commands:
-[050%] Define Oryn user executable ABI.
-       0.5.132 proof: KernelUserExecutable defines the Oryn user executable ABI magic, version range, x86_64 architecture id, entry point, initial user stack, and image descriptor.
-[060%] Load ELF64 user executables from VFS.
-       0.5.132 proof: the ELF64 loader reads a user executable through VFS, validates the ELF header/program headers, maps PT_LOAD segments into a user address space, and creates a controlled user thread.
-[050%] Load external commands only from /System/Commands or the configured command root.
-       0.5.132 proof: external command loading rejects paths outside the configured command root and accepts /SYSTEM/COMMANDS/HELLO.ELF from the VFS proof volume.
-[100%] Reject path traversal and slash-separated internal command names.
-       0.5.133 proof: KernelUserCommand rejects traversal paths and slash/backslash command names before resolving commands under the configured command root.
-[100%] Create a command image descriptor with ABI version, entry, stack, permissions, and arguments.
-       0.5.133 proof: command descriptors carry ABI version, entry, stack top, permission flags, argc/envc, standard handles, argument text, and environment text.
-[050%] Add argv/envp construction.
-       0.5.133 proof: command descriptor construction builds bounded argv/envp text vectors for the initial user process image.
-[050%] Add process standard handles: stdin, stdout, stderr.
-       0.5.133 proof: command descriptors assign stdin=0, stdout=1, and stderr=2 for the new process.
-[050%] Add executable permissions.
-       0.5.133 proof: command descriptors require executable permission flags before a user command image is considered runnable.
-[050%] Add shared library policy later; start with static user programs.
-       0.5.134 proof: KernelUserExecutable rejects shared-library images and keeps user command loading static-program-only.
-[100%] Convert help into /System/Commands/help.elf.
-       0.5.134 proof: the help command image loads as /SYSTEM/COMMANDS/HELP.ELF with no command subdirectory.
-[050%] Convert dir, ls, tree, cd, pwd, type, mkdir, del, copy into external commands.
-       0.5.134 proof: all built-in-style command names are treated as flat /System/Commands/*.elf images.
-[100%] Make the shell a separate loaded userland application.
-       0.5.134 proof: shell loads from /SYSTEM/COMMANDS/SHELL.ELF as a separate user executable image.
-
-Milestone 1.3 - VFS and file descriptor model:
-[WARN] KernelVfs source exists but is currently a foundation, not the final file descriptor model.
-[TOBE] Define vnode/inode/file structures.
-[TOBE] Define file descriptor table per process.
-[TOBE] Add open, close, read, write, seek, stat, readdir, mkdir, unlink, rename primitives.
-[TOBE] Add path parser and normalizer.
-[TOBE] Add mount table.
-[TOBE] Add root filesystem mount.
-[TOBE] Add current working directory per process.
-[TOBE] Add permissions and ownership metadata.
-[TOBE] Add device files through devfs.
-[TOBE] Add procfs-style process/kernel information filesystem later.
-[TOBE] Add tmpfs/ramfs for early boot and tests.
-[TOBE] Add page cache/buffer cache foundation.
-[TOBE] Add sync/flush policy.
-
-Milestone 1.4 - Storage stack:
-[050%] PCI storage-class discovery records storage controllers and storage subclasses.
-[060%] KernelBlockDevice registry, range validation, read/write sector APIs and proof are implemented.
-[060%] FAT32 source is split into BPB/mount, FAT table, cluster I/O, directory, file read/write, format, mutate, names, path, validation, and free-space accounting helpers.
-[060%] Define production block device abstraction: sector size, block count, read, write, flush.
-[060%] Add partition table parser: MBR first, GPT next.
-[025%] Add AHCI/SATA driver.
-       0.5.138 proof: KernelPci now initializes KernelAhci immediately after PCI storage-class discovery, captures BAR5 for AHCI ABAR binding, registers prepared AHCI block devices, and proves AHCI command-issue plus DMA PRDT foundations even when no AHCI controller is present on the current VM.
-[025%] Add NVMe driver.
-       0.5.139 proof: KernelNvme binds to PCI NVMe storage controllers, captures the NVMe MMIO BAR, prepares admin/I/O queue and PRP DMA foundations, creates namespace-backed block-device records, registers prepared NVMe block devices, and reports OK even when the current VM has no NVMe controller present.
-[025%] Add USB mass storage driver.
-       0.5.140 proof: KernelUsbMassStorage binds to PCI USB host controllers, tracks USB mass-storage enumeration, bulk-only transport, SCSI command and DMA-buffer foundations, prepares USB mass-storage block-device records, and reports OK even when no USB storage device is attached.
-[025%] Add virtio-blk driver for QEMU if selected as a target profile.
-       0.5.143 proof: KernelVirtioBlock binds to QEMU VirtIO block PCI devices when StorageInterface=virtio-blk is selected, prepares feature negotiation, virtqueue, request queue, DMA buffer, and block-device foundations, and the runner exposes the FAT32 disk through virtio-blk-pci for that profile.
-[025%] virtio-net foundation exists, but it is not production-ready.
-[TOBE] virtio-scsi
-[TOBE] virtio-balloon
-[TOBE] virtio-rng
-[025%] virtio-gpu foundation exists for QEMU-style display output, but it is not production-ready.
-[TOBE] virtio-serial / console
-[TOBE] virtio-fs
-[TOBE] Add block cache.
-[TOBE] Add request queue and completion events.
-[TOBE] Add read-only mount mode for unsafe drivers.
-[060%] FAT32 read/write helpers now reject invalid paths, preserve FAT high bits, mirror FAT writes, truncate freed chains on shrink, protect non-empty directories, and expose check/flush/free-space/status APIs.
-[TOBE] Add ext2 read support as the next simple Linux-like filesystem target.
-[TOBE] Add filesystem corruption checks and safe failure modes.
-
-Milestone 1.5 - Device model and drivers:
-[050%] PCI enumerator foundation exists.
-[WARN] ACPI parsing is currently table-specific, not a full shared ACPI module.
-[TOBE] Create a device object model: bus, device, driver, resource, class.
-[TOBE] Create driver registry and probe/bind/unbind lifecycle.
-[TOBE] Add resource manager for MMIO, I/O ports, IRQs, DMA ranges, and PCI BARs.
-[TOBE] Add ACPI module with RSDP, RSDT/XSDT, MADT, HPET, MCFG, FADT parsing.
-[TOBE] Add power-management hooks later.
-[TOBE] Add PS/2 keyboard driver as a real input device.
-[TOBE] Add PS/2 mouse driver.
-[TOBE] Add serial driver.
-[TOBE] Add framebuffer/display driver model.
-[TOBE] Add NIC driver model.
-[TOBE] Add safe host hardware access policy for VM and real hardware targets.
-
-Milestone 1.6 - Console, display, text, and input:
-[050%] Framebuffer status output exists.
-[050%] Scrollback and keyboard scr olling proof exist.
-[WARN] TTF loader/renderer foundation exists, but packaged fonts are not yet complete.
-[TOBE] Finalize Shell -> Console -> Display ownership.
-[TOBE] Ensure Shell never draws directly.
-[TOBE] Ensure Console only uses Display APIs for drawing.
-[TOBE] Add input event queue from keyboard IRQ driver.
-[TOBE] Add keymaps and language layouts.
-[TOBE] Add modifier, lock key, and repeat handling.
-[TOBE] Add line editor with history and completion.
-[TOBE] Add cursor blink through real timer events.
-[TOBE] Add dirty-rectangle framebuffer flushing.
-[TOBE] Add display mode enumeration through driver layer, not GOP.
-[TOBE] Add EDID mode discovery.
-[TOBE] Package default TTF fonts in System/Fonts.
-[TOBE] Add font get/set/set size command as external user commands.
-
-Milestone 1.7 - Networking stack:
-[TOBE] Add NIC driver model and at least one QEMU NIC driver.
-[TOBE] Add Ethernet frame receive/transmit.
-[TOBE] Add MAC address management.
-[TOBE] Add ARP.
-[TOBE] Add IPv4.
-[TOBE] Add ICMP ping.
-[TOBE] Add UDP.
-[TOBE] Add TCP.
-[TOBE] Add DHCP client.
-[TOBE] Add DNS client.
-[TOBE] Add sockets mapped through Get/Set/Event.
-[TOBE] Add HTTP client/server later.
-[TOBE] Add TLS later, after entropy and crypto foundation.
-[TOBE] Add firewall/capability hooks later.
-
-Milestone 1.8 - Security, users, and isolation:
-[TOBE] Define kernel capability model.
-[TOBE] Define user and group IDs.
-[TOBE] Add process credentials.
-[TOBE] Add filesystem permission checks.
-[TOBE] Add device permission checks.
-[TOBE] Add module permissions.
-[060%] Add W^X enforcement.
-       User mappings, protection changes, and mmap-style reservations enforce write-xor-execute flags.
-[TOBE] Add SMAP/SMEP support when CPU supports it.
-[TOBE] Add stack canaries or equivalent kernel hardening.
-[TOBE] Add random number source and entropy collection.
-[TOBE] Add secure boot/platform-key handoff reporting as data only.
-[TOBE] Add audit log for security-relevant events.
-
-Milestone 1.9 - Diagnostics, testing, and recovery:
-[WARN] BootReport exists, but there is not yet a complete module-level test framework.
-[TOBE] Add unit tests for pure C helper modules.
-[TOBE] Add boot tests for every kernel subsystem.
-[TOBE] Add negative tests for missing devices and disabled VM features.
-[TOBE] Add QEMU matrix profiles: minimal, normal, SMP, no-HPET, no-APIC2, storage, network.
-[TOBE] Add crash dump format.
-[TOBE] Add panic ring buffer dump.
-[TOBE] Add last-known-good boot marker.
-[TOBE] Add watchdog/recovery policy.
-[TOBE] Add kernel log levels and ring buffer export.
-[TOBE] Add module health status query through Get.
-[WARN] Build artifact manifest source exists, but boot artifact manifest is not complete.
-[TOBE] Add link map and dead-code report.
-[TOBE] Add regression tests for no .inc files and source line-count limits.
-[TOBE] Add regression tests that screen output category lines are only OK, WARN, or FAIL.
-
-Milestone 2.0 - POSIX/Linux compatibility layer:
-[TOBE] Keep Oryn internal ABI as Get, Set, Event.
-[TOBE] Add POSIX-like compatibility headers for userland.
-[TOBE] Add libc userland wrapper over Get/Set/Event.
-[TOBE] Add file descriptor syscalls through wrapper functions.
-[TOBE] Add process APIs: spawn/exec, wait, exit.
-[TOBE] Add time APIs.
-[TOBE] Add directory APIs.
-[TOBE] Add sockets API after networking exists.
-[100%] Add signals/events compatibility design.
-[TOBE] Add minimal shell script runner later.
-[TOBE] Add toolchain story for compiling external user programs.
-
-Milestone 2.1 - Build system maturity:
-[075%] Incremental C-to-object compilation exists.
-[075%] Build manifest source exists.
-[WARN] LibC object preselection exists but is still not a real archive/dependency resolver.
-[TOBE] Add full dependency graph resolver for SDK modules and LibC units.
-[TOBE] Replace textual symbol preparse with an archive/dependency resolver.
-[TOBE] Build reusable static archives for stable SDK modules.
-[WARN] Static C module manifest exists; per-module manifest files are still needed.
-[TOBE] Add generated compile database for editor tooling.
-[TOBE] Add object cache invalidation by compiler version, flags, source hash, and dependency hash.
-[TOBE] Add parallel compile worker count from project settings.
-[TOBE] Add reproducible build mode.
-[TOBE] Add package manifest for FullSource and ChangedFiles.
-[TOBE] Add update validation before copying files.
-
-Milestone 2.2 - SDK prerequisites and host tooling:
-[075%] FillPrerequisites.sh exists.
-[075%] Turn prerequisite filling into a clear SDK app/command with checks, install hints, and final proof report.
-[075%] Detect clang, lld, llvm-ar, llvm-objcopy, qemu, ovmf, FAT image tools, zip, unzip, and git.
-[075%] Print exact missing tool, selected provider, purpose, and remediation command.
-[075%] Support Linux/WSL, Windows winget discovery, macOS Homebrew, and common Linux package providers.
-[TOBE] Keep host prerequisites outside the kernel source tree.
-[100%] Avoid hiding failures behind generic "tool not found" messages.
-[075%] Add a prerequisites report artifact under Common/Reports/PrerequisitesReport.txt.
-
-Milestone 2.3 - Module manifests and selectable boot options:
-[100%] KernelModuleManifest has compiled-in module items and prerequisites.
-[050%] APIC is declared after PIC, CPU, and Interrupts.
-[100%] Create one manifest file per module directory.
-[TOBE] Add manifest fields: name, items, target, prerequisites, optional/required, starts-when, provides, consumes, test command, and report category.
-[100%] Generate KernelModuleManifestData.c from the per-module manifests.
-[TOBE] Generate build source inclusion from the same manifests.
-[100%] Ensure selected BootInfo items decide what actually starts.
-[TOBE] Ensure modules with no selected work emit WARN only when useful, and stay silent when intentionally disabled.
-[TOBE] Ensure selected required modules with missing prerequisites emit FAIL.
-[100%] Add manifest validation command to OrynBuild.
-[TOBE] Add boot report section listing selected, skipped, started, ready, warn, and failed modules.
-
-Recommended implementation order:
-1. Finish per-module manifests and generate the manifest C table from them.
-2. Make the runtime boot sequence start modules only from selected BootInfo/project options.
-3. Keep KernelRuntimeBootSequence limited to runtime entry and boot-proof handoff.
-4. Complete Diagnostics/Logger ring buffer and make serial proof detail flow through it.
-5. Turn FillPrerequisites.sh into a full prerequisites app/command with proof report.
-6. Continue expanding OrynLibC conformance edge cases as new functions are added.
-7. Add the real kernel heap and virtual-memory map/unmap/protect APIs.
-8. Finish interrupt queues, deferred work, and monotonic clock.
-9. Build scheduler and kernel threads.
-10. Enter user mode with one test process.
-11. Build VFS and file descriptors.
-12. Build block device + FAT32 production read path.
-13. Load external shell from /System/Commands/*.elf.
-14. Convert commands into external programs.
-15. Add process isolation, exec, wait, and stdout/stderr routing.
-16. Add storage write support.
-17. Add networking.
-18. Add security, permissions, and crash recovery.
-19. Add POSIX/Linux compatibility wrappers on top of Get/Set/Event.
-
-Immediate next 10 SDK tasks:
-[100%] 1. Add per-module manifest files beside each module and generate KernelModuleManifestData.c.
-[100%] 2. Add OrynBuild manifest validation so APIC/PIC/CPU/Interrupts order and all other prerequisites are checked before compile/run.
-[100%] 3. Make runtime start decisions come from selected BootInfo/project options, not hardcoded proof order.
-[TOBE] 4. Add WARN/FAIL policy for optional unselected modules versus required missing prerequisites.
-[050%] 5. Move remaining proof orchestration from KernelRuntimeBootSequence into KernelBootProof.
-[TOBE] 6. Add Diagnostics/Logger ring buffer and route serial details through it.
-[075%] 7. Expand FillPrerequisites into a complete command with detect/install/report phases.
-[075%] 8. Complete OrynLibC function-level manifests and external host-side conformance tests; in-kernel self proof remains active.
-[TOBE] 9. Replace LibC textual symbol preparse with archive/dependency resolution.
-[TOBE] 10. Add Build/Reports outputs for prerequisites, manifest validation, dependency graph, and boot module status.
-
-Definition of "full SDK works" for Oryn 2.x:
-[TOBE] Creates, builds, images, runs, and tests freestanding kernels from native C source.
-[TOBE] Keeps Common and Targets ownership clean.
-[TOBE] Resolves module and LibC prerequisites from manifests, not from hidden hardcoded order.
-[TOBE] Builds only changed source by default.
-[TOBE] Produces useful diagnostics for every skipped, selected, compiled, linked, and booted item.
-[TOBE] Produces update packages with FullSource and ChangedFiles that validate before copying.
-[TOBE] Supports UEFI x64 first and can add future targets without contaminating Common.
-[TOBE] Provides a growing freestanding OrynLibC as object files and reusable archives.
-[TOBE] Provides reproducible QEMU boot tests and reports.
-
-Definition of "full Kernel works like Linux" for Oryn 2.x:
-[TOBE] Boots on QEMU UEFI x64 without returning to loader.
-[TOBE] Owns CPU, memory, interrupts, timers, devices, and halt/panic paths.
-[TOBE] Runs multiple isolated user processes.
-[TOBE] Schedules threads pre-emptively.
-[TOBE] Loads external user programs from the filesystem.
-[TOBE] Provides a VFS and file descriptors.
-[TOBE] Reads and writes persistent files safely.
-[TOBE] Supports at least one real block storage path.
-[TOBE] Supports at least one network device and basic TCP/IP.
-[TOBE] Provides a shell as a userland program.
-[TOBE] Keeps internal kernel ABI as Get, Set, Event.
-[TOBE] Provides POSIX/Linux-like wrappers above the Oryn ABI.
-[TOBE] Has clear OK/WARN/FAIL screen status and detailed serial diagnostics.
-[TOBE] Has automated QEMU regression tests for every major subsystem.
-
-[075%] Build dependency graph is now a module/archive resolver.
-       The build now discovers SDK, target, LibC, and project modules, resolves module prerequisites, compiles each module into a static archive, writes ArchiveManifest.txt, and links the kernel from the resolved archive graph instead of linking a flat source-list directly.
-
-[075%] Prerequisite filling is now a native SDK app/command.
-       Use `oryn prerequisites check`, `oryn prerequisites plan`, `oryn prerequisites install`, or `oryn prerequisites manifest`.
-       The command detects apt, dnf, pacman, zypper, Homebrew, and winget providers, reports exact missing tools, builds an install command, supports the old FillPrerequisites.sh wrapper, and writes Common/Reports/PrerequisitesReport.txt.
-
-[100%] 0.5.83 Add update package manifest for FullSource and ChangedFiles.
-       FullSource/PackageManifest.txt and ChangedFiles/PackageManifest.txt are generated for each package tree.
-       Updater validates manifest tree name, package version, file count, byte count, listed paths, file sizes, and sha256 values before copy.
-       Missing, extra, duplicate, unsafe, or corrupted payload files now fail closed before SDK/project updates.
-[075%] 0.5.84 Add signed package hashes for release-grade package authenticity.
-
-[075%] 0.5.85 Add generated file manifests for every package file in FullSource and ChangedFiles.
-
-0.5.87 Kernel boot proof ownership:
-[050%] KernelRuntimeBootSequence now has one runtime duty: enter the kernel runtime and hand off to the boot proof runner.
-[050%] Added KernelBootProof.h as the ownership boundary for boot proof sequencing.
-[050%] Added KernelBootProofOrchestrator.c to own boot proof execution, panic handoff, running-state transition, and halt proofs.
-[075%] KernelRuntimeBootSequence no longer includes KernelDiagnostics, KernelLifecycle, KernelPanic, or KernelIo.
-
-
-0.5.88 FAT32 and VFS production filesystem foundation:
-[060%] FAT32 mount validation now checks BPB layout, sector count, reserved sectors, FAT count, cluster sizing, root cluster, total sectors, and unsupported FAT12/FAT16 root-entry layouts.
-[060%] FAT32 volume state now exposes Mounted, ReadOnly, LastStatus, FsInfoSector, BackupBootSector, free-cluster hint, and next-free hint.
-[100%] FAT writes now preserve the high nibble, mirror all FAT copies, and return explicit status failures.
-[100%] FAT allocation now uses next-free hints and maintains free-cluster estimates when FSInfo is valid.
-[100%] FAT chain safety now validates cluster links and rejects out-of-range chains.
-[100%] File writes now free old clusters when a file shrinks or becomes zero bytes.
-[100%] Create/write/delete now reject invalid 8.3 paths, root deletion, duplicate creation, missing parents, and non-empty directory deletion.
-[060%] VFS now normalizes paths, rejects backslash and dot/dot-dot traversal, chooses the longest matching mount prefix, blocks duplicate mounts, and exposes VFS status reporting.
-[060%] Added OrynFat32CheckVolume, OrynFat32Flush, OrynFat32GetFreeClusterEstimate, OrynFat32ValidatePath, OrynFat32LastStatus, OrynVfsNormalizePath, and OrynVfsLastStatus.
-[WARN] Long filename support, journaling, permissions, caching, real device hotplug, fsck repair, and full POSIX file descriptors are still future filesystem layers, not claimed complete in this step.
-0.5.90 FAT32 formatter mount validation fix:
-[060%] Fixed formatter/mounter mismatch that caused the kernel FAT32/VFS proof to fail immediately after formatting.
-[060%] Formatter now writes a valid FAT32 media descriptor before mount validation.
-[100%] Formatter now writes backup boot and FSInfo sectors for the declared backup locations.
-[100%] Native build still links Kernel-5.elf from resolved module archives.
-
-
-[100%] 0.5.90 generated module manifests.
-       Kernel module metadata now comes from beside-module .module files under the owning Common and UEFI x64 source directories.
-       The native build regenerates KernelModuleManifest.h and KernelModuleManifestData.c before compiling the kernel.
-       Build/Plan/KernelModuleManifestGeneration.txt records the manifest source files and generated outputs.
-       Static hand-maintained C module tables are no longer the source of truth.
-
-
-[075%] 0.5.93 OrynLibC signed conversion proof fix.
-
-       strtoll now parses signed magnitudes correctly instead of treating negative values as wrapped unsigned output from strtoull.
-
-       OrynLibC freestanding self-proof now includes explicit negative strtol/strtoll coverage.
-
-[075%] 0.5.94 Split remaining multi-function LibC files where practical.
-       OrynLibC now keeps public C library entry points in separate object-ready source units where practical.
-       Split ctype, inttypes, stdlib conversion wrappers, allocator hooks, rand/srand, bsearch/qsort, stdio snprintf/vsnprintf, paired string functions, and OrynString wrappers.
-       Kept small private helpers inside the one public function file that owns them when splitting would add noise or unsafe shared state.
-
-[075%] 0.5.95 LibC split-source stale archive fix.
-       Fixed split-source duplicate symbol failures by rebuilding module archives from a clean archive file on every module archive pass.
-       Old archive members from removed grouped LibC files can no longer survive inside libOrynLibC.a.
-       DeletedFiles also removes the old LibC grouped source files and known stale object/archive outputs from existing Kernel-5 builds.
-
-0.5.96 - LibC function-level manifests
-[075%] Added complete function-level manifests for each OrynLibC C source unit.
-[075%] Added Common/OrynLibC/FunctionManifests with one .libcunit file per LibC unit.
-[050%] Each manifest records category, unit name, source path, public symbol list, static helper list, freestanding status, and object granularity.
-[075%] Native build validates LibC source/manifests before module/archive resolution.
-[075%] Build writes Build/Plan/LibCFunctionUnitManifestReport.txt.
-[075%] Build fails closed if a LibC source has no manifest, a manifest points to a missing source, or duplicate manifests claim the same source.
-
-
-
-[075%] 0.5.97 External host-side LibC conformance tests added.
-       Added Common/Scripts/RunLibCHostConformance.sh.
-       Added Common/OrynLibC/Tests/Host/TestOrynLibCHostConformance.c.
-       Added oryn libc-test / oryn libc-conformance command.
-       Host test compiles OrynLibC as normal host objects outside the kernel.
-       Host test validates every OrynLibC source has a function-unit manifest.
-       Host test validates every function-unit manifest points to an existing source.
-       Host test validates public symbol inventory through nm.
-       Host test runs behavioral checks for ctype, errno, string, OrynString wrappers, stdlib conversions, div family, inttypes, allocator hooks, malloc/calloc/realloc/free, bsearch, qsort, rand/srand, snprintf, and vsnprintf.
-       Reports are written to Common/Reports/LibCConformance/.
-0.5.100 - BootProof category ownership
-[050%] Runtime boot sequence contains no boot proof category checks.
-[050%] KernelBootProofOrchestrator dispatches to BootProof-owned category checks instead of Diagnostics-owned boot sequence logic.
-[075%] Added KernelBootProofCategories.c as the owner of entry, manifest, LibC, descriptor, interrupt/timer, PCI, console, FAT32/VFS, memory, and invalid BootInfo proof ordering.
-[050%] KernelDiagnosticsBootProofs.c now only owns reusable diagnostic proof helpers, not the boot category orchestration path.
-[050%] KernelDiagnostics.h no longer exposes a boot proof sequence runner.
-
-
-[050%] 0.5.100: Move serial proof detail into Diagnostics/Logger only.
-       BootProof category/proof files now emit detail through KernelDiagnosticsLogger instead of direct KernelIo serial writes.
-       KernelBootProofOrchestrator now uses the diagnostics logger for halt detail.
-
-[100%] 0.5.100: Add a KernelInit graph with ordered stages and explicit dependencies.
-       KernelInitGraph defines Entry, BootInfo, ModuleManifest, LibC, Descriptors, Interrupts, Timers, PCI, Console, FAT32/VFS, Memory, and Running stages.
-       BootProof validates the graph and logs each stage dependency before category proof execution.
-
-0.5.101 - Real kernel heap foundation
-[060%] Added KernelHeap module with kmalloc, kfree, krealloc, and kcalloc.
-[075%] Added heap statistics for total/free/allocated bytes, peak allocation, active allocations, failures, and page usage.
-[075%] Added leak counter tracking through active allocation accounting.
-[060%] Added fixed-size slab/object caches for 32, 64, 128, and 256 byte kernel structures.
-[075%] Added critical heap allocation path with guard-page accounting and virtual unmap hook when paging is active.
-[060%] Added kernel stack guard-page proof hook after virtual memory activation.
-[075%] Added Heap as a generated kernel module manifest between PhysicalMemory and VirtualMemory.
-[100%] Updated KernelInit graph so Heap explicitly depends on Memory and VirtualMemory explicitly depends on Heap.
-[060%] Boot proof now emits OK for heap API, statistics/leak counters, slab caches, and guard-page support.
-[WARN] Full dynamic virtual-address heap growth, per-CPU magazines, poisoning/redzones, and demand-paged heap arenas remain future hardening steps.
-
-0.5.102 Virtual memory address-space policy:
-[050%] Added page-fault handler policy with fatal kernel/guard handling and non-fatal user process policy classification.
-[060%] Added virtual memory map, unmap, and protect APIs over explicit address-space objects.
-[050%] Added process-owned address-space creation with copied kernel-half mappings.
-[050%] Added explicit user/kernel address split constants and boot proof output.
-[050%] Added VM proof coverage for user mapping, protection change, unmap, process address-space creation, and page-fault policy classification.
-
-
-0.5.103 Page-fault process policy fix:
-[050%] User page-fault policy proof now uses an explicit process/address-space context.
-[060%] Invalid user page-fault context remains fatal by policy.
-[050%] Valid user process page faults follow non-fatal process policy classification.
-
-0.5.104 User copy, demand allocation, and page ownership diagnostics:
-[075%] Added OrynCopyFromUser and OrynCopyToUser helpers.
-[075%] User copy helpers validate the user/kernel address split before copying.
-[100%] User copy helpers validate that user pages are mapped with required permissions before copying.
-[100%] User copy helpers translate mapped user virtual pages to owned physical pages rather than blindly dereferencing unchecked pointers.
-[050%] Added anonymous user-region reservation to per-process address spaces.
-[060%] Added demand allocation for non-present user anonymous pages through the page-fault policy.
-[060%] Page-fault policy can now recover a non-present user anonymous page fault by allocating and mapping a page.
-[060%] Page-fault policy still treats kernel faults, guard-page faults, and invalid user contexts as fatal.
-[050%] Added physical page ownership records.
-[060%] Added page reference counters.
-[060%] Added page owner classes for generic pages, page tables, kernel heap pages, user pages, and reserved pages.
-[075%] Added ownership diagnostics for record usage, total references, owner counts, overflows, and mismatches.
-[060%] Virtual-memory proof now covers user copy helpers, anonymous region demand allocation, and ownership diagnostics.
-[WARN] Full user process lifecycle integration, page eviction, and mmap-backed file regions remain future work.
-
-
-0.5.107 - Process/thread and scheduler-ready stack foundation
-[050%] Add process/thread structures that bind to per-process address spaces.
-[050%] Add scheduler-ready kernel thread stack allocation through guarded heap/VM helpers.
-[050%] Add Process and Scheduler modules to generated module manifests.
-[050%] Add KernelInit graph stages for Process and Scheduler after VirtualMemory.
-
-[050%] Fix VM manifest readiness before Process/Scheduler start policy.
-       VirtualMemory is now marked ready immediately after the VM proof succeeds, before Process/Scheduler prerequisite checks run.
-
-[050%] 0.5.107: Process manifest state is marked ready before Scheduler prerequisite checks.
-       Scheduler no longer fails with "missing prerequisite: Process" after Process proof succeeds.
-
-
-0.5.108 - Kernel heap contiguous span and process stack proof fix
-[060%] Fixed kernel heap multi-page span placement.
-       Heap spans now use the lowest address of the allocated contiguous physical-page run, instead of the first page popped from the descending physical allocator.
-[050%] Fixed scheduler-ready kernel thread stack allocation proof.
-       Multi-page stacks no longer write upward from the highest allocated page into unowned memory.
-[050%] Added process/thread proof detail logging for failed sub-steps.
-       Future failures now report whether the missing part was heap initialization, process allocation, address-space binding, scheduler stack allocation, or stack guard accounting.
-[050%] Scheduler prerequisite failure is no longer the root symptom when Process stack proof fails.
-       Process proof now reports the real failed sub-step first, then Scheduler remains blocked only as a consequence.
-
-0.5.111 - Package validation removed from updater
-[050%] Removed package self-validation from the update path.
-[050%] Removed signed package authenticity checks from the normal update path.
-[100%] Update now extracts and applies selected FullSource/ChangedFiles payloads directly.
-[075%] Added ChangedFiles copy of UpdateOrynCurrent.sh so future updates carry no-validation policy.
-[WARN] Package authenticity is no longer enforced by the updater by design.
-
-
-0.5.112 - LibC completion status refresh
-[075%] Confirmed OrynLibC is included through the module/archive resolver as libOrynLibC.a.
-[075%] Confirmed remaining practical multi-function OrynLibC files were split into function-sized source units.
-[075%] Confirmed complete function-level manifests exist for all 77 OrynLibC source units.
-[075%] Confirmed host-side OrynLibC conformance command and script exist beyond the in-kernel self proof.
-[100%] Updated this ToDo2 status block so current LibC work is no longer incorrectly listed as TOBE/WARN.
-
-0.5.113 - COW and DMA-safe allocation foundations
-[050%] Add copy-on-write foundation for fork-like process creation later.
-[060%] Add DMA-safe physical allocation constraints.
-
-0.5.114 - Permanent README refresh
-[100%] Wrote the top-level README.md as the permanent Oryn SDK overview.
-[100%] Added horizontal documentation links at the top and bottom.
-[100%] Documented what Oryn SDK does for OS developers.
-[100%] Documented currently provided language support and planned language direction.
-
-[050%] 0.5.128 PCI storage-class discovery proof marks the discovery path ready after the scan, even when no storage controller is present.
-
-[025%] 0.5.141 USB mass storage PCI init proof fix.
-
-[025%] 0.5.143 VirtIO block QEMU profile driver.
-[025%] 0.5.143 VirtIO block init is invoked from PCI init and registers prepared block devices.
-
-
-0.5.145 - VirtIO-Net high-speed network driver foundation
-[025%] Added VirtIO-Net PCI driver foundation for high-speed network cards.
-[025%] VirtIO-Net binds to transitional and modern QEMU/Red Hat PCI network devices.
-[050%] Added feature negotiation, RX/TX/control virtqueue, packet DMA buffer, MAC address, interrupt, and link-status foundations.
-[025%] PCI init invokes VirtIO-Net after class-code network discovery and PCI proof reports VirtIO-Net readiness.
-
-0.5.146 - VirtIO-GPU 2D/3D display driver foundation
-[025%] Added VirtIO-GPU PCI driver foundation for 2D/3D graphics and display outputs.
-[025%] VirtIO-GPU binds to transitional and modern QEMU/Red Hat PCI display devices.
-[050%] Added feature negotiation, control virtqueue, cursor virtqueue, display-output, 2D resource, 3D resource, DMA buffer, EDID/display-mode, interrupt, and display-subsystem bridge foundations.
-[025%] PCI init invokes VirtIO-GPU after class-code display discovery and PCI proof reports VirtIO-GPU readiness.
-
-0.5.156 - Updater temporary extraction permission cleanup fix
-[100%] Update cleanup now restores user read/write/traverse permissions on the temporary extraction tree before deleting it.
-[100%] Update now normalizes extracted package directory permissions after unzip so FullSource and ChangedFiles can be traversed and removed safely.
-[100%] Package directory entries are emitted with executable/traversable permissions so WSL update cleanup no longer reports permission denied for extracted directories.
-0.5.157 - Root obsolete script cleanup production readiness
-[100%] Deleted-file cleanup for obsolete root recovery/bootstrap scripts is production-ready in the updater flow.
-[100%] Old OrynReleaseKeyRecovery and OrynNoValidationBootstrap scripts are removed from the workspace root on update.
-[100%] Windows Zone.Identifier sidecar cleanup is handled by the update-owned cleanup list.
-
-[100%] Kernel-5 is now a real SDK-authored kernel entry: project-owned KernelMain selects/touches selected SDK module link roots, verifies physical module presence, runs boot proof, exits VM mode, and halts through public SDK runtime APIs instead of being only a thin runtime trampoline.
-[100%] Move Kernel-5 visible boot report/proof output ownership into OrynProjects/Kernel-5/Source/BootProof so the built kernel source owns the printed boot narrative.
-
-0.5.186 - True SDK kernel application entry
-[100%] Replaced Kernel-5 hand-written runtime/manifest/link-root driver code with the public Oryn SDK application API.
-[100%] Added OrynKernelSdk.h with ORYN_KERNEL_APPLICATION so a project kernel declares its application entry instead of calling SDK internals directly.
-[100%] Added OrynKernelSdkStart in the SDK runtime layer to own module-root touching, selected-module presence checks, runtime enter, VM exit, and halt.
-[100%] Kernel-5 Source/KernelMain.c now only includes OrynKernelSdk.h, defines Kernel5Main, and uses SDK calls like OrynKernelSdkReportOk and OrynKernelSdkRunBootProof.
-[100%] The built kernel is now an SDK-built application using public SDK-facing APIs instead of a project file manually driving KernelRuntime, KernelModuleManifest, and KernelScreenReport internals.
-0.5.186 - Minimal Hello World SDK kernel application
-[DONE 100%] Kernel-5 no longer calls boot proofing from its application Main.
-[DONE 100%] Kernel-5 writes only Hello World from the kernel application path.
-[DONE 100%] SDK boot proof runner is now optional and no-op unless a project supplies a real proof implementation.
-[DONE 100%] Oryn run accepts a minimal Hello World SDK kernel as a successful non-proof run.
+[ OK ] Works for the current narrow scope and is not just a proof/stub.
+[WARN] Exists partially, or works only as a foundation/smoke path.
+[FAIL] Known broken or blocking.
+[TOBE] To Be Implemented for the real runtime SDK.
+
+Current narrow OK scope:
+[ OK ] UEFI x64 loader can load the kernel ELF and pass one plain OrynBootInfo pointer.
+[ OK ] Kernel-5 has a plain KernelMain source file.
+[ OK ] The old ORYN_KERNEL_APPLICATION registration is removed from Kernel-5.
+[ OK ] KernelMain returns bool for success/failure where that is the appropriate result.
+[ OK ] KernelMain can write Hello World with printf for the smoke path.
+[ OK ] Kernel-owned entry support owns the platform bridge around KernelMain.
+
+Important warnings:
+[WARN] The current printf path is a smoke path, not a completed stdout/console/device runtime.
+[WARN] LibC function manifests exist, but LibC is not yet a complete runtime SDK library stack.
+[WARN] Kernel module manifests exist, but they are not enough: modules must emit real code into kernel, userland services, libraries, apps, and devices.
+[WARN] Existing proof output must not be treated as runtime SDK completion.
+[WARN] Existing driver foundations must not be treated as completed runtime drivers.
+
+Runtime SDK principle:
+[TOBE] A module is not done when it has a manifest.
+[TOBE] A module is done when selecting it makes the SDK add the required kernel code, userland services, userland libraries, device drivers, startup order, package files, and testable runtime behaviour.
+[TOBE] The SDK must build the OS graph, not just validate it.
+
+1. Runtime SDK module contract:
+[TOBE] Define a module contract file format for every public module.
+[TOBE] Contract field: module id.
+[TOBE] Contract field: public SDK name.
+[TOBE] Contract field: kernel source units.
+[TOBE] Contract field: kernel headers.
+[TOBE] Contract field: userland service source units.
+[TOBE] Contract field: userland app source units.
+[TOBE] Contract field: userland command source units.
+[TOBE] Contract field: userland/static libraries.
+[TOBE] Contract field: device driver units.
+[TOBE] Contract field: generated glue units.
+[TOBE] Contract field: required files for /System.
+[TOBE] Contract field: prerequisites.
+[TOBE] Contract field: optional prerequisites.
+[TOBE] Contract field: provided capabilities.
+[TOBE] Contract field: startup phase.
+[TOBE] Contract field: shutdown phase.
+[TOBE] Contract field: service/app launch order.
+[TOBE] Contract field: public API return contract.
+[TOBE] Contract field: tests/smoke commands.
+
+2. Runtime SDK resolver:
+[TOBE] Read selected target.
+[TOBE] Read selected modules.
+[TOBE] Resolve required prerequisites automatically.
+[TOBE] Resolve optional prerequisites only when selected or needed.
+[TOBE] Detect cycles.
+[TOBE] Detect missing provider modules.
+[TOBE] Explain why every prerequisite was added.
+[TOBE] Write a human-readable module graph report.
+[TOBE] Write a machine-readable module graph file.
+[TOBE] Reject impossible module combinations.
+[TOBE] Support target-specific module alternatives.
+
+3. Runtime SDK emitter:
+[TOBE] Emit/copy selected kernel source units.
+[TOBE] Emit/copy selected kernel headers.
+[TOBE] Emit/copy selected userland service units.
+[TOBE] Emit/copy selected userland app units.
+[TOBE] Emit/copy selected external command units.
+[TOBE] Emit/copy selected library units.
+[TOBE] Emit/copy selected device driver units.
+[TOBE] Emit generated kernel startup source.
+[TOBE] Emit generated service startup source.
+[TOBE] Emit generated app launch source or launch table.
+[TOBE] Emit generated syscall tables.
+[TOBE] Emit generated service registry.
+[TOBE] Emit generated device registry.
+[TOBE] Emit generated public SDK include aggregation.
+
+4. Runtime SDK builder:
+[TOBE] Compile kernel modules into kernel archive/object units.
+[TOBE] Compile userland services into service ELFs.
+[TOBE] Compile userland apps into app ELFs.
+[TOBE] Compile external commands into command ELFs.
+[TOBE] Compile static libraries for userland clients.
+[TOBE] Compile device drivers according to target rules.
+[TOBE] Track dependencies for generated files.
+[TOBE] Incrementally rebuild changed C units only.
+[TOBE] Incrementally relink changed binaries only.
+[TOBE] Fail when generated code ignores a checkable return.
+
+5. Runtime SDK packager:
+[TOBE] Create /System/Kernel.
+[TOBE] Create /System/Services.
+[TOBE] Create /System/Libraries.
+[TOBE] Create /System/Apps.
+[TOBE] Create /System/Commands.
+[TOBE] Create /System/Drivers.
+[TOBE] Create /System/Fonts.
+[TOBE] Copy kernel ELF to the selected kernel path.
+[TOBE] Copy services to /System/Services.
+[TOBE] Copy libraries to /System/Libraries.
+[TOBE] Copy apps to /System/Apps.
+[TOBE] Copy commands to /System/Commands.
+[TOBE] Copy drivers/device data to /System/Drivers.
+[TOBE] Support hundreds of system image files.
+
+6. Kernel startup/runtime:
+[WARN] Kernel-owned entry invokes KernelMain for Hello World.
+[TOBE] Kernel-owned entry invokes generated runtime startup.
+[TOBE] Generated runtime startup checks every return.
+[TOBE] Optional modules can WARN and continue only when their contract allows it.
+[TOBE] Required modules fail startup when they fail.
+[TOBE] Runtime startup order is generated from the module graph.
+[TOBE] Runtime shutdown order is generated from the module graph.
+[TOBE] Runtime panic path is generated/registered from selected modules.
+[TOBE] Boot proof is removed from normal runtime boot.
+[TOBE] Diagnostics are available as explicit tests, not normal boot ownership.
+
+7. Public return rule:
+[TOBE] Public functions return bool when the only meaningful result is yes/no success.
+[TOBE] Public functions return OrynStatus when success/failure needs a code/message.
+[TOBE] Public functions return OrynXxxResult when they produce a value plus status.
+[TOBE] No public start/stop/create/open/read/write/load/launch/allocate/map/mount/register/send/receive/parse/validate function returns void.
+[TOBE] Generated startup checks all returns.
+[TOBE] Generated services check all returns.
+[TOBE] Userland client libraries expose checkable returns.
+[TOBE] Audit tool scans public headers and fails unchecked public void APIs.
+
+8. LibC and base libraries:
+[WARN] Minimal stdio functions are present for current kernel printf smoke path.
+[TOBE] Complete printf/vprintf/snprintf/vsnprintf behaviour.
+[TOBE] Complete string library conformance.
+[TOBE] Complete memory library conformance.
+[TOBE] Complete stdlib subset.
+[TOBE] Complete errno/status mapping.
+[TOBE] Complete userland libc build.
+[TOBE] Build libc as a library for userland apps/services.
+[TOBE] Separate kernel-safe libc subset from userland libc.
+[TOBE] External conformance tests for all public libc functions.
+
+9. Kernel/userland boundary:
+[TOBE] Exactly three syscall families: Get, Set, Event.
+[TOBE] Kernel syscall dispatcher.
+[TOBE] Userland syscall stub library.
+[TOBE] Syscall ABI definition.
+[TOBE] Syscall error/result convention.
+[TOBE] Service IPC over Get/Set/Event.
+[TOBE] Event queue delivery.
+[TOBE] Userland permissions/capabilities.
+
+10. Process and executable loading:
+[TOBE] Real scheduler runtime.
+[TOBE] Real process manager runtime.
+[TOBE] Thread lifecycle.
+[TOBE] Userland address spaces.
+[TOBE] ELF userland loader.
+[TOBE] App launch from /System/Apps.
+[TOBE] Service launch from /System/Services.
+[TOBE] Command launch from /System/Commands.
+[TOBE] Process exit and status reporting.
+[TOBE] Process wait/event model.
+
+11. Storage and filesystem:
+[TOBE] Block device runtime API.
+[TOBE] Device discovery service.
+[TOBE] FAT32 read implementation.
+[TOBE] FAT32 write implementation.
+[TOBE] FAT32 directory enumeration.
+[TOBE] VFS namespace.
+[TOBE] Mount table.
+[TOBE] File service.
+[TOBE] File client library.
+[TOBE] Shell commands use the file service, not internal command shortcuts.
+
+12. Console, input, display, and text:
+[TOBE] Console kernel bridge.
+[TOBE] Console userland service.
+[TOBE] Console client library.
+[TOBE] stdout/stderr routing.
+[TOBE] stdin/input routing.
+[TOBE] Serial/debug device abstraction.
+[TOBE] Framebuffer display abstraction.
+[TOBE] Keyboard interrupt driver.
+[TOBE] Keyboard event queue.
+[TOBE] Text measurement/wrapping.
+[TOBE] Font loading from /System/Fonts.
+[TOBE] Shell UI over console service.
+
+13. Device manager and drivers:
+[TOBE] Device manager service.
+[TOBE] Driver registry.
+[TOBE] Device capability model.
+[TOBE] PCI runtime discovery.
+[TOBE] Interrupt routing for devices.
+[TOBE] DMA ownership model.
+[TOBE] Storage drivers.
+[TOBE] Network drivers.
+[TOBE] Display drivers.
+[TOBE] Audio drivers.
+[TOBE] USB drivers.
+[TOBE] VirtIO drivers as real runtime drivers, not proof foundations.
+
+14. Commands and apps:
+[TOBE] Shell as a userland app.
+[TOBE] dir external command.
+[TOBE] ls external command.
+[TOBE] cd external command/shell builtin decision with clear contract.
+[TOBE] pwd external command.
+[TOBE] type external command.
+[TOBE] mkdir external command.
+[TOBE] del external command.
+[TOBE] copy external command.
+[TOBE] font external command.
+[TOBE] display external command.
+[TOBE] help external command.
+[TOBE] Commands are loaded by ExecutableLoader from /System/Commands.
+
+15. Networking:
+[TOBE] Network device runtime API.
+[TOBE] Network service.
+[TOBE] DHCP client.
+[TOBE] DNS client.
+[TOBE] TCP/UDP foundation.
+[TOBE] HTTP client/server.
+[TOBE] TLS.
+[TOBE] SSH.
+[TOBE] SMB/FTP/TFTP later.
+
+16. Diagnostics and testing:
+[TOBE] Convert proof suites into explicit diagnostics commands/tests.
+[TOBE] Normal boot should not spam proof lines.
+[TOBE] Runtime self-tests should be optional.
+[TOBE] Build-time validation should validate real emitted runtime graph.
+[TOBE] QEMU smoke test: Hello World.
+[TOBE] QEMU smoke test: launch file service.
+[TOBE] QEMU smoke test: launch shell.
+[TOBE] QEMU smoke test: run external dir command.
+[TOBE] QEMU smoke test: run external type command.
+
+17. Documentation:
+[TOBE] Runtime SDK architecture document.
+[TOBE] Module contract authoring guide.
+[TOBE] Public SDK return rule guide.
+[TOBE] Userland service writing guide.
+[TOBE] Userland app writing guide.
+[TOBE] Device driver writing guide.
+[TOBE] Kernel target writing guide.
+[TOBE] No new top-level README unless explicitly requested.
+
+Release suitability rule:
+[TOBE] Do not mark a module [ OK ] because a manifest, proof, placeholder, or skeleton exists.
+[TOBE] Mark a module [ OK ] only when it is selected through the SDK, emitted into the correct layer, built, linked, packaged, started, and checked through runtime behaviour.
