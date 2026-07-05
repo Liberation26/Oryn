@@ -3,6 +3,7 @@
 
 #include "OrynBootInfo.h"
 
+int KernelMain(const OrynBootInfo* bootInfo);
 void KernelStart(const OrynBootInfo* bootInfo);
 
 #endif

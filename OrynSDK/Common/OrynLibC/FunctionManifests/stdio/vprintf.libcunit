@@ -1,5 +1,5 @@
 ORYN_LIBC_FUNCTION_UNIT_MANIFEST_V1
-PackageVersion=0.5.187
+PackageVersion=0.5.189
 Category=stdio
 Unit=vprintf
 Source=stdio/vprintf.c
@@ -7,6 +7,6 @@ SourceLanguage=C11
 Freestanding=yes
 ObjectGranularity=function-unit
 PublicSymbols=vprintf
-StaticHelpers=OrynPrintfOut8,OrynPrintfWriteChar,OrynPrintfWriteText
+StaticHelpers=-
 RequiredBy=OrynLibC
-Notes=Generated from OrynLibC source unit; source remains implementation authority, manifest is the build/proof inventory contract.
+Notes=Kernel stdout bridge for printf; hardware debug/serial writes remain owned by KernelIo.
