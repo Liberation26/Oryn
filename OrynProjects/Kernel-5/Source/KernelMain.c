@@ -1,26 +1,7 @@
-#include "OrynKernelSdk.h"
-#include "OrynStatus.h"
+#include <stdio.h>
 
-static OrynStatus Kernel5MainChecked(OrynKernelSdkContext* kernel)
+int KernelMain(void)
 {
-    if (kernel == 0)
-    {
-        return OrynStatusInvalidArgument("Kernel SDK context was null.");
-    }
-
-    OrynKernelSdkWriteLine(kernel, "Hello World");
-
-    return OrynStatusOk("Kernel-5 completed.");
+    printf("Hello World\n");
+    return 0;
 }
-
-static void Kernel5Main(OrynKernelSdkContext* kernel)
-{
-    OrynStatus status = Kernel5MainChecked(kernel);
-
-    if (ORYN_STATUS_FAILED(status))
-    {
-        OrynKernelSdkWriteLine(kernel, status.Message);
-    }
-}
-
-ORYN_KERNEL_APPLICATION("Kernel-5", Kernel5Main)
