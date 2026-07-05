@@ -1,4 +1,4 @@
-OrynSDK ToDo2: runtime SDK percentage tracker 0.5.192
+OrynSDK ToDo2: runtime SDK percentage tracker 0.5.193
 
 This file tracks real runtime SDK completion using percentages instead of OK/WARN/TOBE tags.
 
@@ -18,7 +18,7 @@ Current narrow scope:
 [100%] KernelMain returns bool for success/failure where that is the appropriate result.
 [ 50%] KernelMain can write Hello World with printf for the smoke path.
 [ 25%] Kernel-owned entry support owns the current platform bridge around KernelMain.
-[ 10%] Runtime SDK direction is documented, but real module emission is not implemented.
+[ 25%] Runtime SDK direction now includes a real kernel-used selected-module startup path; full module emission is still separate work.
 
 1. Runtime SDK module contract:
 [  0%] Define a module contract file format for every public module.
@@ -97,10 +97,10 @@ Current narrow scope:
 
 6. Runtime startup:
 [ 25%] Kernel-owned entry bridge exists for the smoke path.
-[  0%] Generated startup calls selected modules in dependency order.
-[  0%] Startup stops on required module failure.
+[100%] Runtime startup calls selected compiled modules in manifest/dependency order before KernelMain.
+[100%] Startup stops before KernelMain when a required selected module fails or has no link root.
 [  0%] Startup continues on allowed optional module failure only when contract permits it.
-[  0%] Startup records module lifecycle state.
+[100%] Startup records Selected, Starting, Ready, Skipped, and Failed states through KernelModuleManifest.
 [  0%] Startup launches service manager.
 [  0%] Startup launches required userland services.
 [  0%] Startup launches shell as userland app.
@@ -202,7 +202,7 @@ Priority order:
 3. Runtime module emitter.
 4. Runtime build/link for kernel plus userland outputs.
 5. System packager.
-6. Generated kernel startup.
+6. Runtime selected-module startup hardening.
 7. Process/scheduler/syscalls.
 8. VFS/FAT32 enough to load userland programs.
 9. Service manager and shell launch.

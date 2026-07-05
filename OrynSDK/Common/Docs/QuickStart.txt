@@ -857,3 +857,8 @@ The kernel console scroll proof now validates line, page, and bottom scrolling w
 Expected proof markers include:
 [KERNEL] PASS: Kernel screen scroll proof keeps visible output stable.
 [KERNEL] PASS: Kernel screen visible presents are atomic.
+
+0.5.193 runtime selected-module startup:
+- Targets/UEFI/X64/KernelSupport/Source/Runtime/KernelRuntimeStartup.c is now the kernel-used runtime SDK startup module.
+- KernelStart calls OrynKernelRuntimeStartSelectedModules before KernelMain, so selected compiled modules are actually touched, state-transitioned, and marked ready through KernelModuleManifest.
+- Startup stops before KernelMain if a required selected module fails or if its link root is missing. Optional modules whose BootInfo/VM selection tokens are not satisfied are skipped as module state, not treated as completed runtime work.

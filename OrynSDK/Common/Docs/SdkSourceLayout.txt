@@ -367,3 +367,13 @@ OrynLibC 0.5.92 foundation:
 - KernelModuleManifestData.c and KernelModuleManifest.h are generated from per-module manifests and include the compiled-in module registry.
 - BootProof starts modules only when the supplied BootInfo and project-selected VM options satisfy the manifest selection tokens.
 - Optional modules with no selected start input WARN and skip; selected modules with fatal missing prerequisites FAIL.
+
+
+0.5.108 Kernel heap/process stack proof fix:
+- KernelHeap multi-page spans now choose the lowest address in the allocated contiguous run.
+- Process proof logs exact failed sub-step before Scheduler prerequisite policy reports dependent blockage.
+
+0.5.193 runtime selected-module startup:
+- Targets/UEFI/X64/KernelSupport/Source/Runtime/KernelRuntimeStartup.c is now the kernel-used runtime SDK startup module.
+- KernelStart calls OrynKernelRuntimeStartSelectedModules before KernelMain, so selected compiled modules are actually touched, state-transitioned, and marked ready through KernelModuleManifest.
+- Startup stops before KernelMain if a required selected module fails or if its link root is missing. Optional modules whose BootInfo/VM selection tokens are not satisfied are skipped as module state, not treated as completed runtime work.

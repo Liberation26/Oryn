@@ -1,4 +1,5 @@
 #include "KernelIo.h"
+#include "KernelRuntimeStartup.h"
 #include "OrynBootInfo.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -19,6 +20,15 @@ void KernelStart(const OrynBootInfo* bootInfo)
     bool succeeded;
 
     KernelIoInit();
+
+    OrynKernelRuntimeStartupResult startup = OrynKernelRuntimeStartSelectedModules(bootInfo);
+    if (!OrynKernelRuntimeStartupSucceeded(&startup))
+    {
+#if !ORYN_VM_INTERACTIVE_DISPLAY
+        KernelIoExitQemuFailure();
+#endif
+        OrynKernelEntryHaltLoop();
+    }
 
     succeeded = KernelMain(bootInfo);
 
