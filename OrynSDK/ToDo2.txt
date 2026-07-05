@@ -1,255 +1,209 @@
-OrynSDK ToDo2 reset: 0.5.191
+OrynSDK ToDo2: runtime SDK percentage tracker 0.5.192
 
-This file is now the runtime SDK work list. The previous entries overstated readiness by counting proofs, manifests, placeholders, and foundations as completion. From this reset forward, almost everything remains [TOBE] until the SDK can emit, build, link, package, and run the real module code needed by the kernel and userland.
+This file tracks real runtime SDK completion using percentages instead of OK/WARN/TOBE tags.
 
-Status tags:
-[ OK ] Works for the current narrow scope and is not just a proof/stub.
-[WARN] Exists partially, or works only as a foundation/smoke path.
-[FAIL] Known broken or blocking.
-[TOBE] To Be Implemented for the real runtime SDK.
+Completion scale:
+[100%] Implemented and accepted for the current runtime SDK direction.
+[ 75%] Mostly implemented, but still needs cleanup, integration, or wider proof.
+[ 50%] Partial working foundation exists, but it is not complete runtime SDK behaviour.
+[ 25%] Early scaffold, smoke path, proof path, or concept exists.
+[  0%] Not implemented yet for the runtime SDK.
 
-Current narrow OK scope:
-[ OK ] UEFI x64 loader can load the kernel ELF and pass one plain OrynBootInfo pointer.
-[ OK ] Kernel-5 has a plain KernelMain source file.
-[ OK ] The old ORYN_KERNEL_APPLICATION registration is removed from Kernel-5.
-[ OK ] KernelMain returns bool for success/failure where that is the appropriate result.
-[ OK ] KernelMain can write Hello World with printf for the smoke path.
-[ OK ] Kernel-owned entry support owns the platform bridge around KernelMain.
+Rule:
+A module is not complete because it has a proof, manifest, placeholder, or boot report line. A module is complete only when selecting it makes the SDK emit/include the required kernel code, userland services, userland libraries, device drivers, startup order, package files, and testable runtime behaviour.
 
-Important warnings:
-[WARN] The current printf path is a smoke path, not a completed stdout/console/device runtime.
-[WARN] LibC function manifests exist, but LibC is not yet a complete runtime SDK library stack.
-[WARN] Kernel module manifests exist, but they are not enough: modules must emit real code into kernel, userland services, libraries, apps, and devices.
-[WARN] Existing proof output must not be treated as runtime SDK completion.
-[WARN] Existing driver foundations must not be treated as completed runtime drivers.
-
-Runtime SDK principle:
-[TOBE] A module is not done when it has a manifest.
-[TOBE] A module is done when selecting it makes the SDK add the required kernel code, userland services, userland libraries, device drivers, startup order, package files, and testable runtime behaviour.
-[TOBE] The SDK must build the OS graph, not just validate it.
+Current narrow scope:
+[100%] Kernel-5 has a plain KernelMain source file.
+[100%] ORYN_KERNEL_APPLICATION registration is removed from Kernel-5.
+[100%] KernelMain returns bool for success/failure where that is the appropriate result.
+[ 50%] KernelMain can write Hello World with printf for the smoke path.
+[ 25%] Kernel-owned entry support owns the current platform bridge around KernelMain.
+[ 10%] Runtime SDK direction is documented, but real module emission is not implemented.
 
 1. Runtime SDK module contract:
-[TOBE] Define a module contract file format for every public module.
-[TOBE] Contract field: module id.
-[TOBE] Contract field: public SDK name.
-[TOBE] Contract field: kernel source units.
-[TOBE] Contract field: kernel headers.
-[TOBE] Contract field: userland service source units.
-[TOBE] Contract field: userland app source units.
-[TOBE] Contract field: userland command source units.
-[TOBE] Contract field: userland/static libraries.
-[TOBE] Contract field: device driver units.
-[TOBE] Contract field: generated glue units.
-[TOBE] Contract field: required files for /System.
-[TOBE] Contract field: prerequisites.
-[TOBE] Contract field: optional prerequisites.
-[TOBE] Contract field: provided capabilities.
-[TOBE] Contract field: startup phase.
-[TOBE] Contract field: shutdown phase.
-[TOBE] Contract field: service/app launch order.
-[TOBE] Contract field: public API return contract.
-[TOBE] Contract field: tests/smoke commands.
+[  0%] Define a module contract file format for every public module.
+[  0%] Contract field: module id.
+[  0%] Contract field: public SDK name.
+[  0%] Contract field: kernel source units.
+[  0%] Contract field: kernel headers.
+[  0%] Contract field: userland service source units.
+[  0%] Contract field: userland app source units.
+[  0%] Contract field: userland command source units.
+[  0%] Contract field: userland/static libraries.
+[  0%] Contract field: device driver units.
+[  0%] Contract field: generated glue units.
+[  0%] Contract field: required files for /System.
+[  0%] Contract field: prerequisites.
+[  0%] Contract field: optional prerequisites.
+[  0%] Contract field: provided capabilities.
+[  0%] Contract field: startup phase.
+[  0%] Contract field: shutdown phase.
+[  0%] Contract field: service/app launch order.
+[  0%] Contract field: public API return contract.
+[  0%] Contract field: tests/smoke commands.
 
 2. Runtime SDK resolver:
-[TOBE] Read selected target.
-[TOBE] Read selected modules.
-[TOBE] Resolve required prerequisites automatically.
-[TOBE] Resolve optional prerequisites only when selected or needed.
-[TOBE] Detect cycles.
-[TOBE] Detect missing provider modules.
-[TOBE] Explain why every prerequisite was added.
-[TOBE] Write a human-readable module graph report.
-[TOBE] Write a machine-readable module graph file.
-[TOBE] Reject impossible module combinations.
-[TOBE] Support target-specific module alternatives.
+[  0%] Read selected target.
+[  0%] Read selected modules.
+[  0%] Resolve required prerequisites automatically.
+[  0%] Resolve optional prerequisites only when selected or needed.
+[  0%] Detect cycles.
+[  0%] Detect missing provider modules.
+[  0%] Explain why every prerequisite was added.
+[  0%] Write a human-readable module graph report.
+[  0%] Write a machine-readable module graph file.
+[  0%] Reject impossible module combinations.
+[  0%] Support target-specific module alternatives.
 
 3. Runtime SDK emitter:
-[TOBE] Emit/copy selected kernel source units.
-[TOBE] Emit/copy selected kernel headers.
-[TOBE] Emit/copy selected userland service units.
-[TOBE] Emit/copy selected userland app units.
-[TOBE] Emit/copy selected external command units.
-[TOBE] Emit/copy selected library units.
-[TOBE] Emit/copy selected device driver units.
-[TOBE] Emit generated kernel startup source.
-[TOBE] Emit generated service startup source.
-[TOBE] Emit generated app launch source or launch table.
-[TOBE] Emit generated syscall tables.
-[TOBE] Emit generated service registry.
-[TOBE] Emit generated device registry.
-[TOBE] Emit generated public SDK include aggregation.
+[  0%] Emit/copy selected kernel source units.
+[  0%] Emit/copy selected kernel headers.
+[  0%] Emit/copy selected userland service units.
+[  0%] Emit/copy selected userland app units.
+[  0%] Emit/copy selected external command units.
+[  0%] Emit/copy selected library units.
+[  0%] Emit/copy selected device driver units.
+[  0%] Emit generated kernel startup source.
+[  0%] Emit generated service startup source.
+[  0%] Emit generated app launch source or launch table.
+[  0%] Emit generated syscall tables.
+[  0%] Emit generated service registry.
+[  0%] Emit generated device registry.
+[  0%] Emit generated public SDK include aggregation.
 
-4. Runtime SDK builder:
-[TOBE] Compile kernel modules into kernel archive/object units.
-[TOBE] Compile userland services into service ELFs.
-[TOBE] Compile userland apps into app ELFs.
-[TOBE] Compile external commands into command ELFs.
-[TOBE] Compile static libraries for userland clients.
-[TOBE] Compile device drivers according to target rules.
-[TOBE] Track dependencies for generated files.
-[TOBE] Incrementally rebuild changed C units only.
-[TOBE] Incrementally relink changed binaries only.
-[TOBE] Fail when generated code ignores a checkable return.
+4. Runtime SDK build/link:
+[ 25%] Kernel C-to-object compilation foundation exists.
+[ 25%] Kernel ELF link foundation exists.
+[  0%] Build userland service ELFs.
+[  0%] Build userland app ELFs.
+[  0%] Build external command ELFs.
+[  0%] Build userland static libraries.
+[  0%] Build reusable module archives.
+[  0%] Link kernel from selected module archives.
+[  0%] Link apps/services from selected userland libraries.
+[  0%] Produce link maps and dead-code reports.
 
-5. Runtime SDK packager:
-[TOBE] Create /System/Kernel.
-[TOBE] Create /System/Services.
-[TOBE] Create /System/Libraries.
-[TOBE] Create /System/Apps.
-[TOBE] Create /System/Commands.
-[TOBE] Create /System/Drivers.
-[TOBE] Create /System/Fonts.
-[TOBE] Copy kernel ELF to the selected kernel path.
-[TOBE] Copy services to /System/Services.
-[TOBE] Copy libraries to /System/Libraries.
-[TOBE] Copy apps to /System/Apps.
-[TOBE] Copy commands to /System/Commands.
-[TOBE] Copy drivers/device data to /System/Drivers.
-[TOBE] Support hundreds of system image files.
+5. Runtime SDK system packager:
+[ 25%] ESP/image file placement foundation exists.
+[  0%] Package /System/Kernel.
+[  0%] Package /System/Services.
+[  0%] Package /System/Libraries.
+[  0%] Package /System/Apps.
+[ 10%] Package /System/Commands concept exists.
+[  0%] Package /System/Drivers.
+[  0%] Package /System/Fonts.
+[  0%] Package module/device data files.
+[  0%] Produce package manifest from selected modules.
 
-6. Kernel startup/runtime:
-[WARN] Kernel-owned entry invokes KernelMain for Hello World.
-[TOBE] Kernel-owned entry invokes generated runtime startup.
-[TOBE] Generated runtime startup checks every return.
-[TOBE] Optional modules can WARN and continue only when their contract allows it.
-[TOBE] Required modules fail startup when they fail.
-[TOBE] Runtime startup order is generated from the module graph.
-[TOBE] Runtime shutdown order is generated from the module graph.
-[TOBE] Runtime panic path is generated/registered from selected modules.
-[TOBE] Boot proof is removed from normal runtime boot.
-[TOBE] Diagnostics are available as explicit tests, not normal boot ownership.
+6. Runtime startup:
+[ 25%] Kernel-owned entry bridge exists for the smoke path.
+[  0%] Generated startup calls selected modules in dependency order.
+[  0%] Startup stops on required module failure.
+[  0%] Startup continues on allowed optional module failure only when contract permits it.
+[  0%] Startup records module lifecycle state.
+[  0%] Startup launches service manager.
+[  0%] Startup launches required userland services.
+[  0%] Startup launches shell as userland app.
 
-7. Public return rule:
-[TOBE] Public functions return bool when the only meaningful result is yes/no success.
-[TOBE] Public functions return OrynStatus when success/failure needs a code/message.
-[TOBE] Public functions return OrynXxxResult when they produce a value plus status.
-[TOBE] No public start/stop/create/open/read/write/load/launch/allocate/map/mount/register/send/receive/parse/validate function returns void.
-[TOBE] Generated startup checks all returns.
-[TOBE] Generated services check all returns.
-[TOBE] Userland client libraries expose checkable returns.
-[TOBE] Audit tool scans public headers and fails unchecked public void APIs.
+7. Public SDK return rule:
+[ 25%] Direction agreed: public functions return bool, OrynStatus, or OrynXxxResult as appropriate.
+[ 25%] KernelMain uses bool for the simple success/failure smoke path.
+[  0%] Common OrynStatus/OrynResult convention completed across public SDK APIs.
+[  0%] Audit tool integrated into build.
+[  0%] Existing public void APIs converted.
+[  0%] Generated code checks every public return.
+[  0%] Warnings/failures are returned as data, not only printed.
 
-8. LibC and base libraries:
-[WARN] Minimal stdio functions are present for current kernel printf smoke path.
-[TOBE] Complete printf/vprintf/snprintf/vsnprintf behaviour.
-[TOBE] Complete string library conformance.
-[TOBE] Complete memory library conformance.
-[TOBE] Complete stdlib subset.
-[TOBE] Complete errno/status mapping.
-[TOBE] Complete userland libc build.
-[TOBE] Build libc as a library for userland apps/services.
-[TOBE] Separate kernel-safe libc subset from userland libc.
-[TOBE] External conformance tests for all public libc functions.
+8. Kernel runtime foundations:
+[ 25%] BootInfo handoff works.
+[ 25%] Kernel-owned entry bridge exists.
+[ 10%] Kernel logging/output abstraction exists only as smoke/proof path.
+[  0%] Kernel lifecycle states.
+[  0%] Kernel panic path.
+[  0%] Kernel shutdown/restart path.
+[  0%] Runtime diagnostic service.
 
-9. Kernel/userland boundary:
-[TOBE] Exactly three syscall families: Get, Set, Event.
-[TOBE] Kernel syscall dispatcher.
-[TOBE] Userland syscall stub library.
-[TOBE] Syscall ABI definition.
-[TOBE] Syscall error/result convention.
-[TOBE] Service IPC over Get/Set/Event.
-[TOBE] Event queue delivery.
-[TOBE] Userland permissions/capabilities.
+9. Memory runtime:
+[ 25%] Memory map/reporting foundations exist.
+[ 10%] Physical allocator foundation exists but is not accepted as full runtime completion.
+[ 10%] Virtual memory foundation exists but is not accepted as full runtime completion.
+[ 10%] Kernel heap foundation exists but is not accepted as full runtime completion.
+[  0%] Userland address-space model.
+[  0%] Kernel/user split.
+[  0%] DMA-safe allocation.
+[  0%] Stack and guard-page policy.
 
-10. Process and executable loading:
-[TOBE] Real scheduler runtime.
-[TOBE] Real process manager runtime.
-[TOBE] Thread lifecycle.
-[TOBE] Userland address spaces.
-[TOBE] ELF userland loader.
-[TOBE] App launch from /System/Apps.
-[TOBE] Service launch from /System/Services.
-[TOBE] Command launch from /System/Commands.
-[TOBE] Process exit and status reporting.
-[TOBE] Process wait/event model.
+10. CPU/interrupt/timer runtime:
+[ 25%] Early PIC/APIC/HPET/GDT/IDT work exists as foundations.
+[  0%] Stable GDT runtime install.
+[  0%] Stable IDT runtime install.
+[  0%] Exception handling.
+[  0%] IRQ0 timer interrupt.
+[  0%] IRQ1 keyboard interrupt.
+[  0%] APIC/x2APIC/IOAPIC routing.
+[  0%] SMP runtime.
+[  0%] Monotonic clock and scheduler tick.
 
-11. Storage and filesystem:
-[TOBE] Block device runtime API.
-[TOBE] Device discovery service.
-[TOBE] FAT32 read implementation.
-[TOBE] FAT32 write implementation.
-[TOBE] FAT32 directory enumeration.
-[TOBE] VFS namespace.
-[TOBE] Mount table.
-[TOBE] File service.
-[TOBE] File client library.
-[TOBE] Shell commands use the file service, not internal command shortcuts.
+11. Userland execution:
+[ 10%] ExecutableLoader command path skeleton exists.
+[  0%] Process abstraction.
+[  0%] Thread abstraction.
+[  0%] Scheduler/context switching.
+[  0%] User/kernel privilege transition.
+[  0%] Exactly three syscall families: Get, Set, Event.
+[  0%] Service manager.
+[  0%] Shell as a separate userland app.
+[  0%] External commands launched as userland programs.
 
-12. Console, input, display, and text:
-[TOBE] Console kernel bridge.
-[TOBE] Console userland service.
-[TOBE] Console client library.
-[TOBE] stdout/stderr routing.
-[TOBE] stdin/input routing.
-[TOBE] Serial/debug device abstraction.
-[TOBE] Framebuffer display abstraction.
-[TOBE] Keyboard interrupt driver.
-[TOBE] Keyboard event queue.
-[TOBE] Text measurement/wrapping.
-[TOBE] Font loading from /System/Fonts.
-[TOBE] Shell UI over console service.
+12. Storage and filesystem runtime:
+[ 25%] ESP file placement foundation exists.
+[ 10%] FAT32/VFS concepts exist.
+[  0%] Block device abstraction.
+[  0%] PCI storage discovery.
+[  0%] AHCI driver.
+[  0%] NVMe driver.
+[  0%] USB mass storage driver.
+[  0%] FAT32 production read/write.
+[  0%] VFS mount table.
 
-13. Device manager and drivers:
-[TOBE] Device manager service.
-[TOBE] Driver registry.
-[TOBE] Device capability model.
-[TOBE] PCI runtime discovery.
-[TOBE] Interrupt routing for devices.
-[TOBE] DMA ownership model.
-[TOBE] Storage drivers.
-[TOBE] Network drivers.
-[TOBE] Display drivers.
-[TOBE] Audio drivers.
-[TOBE] USB drivers.
-[TOBE] VirtIO drivers as real runtime drivers, not proof foundations.
+13. Console/input/display runtime:
+[ 25%] Framebuffer and screen foundations exist.
+[ 10%] Console is not yet a real runtime service.
+[ 10%] Keyboard path is not yet stable interrupt-driven input.
+[  0%] Display driver registry.
+[  0%] EDID/mode enumeration.
+[  0%] Double-buffering as runtime display policy.
+[  0%] Console service.
+[  0%] Shell line editor.
+[  0%] Font/TTF runtime path.
 
-14. Commands and apps:
-[TOBE] Shell as a userland app.
-[TOBE] dir external command.
-[TOBE] ls external command.
-[TOBE] cd external command/shell builtin decision with clear contract.
-[TOBE] pwd external command.
-[TOBE] type external command.
-[TOBE] mkdir external command.
-[TOBE] del external command.
-[TOBE] copy external command.
-[TOBE] font external command.
-[TOBE] display external command.
-[TOBE] help external command.
-[TOBE] Commands are loaded by ExecutableLoader from /System/Commands.
+14. Drivers, buses, and networking:
+[ 10%] Driver/bus concepts exist.
+[  0%] PCI/PCIe enumerator.
+[  0%] ACPI parser for runtime ownership.
+[  0%] Driver registry and lifecycle.
+[  0%] Device object model.
+[  0%] NIC model.
+[  0%] Ethernet/ARP/IP/UDP/TCP.
+[  0%] DHCP, DNS, HTTP, TLS.
 
-15. Networking:
-[TOBE] Network device runtime API.
-[TOBE] Network service.
-[TOBE] DHCP client.
-[TOBE] DNS client.
-[TOBE] TCP/UDP foundation.
-[TOBE] HTTP client/server.
-[TOBE] TLS.
-[TOBE] SSH.
-[TOBE] SMB/FTP/TFTP later.
+15. Diagnostics and tests:
+[ 25%] Diagnostics foundations exist.
+[ 25%] Boot-stage debug logging exists.
+[ 25%] Kernel-entry smoke marker exists.
+[  0%] Diagnostics app outside KernelMain.
+[  0%] Runtime self-test runner.
+[  0%] Automated QEMU pass/fail capture based on runtime tests.
+[  0%] Regression tests for every module.
 
-16. Diagnostics and testing:
-[TOBE] Convert proof suites into explicit diagnostics commands/tests.
-[TOBE] Normal boot should not spam proof lines.
-[TOBE] Runtime self-tests should be optional.
-[TOBE] Build-time validation should validate real emitted runtime graph.
-[TOBE] QEMU smoke test: Hello World.
-[TOBE] QEMU smoke test: launch file service.
-[TOBE] QEMU smoke test: launch shell.
-[TOBE] QEMU smoke test: run external dir command.
-[TOBE] QEMU smoke test: run external type command.
-
-17. Documentation:
-[TOBE] Runtime SDK architecture document.
-[TOBE] Module contract authoring guide.
-[TOBE] Public SDK return rule guide.
-[TOBE] Userland service writing guide.
-[TOBE] Userland app writing guide.
-[TOBE] Device driver writing guide.
-[TOBE] Kernel target writing guide.
-[TOBE] No new top-level README unless explicitly requested.
-
-Release suitability rule:
-[TOBE] Do not mark a module [ OK ] because a manifest, proof, placeholder, or skeleton exists.
-[TOBE] Mark a module [ OK ] only when it is selected through the SDK, emitted into the correct layer, built, linked, packaged, started, and checked through runtime behaviour.
+Priority order:
+1. Runtime module contract.
+2. Runtime module resolver.
+3. Runtime module emitter.
+4. Runtime build/link for kernel plus userland outputs.
+5. System packager.
+6. Generated kernel startup.
+7. Process/scheduler/syscalls.
+8. VFS/FAT32 enough to load userland programs.
+9. Service manager and shell launch.
+10. External commands as userland apps.

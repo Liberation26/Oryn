@@ -15,19 +15,19 @@ Boot and handoff:
 [ OK ] Kernel command line and boot configuration block.
 
 Kernel entry and ownership:
-[ OK ] We need IDT
-[ OK ] We need GDT
-[ OK ] We need PIC,APIC, and HPET
-[ OK ] We need Interrupts
-[ OK ] We Need SysCalls
-[ OK ] We need PCI Discovery
-[ OK ] We Need Multi-Core processing
-[ OK ] We need to be able to set the PIC/APIC/2xAPIC/HPET settings for the VM
-[ OK ] We need the screen to be double buffered
-[ OK ] We need screen scrolling implemented
-[ OK ] Kernel halts itself instead of returning to the loader.
-[ OK ] Dedicated kernel lifecycle states.
-[ OK ] Kernel-owned panic screen/report path.
+[TOBE] We need IDT
+[TOBE] We need GDT
+[TOBE] We need PIC,APIC, and HPET
+[TOBE] We need Interrupts
+[TOBE] We Need SysCalls
+[TOBE] We need PCI Discovery
+[TOBE] We Need Multi-Core processing
+[TOBE] We need to be able to set the PIC/APIC/2xAPIC/HPET settings for the VM
+[TOBE] We need the screen to be double buffered
+[TOBE] We need screen scrolling implemented
+[TOBE] Kernel halts itself instead of returning to the loader.
+[TOBE] Dedicated kernel lifecycle states.
+[TOBE] Kernel-owned panic screen/report path.
 
 Build and linking:
 [TOBE] Incremental C-to-object compilation.
