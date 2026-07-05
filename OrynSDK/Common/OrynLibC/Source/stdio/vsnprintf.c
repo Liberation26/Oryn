@@ -1,90 +1,196 @@
-#include "stdarg.h"
-#include "stddef.h"
-#include "stdint.h"
-#include "stdio.h"
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 
-static void PutChar(char* target, size_t size, size_t* used, char value)
+static void OrynStdoutBufferPut(char* target, size_t size, size_t* used, char value)
 {
-    if (*used + 1U < size) { target[*used] = value; }
-    ++(*used);
-}
-
-static void PutText(char* target, size_t size, size_t* used, const char* text)
-{
-    if (text == 0) { text = "(null)"; }
-    while (*text != 0) { PutChar(target, size, used, *text++); }
-}
-
-static void PutUnsigned(char* target, size_t size, size_t* used,
-    unsigned long long value, unsigned base, int upper)
-{
-    char digits[32];
-    size_t count = 0U;
-    const char* alphabet = upper ? "0123456789ABCDEF" : "0123456789abcdef";
-    if (value == 0ULL) { PutChar(target, size, used, '0'); return; }
-    while (value != 0ULL)
+    if (target != 0 && size > 0U && *used + 1U < size)
     {
-        digits[count++] = alphabet[value % base];
-        value /= base;
+        target[*used] = value;
     }
-    while (count > 0U) { PutChar(target, size, used, digits[--count]); }
+
+    *used = *used + 1U;
 }
 
-static void PutSigned(char* target, size_t size, size_t* used, long long value)
+static void OrynStdoutBufferPutString(char* target, size_t size, size_t* used, const char* text)
 {
-    unsigned long long magnitude;
-    if (value < 0)
+    const char* current = text;
+
+    if (current == 0)
     {
-        PutChar(target, size, used, '-');
-        magnitude = (unsigned long long)(-(value + 1LL)) + 1ULL;
+        current = "(null)";
+    }
+
+    while (*current != '\0')
+    {
+        OrynStdoutBufferPut(target, size, used, *current);
+        ++current;
+    }
+}
+
+static void OrynStdoutBufferPutUnsigned(char* target, size_t size, size_t* used, unsigned long long value, unsigned int base, int uppercase)
+{
+    char buffer[32];
+    unsigned int index = 0U;
+    const char* digits = uppercase ? "0123456789ABCDEF" : "0123456789abcdef";
+
+    if (base < 2U)
+    {
+        base = 10U;
+    }
+
+    if (value == 0ULL)
+    {
+        OrynStdoutBufferPut(target, size, used, '0');
+        return;
+    }
+
+    while (value != 0ULL && index < (unsigned int)sizeof(buffer))
+    {
+        buffer[index] = digits[value % base];
+        value = value / base;
+        ++index;
+    }
+
+    while (index > 0U)
+    {
+        --index;
+        OrynStdoutBufferPut(target, size, used, buffer[index]);
+    }
+}
+
+static void OrynStdoutBufferPutSigned(char* target, size_t size, size_t* used, long long value)
+{
+    unsigned long long unsignedValue;
+
+    if (value < 0LL)
+    {
+        OrynStdoutBufferPut(target, size, used, '-');
+        unsignedValue = (unsigned long long)(0ULL - (unsigned long long)value);
     }
     else
     {
-        magnitude = (unsigned long long)value;
+        unsignedValue = (unsigned long long)value;
     }
-    PutUnsigned(target, size, used, magnitude, 10U, 0);
+
+    OrynStdoutBufferPutUnsigned(target, size, used, unsignedValue, 10U, 0);
 }
 
 int vsnprintf(char* restrict target, size_t size, const char* restrict format, va_list args)
 {
     size_t used = 0U;
-    while (*format != 0)
+    const char* current = format;
+
+    if (format == 0)
     {
-        int long_count = 0;
-        if (*format != '%') { PutChar(target, size, &used, *format++); continue; }
-        ++format;
-        if (*format == '%') { PutChar(target, size, &used, *format++); continue; }
-        while (*format == 'l') { ++long_count; ++format; }
-        switch (*format++)
+        if (target != 0 && size > 0U)
         {
-            case 'c': PutChar(target, size, &used, (char)va_arg(args, int)); break;
-            case 's': PutText(target, size, &used, va_arg(args, const char*)); break;
-            case 'd': case 'i':
-                PutSigned(target, size, &used,
-                    long_count >= 2 ? va_arg(args, long long) :
-                    long_count == 1 ? va_arg(args, long) : va_arg(args, int));
-                break;
-            case 'u':
-                PutUnsigned(target, size, &used,
-                    long_count >= 2 ? va_arg(args, unsigned long long) :
-                    long_count == 1 ? va_arg(args, unsigned long) : va_arg(args, unsigned int), 10U, 0);
-                break;
-            case 'x': case 'X':
-                PutUnsigned(target, size, &used,
-                    long_count >= 2 ? va_arg(args, unsigned long long) :
-                    long_count == 1 ? va_arg(args, unsigned long) : va_arg(args, unsigned int),
-                    16U, format[-1] == 'X');
-                break;
-            case 'p':
-                PutText(target, size, &used, "0x");
-                PutUnsigned(target, size, &used, (uintptr_t)va_arg(args, void*), 16U, 0);
-                break;
-            default: PutChar(target, size, &used, '?'); break;
+            target[0] = '\0';
+        }
+
+        return -1;
+    }
+
+    while (*current != '\0')
+    {
+        if (*current != '%')
+        {
+            OrynStdoutBufferPut(target, size, &used, *current);
+            ++current;
+            continue;
+        }
+
+        ++current;
+
+        if (*current == '%')
+        {
+            OrynStdoutBufferPut(target, size, &used, '%');
+        }
+        else if (*current == 's')
+        {
+            OrynStdoutBufferPutString(target, size, &used, va_arg(args, const char*));
+        }
+        else if (*current == 'c')
+        {
+            OrynStdoutBufferPut(target, size, &used, (char)va_arg(args, int));
+        }
+        else if (*current == 'd' || *current == 'i')
+        {
+            OrynStdoutBufferPutSigned(target, size, &used, (long long)va_arg(args, int));
+        }
+        else if (*current == 'u')
+        {
+            OrynStdoutBufferPutUnsigned(target, size, &used, (unsigned long long)va_arg(args, unsigned int), 10U, 0);
+        }
+        else if (*current == 'x')
+        {
+            OrynStdoutBufferPutUnsigned(target, size, &used, (unsigned long long)va_arg(args, unsigned int), 16U, 0);
+        }
+        else if (*current == 'X')
+        {
+            OrynStdoutBufferPutUnsigned(target, size, &used, (unsigned long long)va_arg(args, unsigned int), 16U, 1);
+        }
+        else if (*current == 'p')
+        {
+            OrynStdoutBufferPutString(target, size, &used, "0x");
+            OrynStdoutBufferPutUnsigned(target, size, &used, (unsigned long long)(uintptr_t)va_arg(args, void*), 16U, 0);
+        }
+        else if (*current == 'l')
+        {
+            ++current;
+
+            if (*current == 'l')
+            {
+                ++current;
+            }
+
+            if (*current == 'd' || *current == 'i')
+            {
+                OrynStdoutBufferPutSigned(target, size, &used, va_arg(args, long long));
+            }
+            else if (*current == 'u')
+            {
+                OrynStdoutBufferPutUnsigned(target, size, &used, va_arg(args, unsigned long long), 10U, 0);
+            }
+            else if (*current == 'x')
+            {
+                OrynStdoutBufferPutUnsigned(target, size, &used, va_arg(args, unsigned long long), 16U, 0);
+            }
+            else if (*current == 'X')
+            {
+                OrynStdoutBufferPutUnsigned(target, size, &used, va_arg(args, unsigned long long), 16U, 1);
+            }
+            else
+            {
+                OrynStdoutBufferPut(target, size, &used, '%');
+                OrynStdoutBufferPut(target, size, &used, 'l');
+                OrynStdoutBufferPut(target, size, &used, *current);
+            }
+        }
+        else
+        {
+            OrynStdoutBufferPut(target, size, &used, '%');
+            OrynStdoutBufferPut(target, size, &used, *current);
+        }
+
+        if (*current != '\0')
+        {
+            ++current;
         }
     }
-    if (size != 0U)
+
+    if (target != 0 && size > 0U)
     {
-        target[(used < size) ? used : (size - 1U)] = 0;
+        if (used < size)
+        {
+            target[used] = '\0';
+        }
+        else
+        {
+            target[size - 1U] = '\0';
+        }
     }
+
     return (int)used;
 }
