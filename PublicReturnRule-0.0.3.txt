@@ -1,0 +1,57 @@
+Oryn Public Return Rule 0.0.3
+================================
+
+This package directly replaces:
+
+    OrynProjects/Kernel-5/Source/KernelMain.c
+
+The replacement changes Kernel5Main from:
+
+    static void Kernel5Main(...)
+
+To:
+
+    static OrynStatus Kernel5Main(...)
+
+It also checks the return from OrynKernelSdkWriteLine.
+
+Windows / PowerShell:
+
+    .\Apply-OrynPublicReturnRule-0.0.3.ps1 -SdkRoot C:\OrynSDK
+
+WSL / Linux:
+
+    chmod +x ./apply-oryn-public-return-rule-0.0.3.sh
+    ./apply-oryn-public-return-rule-0.0.3.sh /home/dave/OrynSDK
+
+Expected KernelMain.c after applying:
+
+    #include "OrynKernelSdk.h"
+
+    static OrynStatus Kernel5Main(OrynKernelSdkContext* kernel)
+    {
+        OrynStatus status;
+
+        if (kernel == 0)
+        {
+            return OrynStatusInvalidArgument("Kernel SDK context was null.");
+        }
+
+        status = OrynKernelSdkWriteLine(kernel, "Hello World");
+        if (ORYN_STATUS_FAILED(status))
+        {
+            return status;
+        }
+
+        return OrynStatusOk("Kernel-5 completed.");
+    }
+
+    ORYN_KERNEL_APPLICATION("Kernel-5", Kernel5Main)
+
+Important:
+
+If the build fails after this, that is useful because it means the next unchecked SDK layer has been exposed. The likely next fixes are:
+
+1. OrynKernelSdkWriteLine must return OrynStatus.
+2. ORYN_KERNEL_APPLICATION must accept an OrynStatus-returning entry point.
+3. The generated kernel launcher must check and report the returned status.

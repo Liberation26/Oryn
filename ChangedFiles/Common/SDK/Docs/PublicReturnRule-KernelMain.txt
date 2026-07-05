@@ -1,0 +1,37 @@
+Oryn public return rule for KernelMain
+=======================================
+
+Kernel applications must no longer use void entry points.
+
+Old:
+
+    static void Kernel5Main(OrynKernelSdkContext* kernel)
+    {
+        OrynKernelSdkWriteLine(kernel, "Hello World");
+    }
+
+New:
+
+    static OrynStatus Kernel5Main(OrynKernelSdkContext* kernel)
+    {
+        OrynStatus status;
+
+        if (kernel == 0)
+        {
+            return OrynStatusInvalidArgument("Kernel SDK context was null.");
+        }
+
+        status = OrynKernelSdkWriteLine(kernel, "Hello World");
+        if (ORYN_STATUS_FAILED(status))
+        {
+            return status;
+        }
+
+        return OrynStatusOk("Kernel-5 completed.");
+    }
+
+Required SDK declarations:
+
+    OrynKernelSdkWriteLine must return OrynStatus.
+    ORYN_KERNEL_APPLICATION must call the app entry and preserve its returned OrynStatus.
+    The app callback typedef must return OrynStatus, not void.
